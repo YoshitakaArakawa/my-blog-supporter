@@ -6,7 +6,7 @@ argument-hint: [テーマ]
 
 # 記事執筆・推敲
 
-brief.md（必須）と thinking.md（あれば）をもとに、記事本文を執筆し `output/{yyyymmdd}_$ARGUMENTS/draft.md` に出力する。
+brief.md（必須）と outline.md・thinking.md（あれば）をもとに、記事本文を執筆し `output/{yyyymmdd}_$ARGUMENTS/draft.md` に出力する。
 執筆後、推敲とユーザーとの磨きこみを行う。
 
 **フォルダ命名規則**: 出力先は `output/{yyyymmdd}_$ARGUMENTS/` とする。既存フォルダがある場合（例: `output/20260331_ai-utilization/`）はそれを使う。`$ARGUMENTS` に日付プレフィックス付きのフォルダ名が直接渡された場合はそのまま使う。以降のパス記述で `$OUTPUT_DIR` はこのディレクトリを指す。
@@ -17,7 +17,8 @@ brief.md（必須）と thinking.md（あれば）をもとに、記事本文を
 
 以下を読み込む:
 - `$OUTPUT_DIR/brief.md`（必須。なければ「先に `/brainstorm $ARGUMENTS` を実行してください」と案内）
-- `$OUTPUT_DIR/thinking.md`（あれば。構成設計として活用）
+- `$OUTPUT_DIR/outline.md`（あれば。記事の見出し構成・展開順序・資料接続の設計図として活用）
+- `$OUTPUT_DIR/thinking.md`（あれば。各セクションで展開する主張・素材として活用）
 - `$OUTPUT_DIR/references.md`（あれば。参考リンクを記事内に適切に配置するため）
 - `${CLAUDE_SKILL_DIR}/references/voice-style.md`（必須。著者の文体・語り口・構造パターン・チェックリスト）
 
@@ -26,8 +27,9 @@ brief.md（必須）と thinking.md（あれば）をもとに、記事本文を
 voice-style.md のルールとパターンに従い、Markdown で記事本文を執筆する。
 
 **執筆時の注意点**:
-- thinking.md がある場合は、その構成と素材に沿って展開する
-- thinking.md がない場合は、brief.md のストーリーラインに沿って展開する
+- outline.md がある場合は、その見出し構成・展開順序に沿って書き、各セクションの中身は thinking.md の主張・素材で肉付けする
+- outline.md がなく thinking.md だけある場合は、thinking.md の主張を素材に brief.md のストーリーラインで展開する
+- どちらもない場合は、brief.md のストーリーラインに沿って展開する
 - references.md の参考リンクは、本文の流れの中に自然に埋め込む
 - 画像の挿入位置は `<!-- 画像: {説明} -->` のプレースホルダーで示す
 - voice-style.md のパターン集・構造・チェックリストに従い、著者の文体・トーンを合わせる
