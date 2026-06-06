@@ -11,6 +11,9 @@ output/**/*.mhtml
 .claude/settings.json
 .claude/settings.local.json
 
+# Images (article screenshots etc.)
+*.png
+
 # OS metadata
 Thumbs.db
 .DS_Store
