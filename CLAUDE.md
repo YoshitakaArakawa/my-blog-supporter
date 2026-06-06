@@ -12,11 +12,11 @@ yarakawa.com のブログ記事を対話的に執筆するプロジェクト。
 6. ユーザーが draft_user.md を執筆 — AI版を参考に、独自の言葉・構成で記事を書き上げる
 7. `/compare-drafts [テーマ]` - draft.md と draft_user.md を比較 → comparison.md (改善FB)
 
-**2〜3 はループ。** `/brainstorm`（発散）⇄ `/deepen`（掘る）を往復し、節目で `/critique`（叩く）を挟む。critique の指摘を次の deepen の燃料にして主張を深める。掘る・叩く工程は thinking.md を更新し続ける（最新が正）。critique は時系列で残す（critique/ 配下に連番）。
+**2〜3 はループ。** `/brainstorm`（発散）⇄ `/deepen`（掘る）を往復する。**`/critique`（叩く）は `/deepen` の既定の後続工程**として自動で走る ― deepen が thinking.md を書いたら、著者に戻す前に critique を自動実行し、指摘のうち**著者固有でないもの**は AI が自答してループを回し（thinking.md に `[AI回答]` で provenance を残す）、**著者固有のもの**（体験・立場・固有の判断が要る点）だけ著者に戻す（content-typed gate、critique 最大3周のキャップ付き）。「AI の自走を入れつつ、記事の中身が静かに AI のものにすり替わるのを防ぐ」設計＝記事の主張「問いと判断は人間が握る」の工程への適用。掘る・叩く工程は thinking.md を更新し続ける（最新が正）。critique は時系列で残す（critique/ 配下に連番）。
 
 ループが落ち着いたら 4 の `/outline` で構成を一度固める。
 
-`/deepen` 以降は省略可能。brief.md の時点で構成が十分明確なら `/brainstorm` → `/write` の直行も可。`/critique` は掘った主張を叩きたい時、`/outline` は構成を別ファイルで固めたい時に使う（thinking.md だけで write に進んでもよい）。`/compare-drafts` も任意。AI生成を次回以降ユーザー版に近付けたい時に実行する。
+`/deepen` 以降は省略可能。brief.md の時点で構成が十分明確なら `/brainstorm` → `/write` の直行も可。`/critique` は `/deepen` 内で自動実行されるが、単独で叩き直したい時は手動でも呼べる（著者が「critique 不要」と明示した時のみ deepen はループを飛ばす）。`/outline` は構成を別ファイルで固めたい時に使う（thinking.md だけで write に進んでもよい）。`/compare-drafts` も任意。AI生成を次回以降ユーザー版に近付けたい時に実行する。
 
 `/critique` は `context: fork`（隔離コンテキスト）で動く。会話履歴を持たないため thinking.md を入力に読み、指摘を critique/critique_NN.md に書き出して実行サマリだけメインに返す。「引き出す deepen」と「叩く critique」をコンテキストごと分離する設計。
 
