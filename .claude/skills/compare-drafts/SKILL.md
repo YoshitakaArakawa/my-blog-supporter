@@ -1,14 +1,16 @@
 ---
 name: compare-drafts
-description: draft.md (AI生成) と draft_user.md (ユーザー生成) を比較し、AI生成を次回以降ユーザー版に近付けるための改善フィードバックを comparison.md として生成する
-argument-hint: "[テーマ]"
+description: 公開後のWeb記事（原則）または draft_user.md と、draft.md (AI生成) を比較し、AI生成を次回以降ユーザー版に近付けるための改善フィードバックを comparison/comparison.md として生成する
+argument-hint: "[テーマ] [公開URL(任意)]"
 ---
 
 # ドラフト比較・改善フィードバック生成
 
-`draft.md` (AI生成) と `draft_user.md` (ユーザー推敲版) を比較し、ユーザー版の特徴を抽出して、次回以降の AI 生成をユーザー版に近付けるためのフィードバックを `output/{yyyymmdd}_$ARGUMENTS/comparison.md` に出力する。
+`draft.md` (AI生成) と「ユーザー側の最終形」を比較し、ユーザー版の特徴を抽出して、次回以降の AI 生成をユーザー版に近付けるためのフィードバックを `$OUTPUT_DIR/comparison/comparison.md` に出力する。
 
-**フォルダ命名規則**: 出力先は `output/{yyyymmdd}_$ARGUMENTS/` とする。既存フォルダがある場合（例: `output/20260331_ai-utilization/`）はそれを使う。`$ARGUMENTS` に日付プレフィックス付きのフォルダ名が直接渡された場合はそのまま使う。以降のパス記述で `$OUTPUT_DIR` はこのディレクトリを指す。
+**ユーザー側の比較対象は「公開後の Web 記事」を原則とする**。公開記事こそ著者が最終的に確定した声であり、draft_user.md（とくに Wix からの抽出版）は体裁ノイズや未反映の編集を含みうるため。公開 URL が無い／取得できない場合のみ `draft_user.md` にフォールバックする（手順1参照）。
+
+**フォルダ命名規則**: 出力先は `output/{yyyymmdd}_$ARGUMENTS/` とする。既存フォルダがある場合（例: `output/20260331_ai-utilization/`）はそれを使う。`$ARGUMENTS` に日付プレフィックス付きのフォルダ名が直接渡された場合はそのまま使う。以降のパス記述で `$OUTPUT_DIR` はこのディレクトリを指す。比較成果物は `$OUTPUT_DIR/comparison/` 配下に置く（フォルダが無ければ作る）。
 
 ## このスキルの目的
 
@@ -21,17 +23,24 @@ argument-hint: "[テーマ]"
 
 ## 手順
 
-### 1. 準備
+### 1. 準備 — 比較対象を確定する
 
-以下を読み込む:
-- `$OUTPUT_DIR/draft.md` (必須。AI生成版。なければ「先に `/write $ARGUMENTS` を実行してください」と案内)
-- `$OUTPUT_DIR/draft_user.md` (必須。ユーザー推敲版。空または極端に短い場合は「draft_user.md がまだ書かれていないようです」と案内して中断)
+**AI側**: `$OUTPUT_DIR/draft.md` を読む（必須。なければ「先に `/write $ARGUMENTS` を実行してください」と案内して中断）。
+
+**ユーザー側**: 以下の優先順で1つに確定する。
+1. **公開 Web 記事（原則）**: ユーザーがチャットで公開 URL を渡している（または `$ARGUMENTS` 第2引数）場合、その記事を取得する:
+   - まず `WebFetch` で本文を全文取得する（「要約せず、原文の見出し・段落・箇条書き・リンクを出現順に。ナビ/カテゴリ/フッター等の本文以外は除外」というプロンプトで投げる）
+   - WebFetch が要約しか返さない／本文が崩れる／失敗する場合は `fetch-page` スキル（playwright-cli）で取得する（Wix 等の SPA を想定）
+   - 取得した本文を `$OUTPUT_DIR/comparison/published.md` に**上書き保存**する（先頭に取得元 URL と取得日を記録）。これをユーザー側の比較対象にする
+2. **フォールバック = `$OUTPUT_DIR/draft_user.md`**: URL が渡されていない、または上の取得が両手段とも失敗した場合に使う。空または極端に短い場合は「比較対象（公開 URL も draft_user.md も）が見当たりません」と案内して中断する
+
+どちらを使ったか（published.md / draft_user.md）を覚えておき、手順5の provenance に明記する。取得手段で逃げない（WebFetch の失敗を黙って draft_user.md にすり替えず、fetch-page を試してから落とす）。
 
 **この時点では voice-style.md を読み込まない**。バイアス回避のため、フェーズ3まで触れない。
 
 ### 2. フェーズ1 — 素直な単純比較 (voice-style.md なし)
 
-両ファイルを素直に見比べて、差分を観察する。以下の柱を出発点に、観察できた点を抽出する:
+AI版（draft.md）とユーザー側（published.md または draft_user.md）を素直に見比べて、差分を観察する。以下の柱を出発点に、観察できた点を抽出する:
 
 **観察の柱 (例。これに縛られず、見えたものは見えたものとして書く)**:
 - 全体構造 — 見出し数、章建ての粒度、サブセクションの使い方
@@ -78,12 +87,13 @@ argument-hint: "[テーマ]"
 
 ### 5. comparison.md の生成
 
-`$OUTPUT_DIR/comparison.md` を以下の構造で出力する:
+`$OUTPUT_DIR/comparison/comparison.md` を以下の構造で出力する:
 
 ```markdown
 # Draft 比較・改善フィードバック
 
-- 比較対象: `draft.md` (AI生成) vs `draft_user.md` (ユーザー生成)
+- 比較対象: `draft.md` (AI生成) vs {ユーザー側ソース}
+- ユーザー側ソース: {`comparison/published.md`（取得元 URL・取得日を併記）/ `draft_user.md` のどちらを使ったかを明記}
 - 生成日: {YYYY-MM-DD}
 - 記事テーマ: {brief.md または brief_deepen.md から推定したテーマ}
 
@@ -130,7 +140,7 @@ argument-hint: "[テーマ]"
 
 ### 6. ユーザーへの案内
 
-- `$OUTPUT_DIR/comparison.md` を生成したことを伝える
+- `$OUTPUT_DIR/comparison/comparison.md` を生成したこと（公開記事から比較した場合は `comparison/published.md` も保存したこと、URL が無く draft_user.md で比較した場合はその旨）を伝える
 - 「III. voice-style.md への改善提案」は **ユーザー判断で別途反映** することを明示
 - 反映するなら、ユーザーから明示的に指示してもらう (例: 「voice-style.md に反映して」)
 - 複数の comparison.md が溜まってきたら、横断的に見直す価値がある旨を案内

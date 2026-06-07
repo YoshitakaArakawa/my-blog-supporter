@@ -11,13 +11,13 @@ yarakawa.com のブログ記事を対話的に執筆するプロジェクト。
 5. `/write [テーマ]` - 記事執筆・推敲 → draft.md (+ 空白 draft_user.md)
 6. ユーザーが draft_user.md を執筆 — AI版を参考に、独自の言葉・構成で記事を書き上げる
 7. `/review-draft [テーマ]` - 著者の下書き(draft_user.md)を初見の読者視点で編集レビュー → review/review_NN.md
-8. `/compare-drafts [テーマ]` - draft.md と draft_user.md を比較 → comparison.md (改善FB)
+8. `/compare-drafts [テーマ] [公開URL]` - draft.md と公開Web記事（原則／無ければ draft_user.md）を比較 → comparison/comparison.md (改善FB)
 
 **2〜3 はループ。** `/brainstorm`（発散）⇄ `/deepen`（掘る）を往復する。**`/critique`（叩く）は `/deepen` の既定の後続工程**として自動で走る ― deepen が thinking.md を書いたら、著者に戻す前に critique を自動実行し、指摘のうち**著者固有でないもの**は AI が自答してループを回し（thinking.md に `[AI回答]` で provenance を残す）、**著者固有のもの**（体験・立場・固有の判断が要る点）だけ著者に戻す（content-typed gate、critique 最大3周のキャップ付き）。「AI の自走を入れつつ、記事の中身が静かに AI のものにすり替わるのを防ぐ」設計＝記事の主張「問いと判断は人間が握る」の工程への適用。掘る・叩く工程は thinking.md を更新し続ける（最新が正）。critique は時系列で残す（critique/ 配下に連番）。
 
 ループが落ち着いたら 4 の `/outline` で構成を一度固める。
 
-`/deepen` 以降は省略可能。brief.md の時点で構成が十分明確なら `/brainstorm` → `/write` の直行も可。`/critique` は `/deepen` 内で自動実行されるが、単独で叩き直したい時は手動でも呼べる（著者が「critique 不要」と明示した時のみ deepen はループを飛ばす）。`/outline` は構成を別ファイルで固めたい時に使う（thinking.md だけで write に進んでもよい）。`/review-draft` も任意。公開前に著者の下書きを初見の読者視点で編集レビューしたい時に使う。`/compare-drafts` も任意。AI生成を次回以降ユーザー版に近付けたい時に実行する。**critique＝主張の批判（thinking.md）、review-draft＝原稿の編集レビュー（draft_user.md）、compare-drafts＝AI版↔著者版の比較**、と役割が分かれる。
+`/deepen` 以降は省略可能。brief.md の時点で構成が十分明確なら `/brainstorm` → `/write` の直行も可。`/critique` は `/deepen` 内で自動実行されるが、単独で叩き直したい時は手動でも呼べる（著者が「critique 不要」と明示した時のみ deepen はループを飛ばす）。`/outline` は構成を別ファイルで固めたい時に使う（thinking.md だけで write に進んでもよい）。`/review-draft` も任意。公開前に著者の下書きを初見の読者視点で編集レビューしたい時に使う。`/compare-drafts` も任意。AI生成を次回以降ユーザー版に近付けたい時に実行する。**critique＝主張の批判（thinking.md）、review-draft＝原稿の編集レビュー（draft_user.md）、compare-drafts＝AI版↔著者の公開記事（原則／無ければ draft_user.md）の比較**、と役割が分かれる。compare-drafts は公開 URL をチャットで受け取り、公開記事を取得して比較する（取得スナップショットは comparison/published.md に保存）。
 
 `/critique` と `/review-draft` は `context: fork`（隔離コンテキスト）で動く。会話履歴を持たないため対象をファイルから読み、指摘を連番ファイルに書き出して実行サマリだけメインに返す。critique は thinking.md を読み critique/critique_NN.md へ。review-draft は draft_user.md を読み review/review_NN.md へ（fork ＝「初見の読者」視点で読みにくさ・難しさを診る狙い）。「引き出す deepen」と「叩く critique」をコンテキストごと分離する設計。
 
@@ -39,7 +39,9 @@ output/{yyyymmdd}_{テーマ}/           記事ごとの出力（日付プレフ
   review/                            下書きレビューの記録（/review-draft 生成、推敲ごとに時系列に蓄積）
     review_01.md                     1回目のレビュー指摘
     review_02.md                     2回目のレビュー指摘 …
-  comparison.md                      AI版とユーザー版の比較・改善FB（/compare-drafts 生成）
+  comparison/                        AI版とユーザー版の比較（/compare-drafts 生成。過去記事は直下 comparison.md のままでよい）
+    published.md                     公開Web記事の取得スナップショット（原則の比較対象。毎回上書き／URL 取得時のみ）
+    comparison.md                    比較・改善FB
 
 .claude/skills/write/references/     /write スキル付属の文体ガイド
   voice-style.md                     著者の文体・語り口・構造パターン・チェックリスト
