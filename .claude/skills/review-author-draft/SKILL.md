@@ -1,5 +1,5 @@
 ---
-name: review-draft
+name: review-author-draft
 description: draft_user.md（著者が書いた記事の下書き）を隔離コンテキスト（初見の読者視点）で編集レビューする。タイトルと本文の整合、構成と流れ、読みやすさ、想定読者（brief.mdの読者像）への難易度、論理破綻・飛躍、文体整合（voice-style）を観点に、優先度順の指摘を review/review_NN.md に時系列で書き出し、実行サマリだけをメインに返す。記事を公開・推敲する前に下書きの完成度を点検したいときに使う。主張の妥当性検証は critique、AI版と著者版の比較は compare-drafts が担い、本スキルは著者の原稿そのものの編集レビューに専念する
 argument-hint: "[テーマ]"
 context: fork
