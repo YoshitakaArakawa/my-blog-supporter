@@ -19,9 +19,9 @@ yarakawa.com のブログ記事を対話的に執筆するプロジェクト。
 
 ループが落ち着いたら 4 の `/outline` で構成を一度固める。
 
-`/deepen` は `/brainstorm` の次に進む**標準工程**。brief.md だけで主張・コアメッセージが固まることはまずないので、原則 `/brainstorm` → `/deepen` と掘ってから書く（`/brainstorm` → `/write` の直行はしない）。`/critique` は `/deepen` 内で自動実行されるが、単独で叩き直したい時は手動でも呼べる（著者が「critique 不要」と明示した時のみ deepen はループを飛ばす）。`/outline` 以降は任意。`/outline` は構成を別ファイルで固めたい時に使う（thinking.md だけで write に進んでもよい）。`/check-drift` は、**AI が成果物を生成する工程（`/outline`・`/write`）の直後それぞれに挟む承認ゲート**。`/outline` 後に `/check-drift outline`、`/write` 後に `/check-drift draft` を回し、書いた当人から切り離した fork が「進む／前段に戻して直す」の判断材料を著者に返す（`/outline` を飛ばす運用なら `draft` の1点だけ）。2点で挟む理由＝ドリフト発生箇所（縮約か散文化か）の局所化は check-drift スキルを参照。`/review-author-draft` も任意。公開前に著者の下書きを初見の読者視点で編集レビューしたい時に使う。`/compare-drafts` も任意。AI生成を次回以降ユーザー版に近付けたい時に実行する。**critique＝主張の批判（thinking.md）、check-drift＝AI成果物の段階間整合（前段から落とした／湧いた）、review-author-draft＝原稿の編集レビュー（draft_user.md）、compare-drafts＝AI版↔著者の公開記事（原則／無ければ draft_user.md）の比較**、と役割が分かれる。compare-drafts は公開 URL をチャットで受け取り、公開記事を取得して比較する（取得スナップショットは comparison/published.md に保存）。
+`/deepen` は `/brainstorm` の次に進む**標準工程**。brief.md だけで主張・コアメッセージが固まることはまずないので、原則 `/brainstorm` → `/deepen` と掘ってから書く（`/brainstorm` → `/write` の直行はしない）。`/critique` は `/deepen` 内で自動実行されるが、単独で叩き直したい時は手動でも呼べる（著者が「critique 不要」と明示した時のみ deepen はループを飛ばす）。`/outline` 以降は任意。`/outline` は構成を別ファイルで固めたい時に使う（thinking.md だけで write に進んでもよい）。`/check-drift` は、**AI が成果物を生成する工程（`/outline`・`/write`）の直後それぞれに挟む承認ゲート**。`/outline` 後に `/check-drift outline`、`/write` 後に `/check-drift draft` を回し、書いた当人から切り離した fork が「進む／前段に戻して直す」の判断材料を著者に返す（`/outline` を飛ばす運用なら `draft` の1点だけ）。2点で挟む理由＝ドリフト発生箇所（縮約か散文化か）の局所化は check-drift スキルを参照。`/simulate-readers`（初見読者シミュレーション）は **`/write` の推敲工程の既定の一部**として fork 実行される（単独でも呼べる）。離脱点・SNS/コメント欄の反応・行動変化・炎上経路の予測を推敲材料として返し、指摘の採否は「主題を深めるか、鎧を増やすだけか」で仕分ける（防御的挿入の累積はトーンを防御文書化するため、鎧系は本文に入れずドラフト冒頭の引き継ぎメモに残置。詳細は write スキル）。`/review-author-draft` も任意。公開前に著者の下書きを初見の読者視点で編集レビューしたい時に使う。`/compare-drafts` も任意。AI生成を次回以降ユーザー版に近付けたい時に実行する。**critique＝主張の批判（thinking.md）、check-drift＝AI成果物の段階間整合（前段から落とした／湧いた）、simulate-readers＝読者の受け取られ方の予測（AI生成ドラフト）、review-author-draft＝原稿の編集レビュー（draft_user.md）、compare-drafts＝AI版↔著者の公開記事（原則／無ければ draft_user.md）の比較**、と役割が分かれる。compare-drafts は公開 URL をチャットで受け取り、公開記事を取得して比較する（取得スナップショットは comparison/published.md に保存）。
 
-`/critique`・`/review-author-draft`・`/check-drift` は `context: fork`（隔離コンテキスト）で動く。会話履歴を持たないため対象をファイルから読み、指摘を連番ファイルに書き出して実行サマリだけメインに返す。critique は thinking.md を読み critique/critique_NN.md へ。review-author-draft は draft_user.md を読み review/review_NN.md へ。check-drift は前段の正（既定では thinking.md＋outline.md＋references.md）と target（draft.md）を読み比べ drift/drift_NN.md へ。「引き出す deepen」と「叩く critique／整合を診る check-drift」をコンテキストごと分離する設計。
+`/critique`・`/review-author-draft`・`/check-drift`・`/simulate-readers` は `context: fork`（隔離コンテキスト）で動く。会話履歴を持たないため対象をファイルから読み、指摘を連番ファイルに書き出して実行サマリだけメインに返す。critique は thinking.md を読み critique/critique_NN.md へ。review-author-draft は draft_user.md を読み review/review_NN.md へ。check-drift は前段の正（既定では thinking.md＋outline.md＋references.md）と target（draft.md）を読み比べ drift/drift_NN.md へ。simulate-readers は AI生成ドラフト（既定 draft.md）と brief.md の読者像を読み readers/readers_NN.md へ。「引き出す deepen」と「叩く critique／整合を診る check-drift／読者として読む simulate-readers」をコンテキストごと分離する設計。
 
 ## ディレクトリ構成
 
@@ -40,6 +40,8 @@ output/{yyyymmdd}_{テーマ}/           記事ごとの出力（日付プレフ
   drift/                             段階間ドリフト点検の記録（/check-drift 生成、点検ごとに時系列に蓄積）
     drift_01.md                      1回目の点検（落とした背骨／無根拠 add）
     drift_02.md                      2回目の点検 …
+  readers/                           初見読者シミュレーションの記録（/simulate-readers 生成、実行ごとに時系列に蓄積）
+    readers_01.md                    1回目の読者反応予測（離脱点・反応・行動変化・炎上経路）…
   draft_user.md                      記事本文（ユーザー推敲版。/write 完了時に空白で作成）
   review/                            下書きレビューの記録（/review-author-draft 生成、推敲ごとに時系列に蓄積）
     review_01.md                     1回目のレビュー指摘
