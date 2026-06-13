@@ -6,6 +6,10 @@ MHTMLはWixダッシュボードのブログ編集ページを丸ごと保存し
 そのパートの post-title / post-description コンテナだけをサブツリー抽出し、
 サイトのナビ・カテゴリ・フッターを構造的に排除する。
 
+見出し(h1-h6)・区切り線(div type=divider)・リスト(li)は Wix の DOM 構造に
+実在するため、それを Markdown(見出し記号 / --- / - )に忠実変換する。
+構造に無いマークアップは足さない(フォントサイズ等からの見出し推測はしない)。
+
 依存: Python 3 標準ライブラリのみ(email, html.parser)。追加パッケージ不要。
 
 使い方:
@@ -21,18 +25,24 @@ from html.parser import HTMLParser
 # 0に戻らずコンテナを抜けても捕捉が続き、フッター等が混入する)。
 VOID = {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
         'link', 'meta', 'param', 'source', 'track', 'wbr'}
-# テキスト前に改行を入れて段落・見出し・リストの区切りを保つブロック要素。
+# 1ブロック(段落)の境界になる要素。これらの開始/終了で現在のブロックを確定する。
 BLOCK = {'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'tr',
-         'blockquote', 'section', 'ul', 'ol'}
-# 段落終端で改行を入れる要素。
-CLOSE_BREAK = {'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'li'}
+         'blockquote', 'section', 'ul', 'ol', 'li', 'pre'}
+HEADING = {'h1', 'h2', 'h3', 'h4', 'h5', 'h6'}
 
 
 class ContainerExtractor(HTMLParser):
-    """data-hook=<hook> の要素サブツリーだけをテキスト化する。
+    """data-hook=<hook> の要素サブツリーを、ブロック単位でテキスト化する。
 
     depthで対象要素の入れ子を追跡し、その要素が閉じたら捕捉を止める。
-    script/style/noscriptの中身は捨てる。li は '- ' 前置でリストを保つ。
+    script/style/noscriptの中身は捨てる。各ブロックには種別(段落 / 見出しh1-h6
+    / リスト項目li / 区切り線hr)を持たせ、render()でMarkdownに変換する。
+
+    Wix固有の2点に注意:
+    - リスト項目は <li><p>...</p></li> と内側に <p> を持つため、li の中にいる
+      間(in_li)は内側 <p> でも種別を li に保つ(でないとマーカー '-' が落ちる)。
+    - 段落を <pre>(整形済み)に入れる場合があり、改行がリテラル \\n になる。
+      pre内(in_pre)は空白正規化で改行を潰さず、行ごとに段落へ分割する。
     """
 
     def __init__(self, hook):
@@ -41,10 +51,34 @@ class ContainerExtractor(HTMLParser):
         self.depth = 0
         self.capturing = False
         self.skip = 0            # script/style/noscriptのネスト数
-        self.parts = []
+        self.blocks = []         # 確定したブロック [(kind, text), ...]
+        self.buf = []            # 現在組み立て中のブロックのテキスト断片
+        self.kind = 'p'          # 現在のブロック種別
+        self.in_li = False       # <li> サブツリー内か
+        self.in_pre = False      # <pre> サブツリー内か
+
+    def _flush(self):
+        """組み立て中のテキスト断片を1ブロックとして確定する。
+
+        pre内は行ごとに別段落へ分割し、改行を保つ。それ以外は連続空白を
+        1つに正規化して1ブロックにまとめる。
+        """
+        raw = ''.join(self.buf)
+        self.buf = []
+        if self.in_pre:
+            for line in raw.splitlines():
+                line = re.sub(r'[ \t]+', ' ', line).strip()
+                if line:
+                    self.blocks.append(('p', line))
+        else:
+            text = re.sub(r'\s+', ' ', raw).strip()
+            if text:
+                self.blocks.append((self.kind, text))
+        self.kind = 'li' if self.in_li else 'p'
 
     def handle_starttag(self, tag, attrs):
-        if not self.capturing and dict(attrs).get('data-hook') == self.hook:
+        a = dict(attrs)
+        if not self.capturing and a.get('data-hook') == self.hook:
             self.capturing = True
             self.depth = 0
         if not self.capturing:
@@ -53,44 +87,77 @@ class ContainerExtractor(HTMLParser):
             self.depth += 1
         if tag in ('script', 'style', 'noscript'):
             self.skip += 1
-        if tag == 'li':
-            self.parts.append('\n- ')
-        elif tag in BLOCK or tag == 'br':
-            self.parts.append('\n')
+            return
+        # 区切り線(Wixは空divに type=divider を付ける)は独立ブロックとして残す。
+        if a.get('type') == 'divider':
+            self._flush()
+            self.blocks.append(('hr', ''))
+            return
+        # <br> は段落内の改行。pre以外では段落の区切りとして扱う。
+        if tag == 'br' and not self.in_pre:
+            self._flush()
+            return
+        # ブロック境界では現在のブロックを確定し、新しいブロックの種別を決める。
+        if tag in BLOCK:
+            self._flush()
+            if tag == 'pre':
+                self.in_pre = True
+            if tag == 'li':
+                self.in_li = True
+                self.kind = 'li'
+            elif tag in HEADING:
+                self.kind = tag
+            else:
+                # p/div/section等。li の中なら li を維持する。
+                self.kind = 'li' if self.in_li else 'p'
 
     def handle_endtag(self, tag):
         if not self.capturing:
             return
         if tag in ('script', 'style', 'noscript') and self.skip > 0:
             self.skip -= 1
-        if tag in CLOSE_BREAK:
-            self.parts.append('\n')
+            return
+        if tag in BLOCK:
+            self._flush()
+            if tag == 'pre':
+                self.in_pre = False
+            if tag == 'li':
+                self.in_li = False
         if tag not in VOID:
             self.depth -= 1
             if self.depth <= 0:
+                self._flush()
                 self.capturing = False
 
     def handle_data(self, data):
-        if self.capturing and self.skip == 0 and data.strip():
-            self.parts.append(data)
+        # pre内は空白だけの行(意図的な改行)も保持する。
+        if self.capturing and self.skip == 0 and (self.in_pre or data.strip()):
+            self.buf.append(data)
 
-    def text(self):
-        joined = ''.join(self.parts)
-        lines = [ln.strip() for ln in joined.splitlines() if ln.strip()]
-        # li内にネストしたブロック要素があるとマーカー'-'と本文が別行に割れる。
-        # 孤立した'-'を直後の本文行に再結合してリスト項目を復元する。
-        merged = []
-        i = 0
-        while i < len(lines):
-            if lines[i] == '-' and i + 1 < len(lines):
-                merged.append('- ' + lines[i + 1])
-                i += 2
+    def render(self):
+        """確定ブロックをMarkdown文字列に組み立てる。
+
+        見出し→#記号、区切り線→---、リスト項目→- を付与する。
+        段落・見出し・区切り線は空行で区切り、連続するリスト項目だけは
+        空行を挟まず詰める(Markdownのリストを保つ)。
+        """
+        items = []
+        for kind, text in self.blocks:
+            if kind == 'hr':
+                items.append(('hr', '---'))
+            elif kind in HEADING:
+                items.append(('h', '#' * int(kind[1]) + ' ' + text))
+            elif kind == 'li':
+                items.append(('li', '- ' + text))
             else:
-                merged.append(lines[i])
-                i += 1
-        body = '\n'.join(merged)
-        # 3行以上の連続改行を段落区切り(空行1つ)に圧縮する。
-        return re.sub(r'\n{3,}', '\n\n', body).strip()
+                items.append(('p', text))
+        out = ''
+        for i, (kind, line) in enumerate(items):
+            if i > 0:
+                tight = kind == 'li' and items[i - 1][0] == 'li'
+                out += '\n' if tight else '\n\n'
+            out += line
+        return out.strip()
 
 
 def html_parts(path):
@@ -117,12 +184,14 @@ def extract(htmls):
     for html in htmls:
         d = ContainerExtractor('post-description')
         d.feed(html)
-        body = d.text()
+        body = d.render()
         if len(body) > len(best_body):
             best_body = body
             t = ContainerExtractor('post-title')
             t.feed(html)
-            best_title = t.text()
+            # タイトルは1行の見出しなので記号や改行を落として素のテキストにする。
+            best_title = re.sub(r'\s+', ' ',
+                                t.render().lstrip('#- ').replace('\n', ' ')).strip()
     return best_title, best_body
 
 
@@ -145,9 +214,11 @@ def main():
     md = f'# {title}\n\n{body}\n' if title else f'{body}\n'
     with open(dst, 'w', encoding='utf-8') as f:
         f.write(md)
+    heads = body.count('\n## ') + body.count('\n### ')
     print(f'OK title={title!r}')
     print(f'OK output={dst}')
-    print(f'OK body_chars={len(body)} body_lines={body.count(chr(10)) + 1}')
+    print(f'OK body_chars={len(body)} body_lines={body.count(chr(10)) + 1} '
+          f'headings={heads}')
 
 
 if __name__ == '__main__':
