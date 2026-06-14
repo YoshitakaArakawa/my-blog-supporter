@@ -10,6 +10,9 @@ MHTMLはWixダッシュボードのブログ編集ページを丸ごと保存し
 実在するため、それを Markdown(見出し記号 / --- / - )に忠実変換する。
 構造に無いマークアップは足さない(フォントサイズ等からの見出し推測はしない)。
 
+リンクは <a href> が本文コンテナ内に残っていれば [text](href) に復元する。
+href が無い場合はリンクテキストを素テキストとして残す(URLを捏造しない)。
+
 依存: Python 3 標準ライブラリのみ(email, html.parser)。追加パッケージ不要。
 
 使い方:
@@ -38,11 +41,13 @@ class ContainerExtractor(HTMLParser):
     script/style/noscriptの中身は捨てる。各ブロックには種別(段落 / 見出しh1-h6
     / リスト項目li / 区切り線hr)を持たせ、render()でMarkdownに変換する。
 
-    Wix固有の2点に注意:
+    Wix固有の3点に注意:
     - リスト項目は <li><p>...</p></li> と内側に <p> を持つため、li の中にいる
       間(in_li)は内側 <p> でも種別を li に保つ(でないとマーカー '-' が落ちる)。
     - 段落を <pre>(整形済み)に入れる場合があり、改行がリテラル \\n になる。
       pre内(in_pre)は空白正規化で改行を潰さず、行ごとに段落へ分割する。
+    - <a href> はインライン要素。アンカー内のテキストは a_buf に分離して集め、
+      </a> で [text](href) を組み立ててからブロックの buf へ戻す。
     """
 
     def __init__(self, hook):
@@ -56,6 +61,10 @@ class ContainerExtractor(HTMLParser):
         self.kind = 'p'          # 現在のブロック種別
         self.in_li = False       # <li> サブツリー内か
         self.in_pre = False      # <pre> サブツリー内か
+        self.in_a = False        # <a> サブツリー内か
+        self.a_href = None       # 現在のアンカーの href
+        self.a_buf = []          # アンカー内テキストの断片
+        self.links = 0           # 復元したMarkdownリンク数
 
     def _flush(self):
         """組み立て中のテキスト断片を1ブロックとして確定する。
@@ -76,6 +85,34 @@ class ContainerExtractor(HTMLParser):
                 self.blocks.append((self.kind, text))
         self.kind = 'li' if self.in_li else 'p'
 
+    def _close_anchor(self):
+        """</a> でアンカーを確定し、ブロックの buf へ戻す。
+
+        href があれば [text](href) を、無ければ素テキストを buf へ積む。
+        Wixが本文中の記号やURL片を誤ってオートリンク化することがあるため、
+        実行不能/内部アンカー/ラベルが記号のみのリンクは素テキストに戻す。
+        """
+        text = re.sub(r'\s+', ' ', ''.join(self.a_buf)).strip()
+        href = self.a_href
+        self.in_a = False
+        self.a_href = None
+        self.a_buf = []
+        # href が無い・javascript: ・ページ内アンカー(#)は本文リンクとして無効。
+        bad_href = (not href) or href.startswith('javascript:') or href.startswith('#')
+        # ラベルに語要素(\w)が無い(".." "…" 等の記号のみ)のはオートリンク事故。
+        no_label = re.search(r'\w', text) is None
+        if bad_href or no_label:
+            if text:
+                self.buf.append(text)
+            return
+        # punycode(xn--)ドメインは正当な国際化ドメインの可能性もあるが、
+        # オートリンク事故でも生じうるため、消さずに要確認マーカーを添える。
+        link = f'[{text}]({href})'
+        if 'xn--' in href:
+            link += ' <!-- 要確認リンク -->'
+        self.buf.append(link)
+        self.links += 1
+
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         if not self.capturing and a.get('data-hook') == self.hook:
@@ -87,6 +124,12 @@ class ContainerExtractor(HTMLParser):
             self.depth += 1
         if tag in ('script', 'style', 'noscript'):
             self.skip += 1
+            return
+        # アンカー開始。以降のテキストは a_buf に分離して集める。
+        if tag == 'a' and self.skip == 0:
+            self.in_a = True
+            self.a_href = a.get('href')
+            self.a_buf = []
             return
         # 区切り線(Wixは空divに type=divider を付ける)は独立ブロックとして残す。
         if a.get('type') == 'divider':
@@ -117,6 +160,9 @@ class ContainerExtractor(HTMLParser):
         if tag in ('script', 'style', 'noscript') and self.skip > 0:
             self.skip -= 1
             return
+        # アンカー確定。depth減算は下の共通処理に任せる(<a>は非VOIDで+1済み)。
+        if tag == 'a' and self.in_a:
+            self._close_anchor()
         if tag in BLOCK:
             self._flush()
             if tag == 'pre':
@@ -132,7 +178,11 @@ class ContainerExtractor(HTMLParser):
     def handle_data(self, data):
         # pre内は空白だけの行(意図的な改行)も保持する。
         if self.capturing and self.skip == 0 and (self.in_pre or data.strip()):
-            self.buf.append(data)
+            # アンカー内テキストは a_buf に分離(]() を正しい位置に組むため)。
+            if self.in_a:
+                self.a_buf.append(data)
+            else:
+                self.buf.append(data)
 
     def render(self):
         """確定ブロックをMarkdown文字列に組み立てる。
@@ -179,23 +229,30 @@ def extract(htmls):
 
     Wixはダッシュボード外殻と記事プレビューを別パートとして保存する。
     どのパートに本文があるかをハードコードせず、抽出結果の長さで選ぶ。
+    戻り値: (title, body, links)。links は復元したMarkdownリンク数。
     """
-    best_body, best_title = '', ''
+    best_body, best_title, best_links = '', '', 0
     for html in htmls:
         d = ContainerExtractor('post-description')
         d.feed(html)
         body = d.render()
         if len(body) > len(best_body):
             best_body = body
+            best_links = d.links
             t = ContainerExtractor('post-title')
             t.feed(html)
             # タイトルは1行の見出しなので記号や改行を落として素のテキストにする。
             best_title = re.sub(r'\s+', ' ',
                                 t.render().lstrip('#- ').replace('\n', ' ')).strip()
-    return best_title, best_body
+    return best_title, best_body, best_links
 
 
 def main():
+    # Windowsの既定コンソール(cp932等)でも要約行が化けない/落ちないようにする。
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except (AttributeError, ValueError):
+        pass
     if len(sys.argv) != 3:
         sys.exit('usage: python extract_wix_mhtml.py <input.mhtml> <output.md>')
     src, dst = sys.argv[1], sys.argv[2]
@@ -206,7 +263,7 @@ def main():
     if not htmls:
         sys.exit('error: MHTML内にtext/htmlパートがありません。'
                  'Wixの保存形式を確認してください。')
-    title, body = extract(htmls)
+    title, body, links = extract(htmls)
     if not body:
         sys.exit('error: 記事本文(data-hook=post-description)が見つかりませんでした。'
                  'ダッシュボードのみのスナップショットでプレビューが'
@@ -215,10 +272,12 @@ def main():
     with open(dst, 'w', encoding='utf-8') as f:
         f.write(md)
     heads = body.count('\n## ') + body.count('\n### ')
-    print(f'OK title={title!r}')
+    # タイトル文字列はstdoutに出さない(コンソール文字コード非依存にするため)。
+    # タイトル本体は出力Markdownの先頭にある。
+    print(f'OK title_chars={len(title)}')
     print(f'OK output={dst}')
     print(f'OK body_chars={len(body)} body_lines={body.count(chr(10)) + 1} '
-          f'headings={heads}')
+          f'headings={heads} links={links}')
 
 
 if __name__ == '__main__':
