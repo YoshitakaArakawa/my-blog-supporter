@@ -1,27 +1,50 @@
 # My Blog Supporter
 
-yarakawa.com のブログ記事を対話的に執筆するプロジェクト。
+yarakawa.com の考察・内省型ブログ記事を、著者がAIと対話しながら書き上げるための支援プロジェクト。
+
+## 目的と設計原則
+
+このリポジトリの工程はこの目的と価値観に従う。**原則の正本はここに置き、各スキルはこれを具体的な工程として適用する**（原則は1箇所、適用はN箇所）。
+
+- **目的**: 著者が自分の声で記事を書き上げること。AIは掘る・叩く・整合を診る・読者を予測する「足場」であり、最終成果物の声と判断は著者のものに保つ。
+- **問いと判断は人間が握る**（最上位）。AIの自走は入れるが、記事の中身が静かにAIのものにすり替わるのを防ぐ。これは記事の主張そのものを工程に適用したもの。
+- **真正性 > 網羅**。確信で埋めた“偽の著者声”は空欄より悪い。著者固有の論点（体験・立場・固有の判断）はAIが代筆せず著者に戻す。
+- **気づきを引き出す > 論理検証**。考察・思索の共有が主軸。叩く・検証する工程は隔離し、対話そのものは「引き出す人格」を保つ。
+- **主題を深める > 防御的な鎧**。想定反論の先回り潰しの累積はトーンを防御文書化し、内省エッセイの没入を削る。
+- **段階間で背骨を落とさない／無根拠に足さない**。AIが成果物を生成するたび、前段との provenance を点検する。
+- **著者の文体・スタンスを保全する**。煽らない、ヘッジで余白を残す、「再現性」「誰でも辿れる論理」を核にする。AI的な平板・無個性に均さない。
+
+### 「良い記事」とは（記事横断の北極星）
+
+記事ごとのゴールは異なるが、共通の到達点をこう置く: **読者に「腑に落ちる・自分も考えたくなる・自分の現場で辿り直したくなる」を起こすこと**。そのエネルギーは正直な言語化と再現可能性（誰でも辿れる論理）から生み、煽り・断定・特別性の演出からは作らない。各記事での具体形は thinking.md / outline.md の「読後の読者の状態」が担い、達成度は `/simulate-readers` の行動変化予測で点検する。
 
 ## ワークフロー
 
-1. `/brainstorm [テーマ]` - テーマの議論・言語化 → brief.md, references.md
-2. `/deepen [テーマ]` - 思考を掘る・問い直す（動機・主張・コアメッセージ）→ thinking.md
-3. `/critique [テーマ]` - 掘った主張に批判レビュー（想定反論・前提の穴）→ critique/critique_NN.md
-4. `/outline [テーマ]` - 記事の見出し構成・展開順序・資料接続を著者と対話で設計 → outline.md
-5. `/check-drift [テーマ] outline` - thinking→outline の点検（縮約で背骨が落ちていないか）→ drift/drift_NN.md
-6. `/write [テーマ]` - 記事執筆・推敲 → draft.md (+ 空白 draft_user.md)
-7. `/check-drift [テーマ] draft` - outline→draft の点検（散文化で背骨が落ちた／無根拠に足したか）→ drift/drift_NN.md
-8. ユーザーが draft_user.md を執筆 — AI版を参考に、独自の言葉・構成で記事を書き上げる
-9. `/review-author-draft [テーマ]` - 著者の下書き(draft_user.md)を初見の読者視点で編集レビュー → review/review_NN.md
-10. `/compare-drafts [テーマ] [公開URL]` - draft.md と公開Web記事（原則／無ければ draft_user.md）を比較 → comparison/comparison.md (改善FB)
+各工程はスキルとして実装され、`/{skill} [テーマ]` で起動する。**各スキルの役割・設計思想・他スキルとの線引きは、各 `SKILL.md` の「役割」節を正本とする**（ここでは重複させず、全体像と導線のみ示す）。
 
-**2〜3 はループ。** `/brainstorm`（発散）⇄ `/deepen`（掘る）を往復する。**`/critique`（叩く）は `/deepen` の既定の後続工程**として自動で走る ― deepen が thinking.md を書いたら、著者に戻す前に critique を自動実行し、指摘のうち**著者固有でないもの**は AI が自答してループを回し（thinking.md に `[AI回答]` で provenance を残す）、**著者固有のもの**（体験・立場・固有の判断が要る点）だけ著者に戻す（content-typed gate、critique 最大3周のキャップ付き）。「AI の自走を入れつつ、記事の中身が静かに AI のものにすり替わるのを防ぐ」設計＝記事の主張「問いと判断は人間が握る」の工程への適用。掘る・叩く工程は thinking.md を更新し続ける（最新が正）。critique は時系列で残す（critique/ 配下に連番）。
+| # | コマンド | 役割 | 主な出力 |
+|---|---|---|---|
+| 1 | `/brainstorm` | テーマを発散・言語化 | brief.md, references.md |
+| 2 | `/deepen` | 思考を掘る（動機・主張・コアメッセージ） | thinking.md |
+| 3 | `/critique` | 掘った主張への批判レビュー | critique/critique_NN.md |
+| 4 | `/outline` | 見出し構成・展開順序の設計 | outline.md |
+| 5 | `/check-drift [テーマ] outline\|draft` | 段階間ドリフト点検 | drift/drift_NN.md |
+| 6 | `/write` | 記事執筆・推敲 | draft.md（＋空の draft_user.md） |
+| 7 | （ユーザーが執筆） | AI版を参考に独自の記事を書く | draft_user.md |
+| 8 | `/review-author-draft` | 著者下書きの編集レビュー | review/review_NN.md |
+| 9 | `/compare-drafts [テーマ] [公開URL]` | AI版↔公開記事（無ければ draft_user.md）の比較 | comparison/comparison.md |
 
-ループが落ち着いたら 4 の `/outline` で構成を一度固める。
+補助スキル:
+- `/import-wix-draft [path.mhtml]` — Wix 下書き MHTML から draft_user.md を取り込む（手順7の入力口）
+- `/illustrate` — 記事の概念図を作図し PNG 出力（`/write` が残す `<!-- 画像: ... -->` プレースホルダを埋める）
+- `/fetch-page` — WebFetch で取れないページ（SPA・要ログインの X 等）を実ブラウザ取得
 
-`/deepen` は `/brainstorm` の次に進む**標準工程**。brief.md だけで主張・コアメッセージが固まることはまずないので、原則 `/brainstorm` → `/deepen` と掘ってから書く（`/brainstorm` → `/write` の直行はしない）。`/critique` は `/deepen` 内で自動実行されるが、単独で叩き直したい時は手動でも呼べる（著者が「critique 不要」と明示した時のみ deepen はループを飛ばす）。`/outline` 以降は任意。`/outline` は構成を別ファイルで固めたい時に使う（thinking.md だけで write に進んでもよい）。`/check-drift` は、**AI が成果物を生成する工程（`/outline`・`/write`）の直後それぞれに挟む承認ゲート**。`/outline` 後に `/check-drift outline`、`/write` 後に `/check-drift draft` を回し、書いた当人から切り離した fork が「進む／前段に戻して直す」の判断材料を著者に返す（`/outline` を飛ばす運用なら `draft` の1点だけ）。2点で挟む理由＝ドリフト発生箇所（縮約か散文化か）の局所化は check-drift スキルを参照。`/simulate-readers`（初見読者シミュレーション）は **`/write` の推敲工程の既定の一部**として fork 実行される（単独でも呼べる）。離脱点・SNS/コメント欄の反応・行動変化・炎上経路の予測を推敲材料として返し、指摘の採否は「主題を深めるか、鎧を増やすだけか」で仕分ける（防御的挿入の累積はトーンを防御文書化するため、鎧系は本文に入れずドラフト冒頭の引き継ぎメモに残置。詳細は write スキル）。`/review-author-draft` も任意。公開前に著者の下書きを初見の読者視点で編集レビューしたい時に使う。`/compare-drafts` も任意。AI生成を次回以降ユーザー版に近付けたい時に実行する。**critique＝主張の批判（thinking.md）、check-drift＝AI成果物の段階間整合（前段から落とした／湧いた）、simulate-readers＝読者の受け取られ方の予測（AI生成ドラフト）、review-author-draft＝原稿の編集レビュー（draft_user.md）、compare-drafts＝AI版↔著者の公開記事（原則／無ければ draft_user.md）の比較**、と役割が分かれる。compare-drafts は公開 URL をチャットで受け取り、公開記事を取得して比較する（取得スナップショットは comparison/published.md に保存）。
-
-`/critique`・`/review-author-draft`・`/check-drift`・`/simulate-readers` は `context: fork`（隔離コンテキスト）で動く。会話履歴を持たないため対象をファイルから読み、指摘を連番ファイルに書き出して実行サマリだけメインに返す。critique は thinking.md を読み critique/critique_NN.md へ。review-author-draft は draft_user.md を読み review/review_NN.md へ。check-drift は前段の正（既定では thinking.md＋outline.md＋references.md）と target（draft.md）を読み比べ drift/drift_NN.md へ。simulate-readers は AI生成ドラフト（既定 draft.md）と brief.md の読者像を読み readers/readers_NN.md へ。「引き出す deepen」と「叩く critique／整合を診る check-drift／読者として読む simulate-readers」をコンテキストごと分離する設計。
+読み方（詳細は各 SKILL.md）:
+- **2⇄3 はループ**。`/deepen` が `/critique` を既定の後続として自動実行し、著者固有でない指摘は AI が自答、著者固有の指摘だけ著者に戻す（最大3周）。`/brainstorm`（発散）⇄ `/deepen`（掘る）も往復する。
+- **`/brainstorm` → `/deepen` が標準**。brief.md だけで `/write` に直行しない。`/outline` 以降は任意。
+- **`/check-drift` は AI 生成工程の承認ゲート**。`/outline` 直後に `outline`、`/write` 直後に `draft` を回す（`/outline` を飛ばすなら `draft` の1点）。
+- **`/simulate-readers`** は `/write` 推敲の既定工程として fork 実行される（単独でも可、readers/readers_NN.md）。
+- `/critique`・`/check-drift`・`/simulate-readers`・`/review-author-draft` は `context: fork`（隔離コンテキスト）。対象をファイルから読み、連番ファイルに書き、実行サマリだけ返す。
 
 ## ディレクトリ構成
 

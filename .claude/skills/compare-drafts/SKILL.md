@@ -12,6 +12,8 @@ argument-hint: "[テーマ] [公開URL(任意)]"
 
 **フォルダ命名規則**: 出力先は `output/{yyyymmdd}_$ARGUMENTS/` とする。既存フォルダがある場合（例: `output/20260331_ai-utilization/`）はそれを使う。`$ARGUMENTS` に日付プレフィックス付きのフォルダ名が直接渡された場合はそのまま使う。以降のパス記述で `$OUTPUT_DIR` はこのディレクトリを指す。比較成果物は `$OUTPUT_DIR/comparison/` 配下に置く（フォルダが無ければ作る）。
 
+**実行形態（inline／fork ではない）**: 他の点検系スキル（critique・check-drift・simulate-readers・review-author-draft）は `context: fork` だが、本スキルは inline で動かす。公開 URL をチャットで対話的に受け取り、取得失敗時は `fetch-page`（X 等の対話ログインを要する場合がある）にフォールバックするので、隔離コンテキストでは完結しない。比較対象の本文は published.md に保存し、メインへは comparison.md のパスと要点のみ案内する。
+
 ## このスキルの目的
 
 「ユーザーが最終的に納得した記事」に、AI が次回以降の生成でより近付けるようにすること。

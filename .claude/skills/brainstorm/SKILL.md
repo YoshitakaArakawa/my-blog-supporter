@@ -59,7 +59,7 @@ argument-hint: "[テーマ]"
 - 参考資料との接続を細かく設計する
 
 ### 5. references.md の生成
-対話で出てきた参考資料・参考ブログを以下のフォーマットで `$OUTPUT_DIRreferences.md` に整理する:
+対話で出てきた参考資料・参考ブログを以下のフォーマットで `$OUTPUT_DIR/references.md` に整理する:
 
 ```markdown
 # 参考資料
@@ -84,7 +84,7 @@ argument-hint: "[テーマ]"
 URLが提示された場合は WebFetch で内容を取得し、概要をまとめる。
 
 ### 6. brief.md の生成
-対話の成果を以下のフォーマットで `$OUTPUT_DIRbrief.md` に書き出す。
+対話の成果を以下のフォーマットで `$OUTPUT_DIR/brief.md` に書き出す。
 **箇条書きレベルの整理であり、磨きこまれた文章である必要はない。**
 
 ```markdown

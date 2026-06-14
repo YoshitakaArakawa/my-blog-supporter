@@ -1,7 +1,7 @@
 ---
 name: import-wix-draft
 description: Wixブログ下書きを保存したMHTML(.mhtml)から記事本文を機械的に抽出し、記事の出力ディレクトリの draft_user.md に現在の下書きとして書き出す。WixからエクスポートしたMHTMLを取り込んで、いま書いている文章をAIと一緒に議論したいときに使う。ダッシュボードのスナップショットからナビ・カテゴリ・フッターを除いた本文だけを抜く。
-argument-hint: [path-to-mhtml]
+argument-hint: "[path-to-mhtml]"
 ---
 
 # import-wix-draft

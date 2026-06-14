@@ -1,7 +1,7 @@
 ---
 name: write
 description: brief.mdとthinking.mdをもとに記事を執筆・推敲し、draft.mdを作成する
-argument-hint: [テーマ]
+argument-hint: "[テーマ]"
 ---
 
 # 記事執筆・推敲
