@@ -1,5 +1,7 @@
 # Playwright session cache (X login cookies etc.)
 .playwright-cli/
+# Playwright MCP browser working dir (snapshots / screenshots)
+.playwright-mcp/
 
 # Third-party raw references (copyright)
 output/*/references/
