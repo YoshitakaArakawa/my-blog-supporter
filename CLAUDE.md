@@ -75,7 +75,7 @@ output/{yyyymmdd}_{テーマ}/           記事ごとの出力（日付プレフ
 
 .claude/skills/write/references/     /write スキル付属の文体ガイド
   voice-style.md                     著者の文体・語り口・構造パターン・チェックリスト
-                                     ルール17-21は AI 的傾向への対抗ガイド
+                                     ルール17-23は AI 的傾向への対抗ガイド
 ```
 
 ## 参考資料の配置ルール
