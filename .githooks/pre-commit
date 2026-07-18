@@ -1,0 +1,12 @@
+#!/bin/sh
+# Reject commits that stage additions/modifications under output/ (private working area).
+# Deletions are allowed so that migrations out of output/ can be committed.
+# Publishing curated artifacts goes through /publish-article into published/.
+staged=$(git diff --cached --name-only --diff-filter=d -- 'output/')
+if [ -n "$staged" ]; then
+  echo "ERROR: output/ is the private working area and must not be committed:" >&2
+  echo "$staged" | sed 's/^/  /' >&2
+  echo "Publish curated artifacts via /publish-article into published/." >&2
+  exit 1
+fi
+exit 0

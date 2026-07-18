@@ -46,10 +46,20 @@ yarakawa.com の考察・内省型ブログ記事を、著者がAIと対話し�
 - **`/simulate-readers`** は `/write` 推敲の既定工程として fork 実行される（単独でも可、readers/readers_NN.md）。
 - `/critique`・`/check-drift`・`/simulate-readers`・`/review-author-draft` は `context: fork`（隔離コンテキスト）。対象をファイルから読み、連番ファイルに書き、実行サマリだけ返す。
 
+## 公開境界（このリポは Public）
+
+このリポジトリは Public であり、commit したものは公開される前提で扱う。記事制作の生素材と公開物を層で分ける:
+
+- `output/`（gitignore・非公開の作業層）: すべての記事はまずここで作る。生素材・中間生成物（brief / thinking / critique / readers / 進行中ドラフト）は commit しない。バックアップはローカルのみ。
+- `published/`（track・公開層）: 公開を決めた記事の、選別済み成果物だけを置く。新規の公開は `/publish-article` のゲート（ホワイトリスト選別 → 公開適性の点検 → 著者承認）を通す。公開済み記事の推敲反映は published/ の直接編集で可。
+- 機械ガード: pre-commit hook（`.githooks/`）が output/ 配下のステージを拒否する。clone 後に `git config core.hooksPath .githooks` で有効化する。第三者素材（`published/*/references/`）と Wix スナップショット（`*.mhtml`）は published/ 側でも gitignore で除外する。
+
 ## ディレクトリ構成
 
 ```
-output/{yyyymmdd}_{テーマ}/           記事ごとの出力（日付プレフィックス付き）
+published/{yyyymmdd}_{テーマ}/        公開層。/publish-article が選別・点検した成果物のみ（構成は下記のサブセット）
+
+output/{yyyymmdd}_{テーマ}/           記事ごとの作業ディレクトリ（非公開・gitignore）
   brief.md                           テーマブリーフ（/brainstorm 生成、最新が正）
   brief_deepen.md                    主張を立てた版のbrief（任意、対話中に手動作成）
   references.md                      参考資料の整理（/brainstorm 生成、/deepen /outline で追記）

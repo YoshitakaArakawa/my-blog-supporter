@@ -3,11 +3,15 @@
 # Playwright MCP browser working dir (snapshots / screenshots)
 .playwright-mcp/
 
-# Third-party raw references (copyright)
-output/*/references/
+# Private working area for articles (raw notes / intermediate artifacts).
+# All article work happens here; publishing goes through /publish-article into published/.
+output/
 
-# Wix dashboard snapshots (account IDs / embeds; import source only)
-output/**/*.mhtml
+# Guards for the public layer: third-party raw materials (copyright) and
+# Wix snapshots (account IDs / embeds) must never be committed, even after
+# a directory migrates into published/
+published/*/references/
+published/**/*.mhtml
 
 # Claude Code settings (local-only)
 .claude/settings.json
