@@ -33,6 +33,7 @@ yarakawa.com の考察・内省型ブログ記事を、著者がAIと対話し�
 | 7 | （ユーザーが執筆） | AI版を参考に独自の記事を書く | draft_user.md |
 | 8 | `/review-author-draft` | 著者下書きの編集レビュー | review/review_NN.md |
 | 9 | `/compare-drafts [テーマ] [公開URL]` | AI版↔公開記事（無ければ draft_user.md）の比較 | comparison/comparison.md |
+| 10 | `/publish-article` | 公開成果物の選別・公開適性点検・公開層への反映 | published/{yyyymmdd}_{テーマ}/ |
 
 補助スキル:
 - `/import-wix-draft [path.mhtml]` — Wix 下書き MHTML から draft_user.md を取り込む（手順7の入力口）

@@ -33,7 +33,7 @@
 
 `brainstorm`（発散）⇄ `deepen`（掘る）⇄ `critique`（叩く）はループになっていて、納得がいくまで往復してから、構成・執筆へ進みます。急ぎのときは `/brainstorm` → `/write` に直行することもあります。
 
-このほかに、Wix の下書きを取り込む `/import-wix-draft` と、記事の概念図を作る `/illustrate` という補助スキルもあります。
+このほかに、Wix の下書きを取り込む `/import-wix-draft`、記事の概念図を作る `/illustrate`、公開を決めた記事の成果物を選別して公開層（`published/`）へ出す `/publish-article` という補助スキルもあります。
 
 ## このワークフローの肝＝設計思想
 
