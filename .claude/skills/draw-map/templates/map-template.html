@@ -1,0 +1,267 @@
+<title>{{記事タイトル}}の全体地図</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;800&family=Noto+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+:root{
+  --ground:#f2f5f6;
+  --surface:#ffffff;
+  --surface-2:#e8eef0;
+  --ink:#101f27;
+  --ink-soft:#41555f;
+  --ink-mute:#6c808a;
+  --rule:#cfdade;
+  --rule-soft:#e2eaec;
+  --det:#0d6360;
+  --det-wash:#dcecea;
+  --prob:#a65a15;
+  --prob-wash:#f6e6d5;
+  --out:#9c3535;
+  --out-wash:#f4dedd;
+  --serif:"Shippori Mincho",Georgia,"Yu Mincho",serif;
+  --sans:"Noto Sans JP",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0c1417;--surface:#131f24;--surface-2:#1b2a30;
+    --ink:#e4edef;--ink-soft:#adc0c6;--ink-mute:#7e939b;
+    --rule:#2c3f46;--rule-soft:#213036;
+    --det:#4fbdb4;--det-wash:#15302f;
+    --prob:#dc9a4e;--prob-wash:#33261a;
+    --out:#d97a75;--out-wash:#331e1e;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0c1417;--surface:#131f24;--surface-2:#1b2a30;
+  --ink:#e4edef;--ink-soft:#adc0c6;--ink-mute:#7e939b;
+  --rule:#2c3f46;--rule-soft:#213036;
+  --det:#4fbdb4;--det-wash:#15302f;
+  --prob:#dc9a4e;--prob-wash:#33261a;
+  --out:#d97a75;--out-wash:#331e1e;
+}
+
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.8;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:48px 24px 96px;display:flex;flex-direction:column;gap:52px}
+h1,h2,h3{font-family:var(--serif);text-wrap:balance;margin:0;line-height:1.35}
+h1{font-size:clamp(30px,5vw,46px);font-weight:800}
+h2{font-size:clamp(21px,3vw,27px);font-weight:600}
+h3{font-size:16px;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute)}
+
+header{display:flex;flex-direction:column;gap:18px}
+.lede{font-size:17px;line-height:1.85;color:var(--ink-soft);max-width:62ch}
+.thesis{
+  font-family:var(--serif);font-size:clamp(18px,2.6vw,23px);font-weight:600;line-height:1.65;
+  background:var(--det-wash);border-left:3px solid var(--det);padding:20px 24px;color:var(--ink);
+}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;font-family:var(--mono);font-size:11.5px;color:var(--ink-mute);border-top:1px solid var(--rule);padding-top:14px}
+
+section{display:flex;flex-direction:column;gap:20px}
+.sechead{display:flex;flex-direction:column;gap:6px}
+.sechead p{color:var(--ink-soft);max-width:64ch}
+
+/* ---------- the map ---------- */
+.mapwrap{overflow-x:auto;padding-bottom:4px}
+.map{
+  min-width:1060px;
+  display:grid;
+  grid-template-columns:70px repeat(6,minmax(0,1fr));
+  gap:8px;
+  align-items:stretch;
+}
+.rowlab{
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  color:var(--ink-mute);display:flex;align-items:flex-start;padding-top:14px;
+  writing-mode:horizontal-tb;
+}
+
+.ch{
+  background:var(--surface);border:1px solid var(--rule);
+  padding:12px 13px;display:flex;flex-direction:column;gap:6px;
+}
+.ch.hot{border-color:var(--det);background:var(--det-wash)}
+.ch .num{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink-mute)}
+.ch.hot .num{color:var(--det)}
+.ch .ttl{font-family:var(--serif);font-size:14.5px;font-weight:600;line-height:1.45}
+.ch .cnt{font-family:var(--mono);font-size:10.5px;color:var(--ink-mute);font-variant-numeric:tabular-nums}
+.ch .gauge{height:3px;background:var(--rule-soft);position:relative}
+.ch .gauge i{display:block;height:100%;background:var(--ink-mute)}
+.ch.hot .gauge i{background:var(--det)}
+
+.cell{
+  background:var(--surface);border:1px solid var(--rule-soft);
+  padding:12px 13px;display:flex;flex-direction:column;gap:7px;
+  font-size:12.5px;line-height:1.65;color:var(--ink-soft);
+}
+.cell.hot{border-color:var(--det)}
+.cell .claim{color:var(--ink);font-weight:600;font-size:13px;line-height:1.6}
+.cell.hot .claim{color:var(--det)}
+.cell .role{font-family:var(--mono);font-size:10px;letter-spacing:.07em;color:var(--ink-mute)}
+.cell ul{margin:0;padding-left:1em;display:flex;flex-direction:column;gap:4px}
+.cell li{line-height:1.6}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{
+  font-family:var(--mono);font-size:10px;letter-spacing:.05em;
+  padding:2px 7px;border:1px solid var(--rule);color:var(--ink-mute);white-space:nowrap;
+}
+.chip.main{border-color:var(--det);color:var(--det)}
+.chip.sub{border-style:dashed}
+.cell .src{font-family:var(--mono);font-size:10px;color:var(--ink-mute);line-height:1.7;border-top:1px solid var(--rule-soft);padding-top:6px}
+
+.thread{
+  border:1px solid var(--prob);background:var(--prob-wash);
+  padding:8px 13px;display:flex;align-items:center;gap:10px;
+  font-size:12.5px;color:var(--ink);
+}
+.thread.alt{border-color:var(--det);background:var(--det-wash)}
+.thread.dash{border-style:dashed;background:transparent;border-color:var(--ink-mute)}
+.thread .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.07em;color:var(--prob);white-space:nowrap}
+.thread.alt .lbl{color:var(--det)}
+.thread.dash .lbl{color:var(--ink-mute)}
+.thread .d{color:var(--ink-soft);font-size:12px}
+
+/* ---------- questions ---------- */
+.qs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.q{background:var(--surface);border:1px solid var(--rule-soft);border-top:3px solid var(--det);padding:17px 19px;display:flex;flex-direction:column;gap:8px}
+.q .qt{font-family:var(--serif);font-size:15.5px;font-weight:600;line-height:1.55}
+.q .qa{font-size:13px;color:var(--ink-soft);line-height:1.7}
+.q .qw{font-family:var(--mono);font-size:10px;letter-spacing:.07em;color:var(--ink-mute)}
+
+/* ---------- boundaries ---------- */
+.outs{display:flex;flex-direction:column;gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.outrow{display:grid;grid-template-columns:1fr 200px;gap:16px;align-items:baseline;background:var(--surface);padding:12px 17px}
+.outrow .what{font-size:13.5px}
+.outrow .why{font-family:var(--mono);font-size:11px;color:var(--out);text-align:right}
+
+footer{border-top:1px solid var(--rule);padding-top:18px;font-family:var(--mono);font-size:11.5px;color:var(--ink-mute);line-height:1.9}
+
+@media (max-width:760px){
+  .outrow{grid-template-columns:1fr;gap:5px}
+  .outrow .why{text-align:left}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- 未定（入力に無い箇所。推測で埋めず、これで可視化する） ---------- */
+.tbd{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--out);border:1px dashed var(--out);padding:1px 6px;display:inline-block}
+.cell.tbd-cell{border-style:dashed;border-color:var(--out);background:transparent}
+</style>
+
+<!--
+  使い方: このファイルをコピーし {{...}} を置換する。CSS は変更しない。
+  章の本数が 6 と違う場合のみ .map の grid-template-columns の repeat() を合わせる。
+  入力ファイルに対応が無い箇所は推測で埋めず <span class="tbd">未定</span> を置く。
+-->
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">記事の見取り図 / {{yyyymmdd}}</span>
+  <h1>{{記事タイトル}}</h1>
+  <p class="lede">{{この地図の読み方を1〜2文。横軸は読む順序、縦は主張から素材への深さ、下段の帯は章をまたぐ軸、という説明}}</p>
+  <p class="thesis">{{この記事の一番伝えたい一文}}</p>
+  <div class="meta">
+    <span>本文 {{N}} 字</span>
+    <span>大見出し {{N}} 本＋結び</span>
+    <span>主張 {{N}} 本</span>
+    <span>貫く軸 {{N}} 本</span>
+    <span>{{カテゴリ}}</span>
+  </div>
+</header>
+
+<section>
+  <div class="sechead">
+    <span class="eyebrow">Map</span>
+    <h2>章ごとに何を扱うか</h2>
+    <p>{{展開の型（例: 否定 → 具体 → 抽象 → 帰結）と、その順序にした理由を1〜2文}}</p>
+  </div>
+
+  <div class="mapwrap">
+    <div class="map">
+
+      <!-- 章の行。重心の章だけ class="ch hot"（1つまで）。gauge の width は最大章を 100% とした比率 -->
+      <span class="rowlab">章</span>
+      <div class="ch"><span class="num">導入</span><span class="ttl">{{見出し}}</span><span class="cnt">{{N}} 字</span><span class="gauge"><i style="width:{{N}}%"></i></span></div>
+      <div class="ch"><span class="num">01</span><span class="ttl">{{見出し}}</span><span class="cnt">{{N}} 字</span><span class="gauge"><i style="width:{{N}}%"></i></span></div>
+      <div class="ch hot"><span class="num">02 ／ 重心</span><span class="ttl">{{見出し}}</span><span class="cnt">{{N}} 字</span><span class="gauge"><i style="width:100%"></i></span></div>
+      <div class="ch"><span class="num">03</span><span class="ttl">{{見出し}}</span><span class="cnt">{{N}} 字</span><span class="gauge"><i style="width:{{N}}%"></i></span></div>
+      <div class="ch"><span class="num">04</span><span class="ttl">{{見出し}}</span><span class="cnt">{{N}} 字</span><span class="gauge"><i style="width:{{N}}%"></i></span></div>
+      <div class="ch"><span class="num">結び</span><span class="ttl">{{見出し}}</span><span class="cnt">{{N}} 字</span><span class="gauge"><i style="width:{{N}}%"></i></span></div>
+
+      <!-- 主張の行。各章で立てる一文。重心の章は class="cell hot" -->
+      <span class="rowlab">主張</span>
+      <div class="cell"><span class="role">枠組み</span><span class="claim">{{主張}}</span></div>
+      <div class="cell"><span class="role">主張 01</span><span class="claim">{{主張}}</span></div>
+      <div class="cell hot"><span class="role">主張 02</span><span class="claim">{{主張}}</span></div>
+      <div class="cell"><span class="role">主張 03</span><span class="claim">{{主張}}</span></div>
+      <div class="cell"><span class="role">帰結</span><span class="claim">{{主張}}</span></div>
+      <div class="cell"><span class="role">結び</span><span class="claim">{{主張}}</span></div>
+
+      <!-- 論点の行。chip main が主論点、chip sub が従。テキストは扱い方の注意 -->
+      <span class="rowlab">論点</span>
+      <div class="cell"><div class="chips"><span class="chip main">{{論点}}</span><span class="chip sub">{{従の論点}}</span></div><span>{{扱い方の注意}}</span></div>
+      <div class="cell"><div class="chips"><span class="chip main">{{論点}}</span></div><span>{{扱い方の注意}}</span></div>
+      <div class="cell hot"><div class="chips"><span class="chip main">{{論点}}</span></div><span>{{扱い方の注意}}</span></div>
+      <div class="cell"><div class="chips"><span class="chip main">{{論点}}</span></div><span>{{扱い方の注意}}</span></div>
+      <div class="cell tbd-cell"><span class="tbd">未定</span></div>
+      <div class="cell"><span>{{扱い方の注意}}</span></div>
+
+      <!-- 素材の行。src は references.md 側のファイル名・出典。出典が無い素材は書かない -->
+      <span class="rowlab">素材</span>
+      <div class="cell"><ul><li>{{素材}}</li><li>{{素材}}</li></ul><span class="src">{{出典}}</span></div>
+      <div class="cell"><ul><li>{{素材}}</li></ul><span class="src">{{出典}}</span></div>
+      <div class="cell hot"><ul><li>{{素材}}</li></ul><span class="src">{{出典}}</span></div>
+      <div class="cell"><ul><li>{{素材}}</li></ul><span class="src">{{出典}}</span></div>
+      <div class="cell"><ul><li>{{素材}}</li></ul><span class="src">{{出典}}</span></div>
+      <div class="cell"><ul><li>{{素材}}</li></ul><span class="src">{{出典}}</span></div>
+
+      <!-- 貫く軸。grid-column の開始/終了で射程を示す（列 1 は行ラベル。章 N は列 N+1） -->
+      <!-- thread=標準 / thread alt=強調 / thread dash=通奏（背景なし） -->
+      <span class="rowlab">貫く軸</span>
+      <div class="thread dash" style="grid-column:2 / 8"><span class="lbl">通奏</span><span class="d">{{軸の説明}}</span></div>
+
+      <span class="rowlab"></span>
+      <div class="thread alt" style="grid-column:3 / 8"><span class="lbl">構造</span><span class="d">{{軸の説明}}</span></div>
+
+      <span class="rowlab"></span>
+      <div class="thread" style="grid-column:3 / 7"><span class="lbl">用語</span><span class="d">{{軸の説明}}</span></div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sechead">
+    <span class="eyebrow">Questions</span>
+    <h2>記事が答える問い</h2>
+    <p>読者がこの記事に持ち込む問いと、記事が返す答え。どの章で返すかも添えた。</p>
+  </div>
+  <div class="qs">
+    <div class="q">
+      <span class="qt">{{読者が持ち込む問い}}</span>
+      <span class="qa">{{記事が返す答え}}</span>
+      <span class="qw">章{{N}} で返す</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sechead">
+    <span class="eyebrow">Boundaries</span>
+    <h2>この記事では扱わないこと</h2>
+    <p>地図の外側。焦点を保つために意図的に外した領域と、その行き先。</p>
+  </div>
+  <div class="outs">
+    <div class="outrow"><span class="what">{{外した領域}}</span><span class="why">{{行き先}}</span></div>
+  </div>
+</section>
+
+<footer>
+  この地図は {{正本のファイル名を列挙}} のレンダリング。正本は Markdown 側にある。<br>
+  内容を変えるときは Markdown を直して <code>/draw-map</code> を再実行する。この HTML を手で直すと乖離する。
+</footer>
+
+</div>

@@ -26,6 +26,9 @@ published/**/*.mhtml
 *.html
 *.svg
 
+# Exception: skill-owned templates (distributed assets, not article material)
+!.claude/skills/**/templates/*.html
+
 # OS metadata
 Thumbs.db
 .DS_Store

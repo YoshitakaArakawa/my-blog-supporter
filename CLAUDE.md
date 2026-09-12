@@ -36,6 +36,7 @@ yarakawa.com の考察・内省型ブログ記事を、著者がAIと対話し�
 | 10 | `/publish-article` | 公開成果物の選別・公開適性点検・公開層への反映 | published/{yyyymmdd}_{テーマ}/ |
 
 補助スキル:
+- `/draw-map [テーマ]` — 現在の計画を1枚の HTML（map.html）にレンダリングし、「この設計で書き始めてよいか」の合意ゲートにする（判定はしない。`/check-drift` の後に手動で起動）
 - `/tighten-draft [テーマ]` — AI ドラフトを公開版の密度まで圧縮する（`/write` が自動実行。磨きこみで膨らんだ時は単独で）
 - `/import-wix-draft [path.mhtml]` — Wix 下書き MHTML から draft_user.md を取り込む（手順7の入力口）
 - `/illustrate` — 記事の概念図を作図し PNG 出力（`/write` が残す `<!-- 画像: ... -->` プレースホルダを埋める）
@@ -80,6 +81,7 @@ output/{yyyymmdd}_{テーマ}/           記事ごとの作業ディレクトリ
     critique_01.md                   ループ1回目の指摘
     critique_02.md                   ループ2回目の指摘 …
   outline.md                         記事の見出し構成・資料接続（/outline 生成、最新が正）
+  map.html                           計画の見取り図（/draw-map 生成、最新が正・上書き。正本は Markdown 側）
   draft.md                           記事本文（/write 生成、AI版。/tighten-draft で圧縮済み）
   draft_pre-tighten.md               圧縮前の AI 版（/tighten-draft が退避。比較・巻き戻し用）
   drift/                             段階間ドリフト点検の記録（/check-drift 生成、点検ごとに時系列に蓄積）
