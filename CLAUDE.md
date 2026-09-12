@@ -102,6 +102,8 @@ output/_metrics/history.csv          記事ごとの指標の履歴（/compare-d
 
 .claude/skills/write/references/     /write スキル付属の文体ガイド
   voice-style.md                     著者の文体・語り口の正本。0. 数値仕様 / 1. 公開記事の実例 / ルール1-16（型）/ 17-23（AI 的傾向への対抗）
+  cognitive-rhythm.md                認知リズム（緊張・拍・密度波形）の設計規範（外部規範の適用版）
+                                     /write の推敲と /review-author-draft のリズム観点が参照
 
 scripts/                             機械ゲート
   lint-draft.mjs                     数値仕様・禁止句・textlint を1レポートにまとめる（CLI / hook / --metrics）
@@ -118,6 +120,8 @@ scripts/                             機械ゲート
   Xスレッド転記、関連記事MD、データCSV等。記事ごとに集める raw 資料。
 - **文体ガイド**: `.claude/skills/write/references/voice-style.md`
   /write スキルが文体一貫性のために参照する。
+- **認知リズム規範**: `.claude/skills/write/references/cognitive-rhythm.md`
+  /write の推敲と /review-author-draft が緩急（緊張・拍・密度）の設計・診断のために参照する。
 
 対応フォーマット:
 - **PDF**（推奨） - テキスト・図表をAIが直接読み取れる
