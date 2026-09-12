@@ -36,7 +36,12 @@ agent: general-purpose
 - draft_user.md が無い、または空の場合は、レビューせずに「`$OUTPUT_DIR/draft_user.md` が見つからない（または空）ので、先に下書きを用意してください（Wix からなら `import-wix-draft` で取り込めます）」という旨をサマリで返して終了する。**draft.md など他ファイルで代替しない**（著者の原稿を診むのが目的のため）。
 - `$OUTPUT_DIR/brief.md`（あれば。**読者像**・テーマ・コアメッセージの文脈把握に使う。読者難易度・タイトル整合の判定基準になる）
 - `$OUTPUT_DIR/outline.md`・`$OUTPUT_DIR/thinking.md`（あれば。**コアメッセージ**・意図した構成と、原稿の実体とのズレを見るのに使う）
-- `.claude/skills/write/references/voice-style.md`（**必須。文体整合・表記の基準**。ルール1-16＝著者の声・表記規約を整合の物差しに、ルール17-23＝AI的傾向への対抗ガイドをレビューのレンズに含める）
+- `.claude/skills/write/references/voice-style.md`（**必須。文体整合・表記の基準**。「0. 数値仕様」「1. 実例」を物差しの中心に、ルール1-16＝著者の声・表記規約、ルール17-23＝AI的傾向への対抗ガイドをレビューのレンズに含める）
+- 機械 lint の結果（**必須**。校正観点の入力）:
+  ```
+  node scripts/lint-draft.mjs $OUTPUT_DIR/draft_user.md
+  ```
+  数値仕様の NG・禁止句・textlint の指摘を観点7（校正）と観点6（文体整合）の材料にする。ただし著者の原稿は AI 版と違い、lint の NG が即「直すべき」ではない。著者が意図して選んだ表現（英文引用・箇条書きの太字ラベル等）は、指摘するとしても「voice-style の仕様と外れている」事実の共有に留め、AI 的な均し方を勧めない
 - `$OUTPUT_DIR/references.md`（あれば。引用と本文の整合を見るのに使う）
 - `$OUTPUT_DIR/review/` 内の既存 `review_*.md`（あれば。前回までに何を指摘済みか把握し、重複指摘を避ける／未対応に印を付ける）
 

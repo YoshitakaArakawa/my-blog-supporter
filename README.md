@@ -27,6 +27,7 @@
 | `/outline` | 見出し構成・展開順序を設計する | 固める |
 | `/check-drift` | 前段から背骨を落とした／無根拠に足したを点検する（隔離） | 点検 |
 | `/write` | 記事を執筆・推敲する | 書く |
+| `/tighten-draft` | AI 版を公開記事の密度まで削る（隔離・推敲時に自動） | 削る |
 | `/simulate-readers` | 初見の読者として通読し、反応・離脱・行動変化を予測する（隔離・推敲時に自動） | 読者で読む |
 | `/review-author-draft` | 自分が書いた下書きを編集者の目でレビューする（隔離） | レビュー |
 | `/compare-drafts` | AI 版と自分版を比較し、次回を自分の文体に寄せる | 振り返る |
@@ -49,6 +50,41 @@
 AI が構成（outline）や本文（draft）を生成するたびに、`/check-drift` が「前段で立てた背骨を落としていないか」「前段に根拠のない主張を勝手に足していないか」を、隔離コンテキストで読み比べます。さらに推敲時には `/simulate-readers` が初見の読者として通読し、どこで離脱しそうか・どう受け取られるかを予測します。書いた本人が自分の追加を自分で正当化してしまう経路を断ち、AI が静かに足したズレを工程の切れ目で捕まえるためです。
 
 これらは、著者のブログの主題でもある「**問いと判断は人間が握る**」という考えを、執筆プロセスそのものに落とし込んだものです。
+
+**4. 文体は「ルール」より「数値と実例」で寄せる**
+AI 版と公開記事を6本ぶん比べると、差は語尾や表記ではなく「密度」にありました。AI 版は公開版の 1.4〜1.9 倍の分量で、増分は先回りの保険文・多段の論証・章間の道案内・定型の結びに集中します。そこで文体ガイド（`voice-style.md`）を、公開記事の実測から決めた数値仕様（段落 1〜2 文、本文 7,000 字以下、「」25 個以下など）と、公開記事からの抜粋（実例）を先頭に置く構成にし、数えられるものは `scripts/lint-draft.mjs`（自前の指標＋textlint）が機械で判定します。`/write` は執筆後に `/tighten-draft` で削り、lint が通ってから著者に渡します。公開後は `/compare-drafts` が指標の履歴を残し、ガイドと lint 設定への変更案を出します。
+
+## セットアップ
+
+```bash
+npm install
+git config core.hooksPath .githooks
+```
+
+`npm install` で textlint 一式（`@textlint-ja/textlint-rule-preset-ai-writing`、`textlint-rule-preset-ja-technical-writing`、`textlint-rule-prh`）が入ります。lint は手動でも回せます:
+
+```bash
+node scripts/lint-draft.mjs output/{yyyymmdd}_{テーマ}/draft.md
+```
+
+draft を Edit/Write するたびに同じレポートを自動で受け取るには、`.claude/settings.json`（ローカル専用・gitignore 済み）に PostToolUse hook を足します:
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/scripts/lint-draft.mjs\" --hook", "timeout": 120 }
+        ]
+      }
+    ]
+  }
+}
+```
+
+hook は `output/**/draft*.md` と `published/**/draft*.md` にだけ反応し、警告を返すだけでブロックはしません。
 
 ## リポジトリの公開境界
 

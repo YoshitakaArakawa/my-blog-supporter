@@ -29,13 +29,14 @@ yarakawa.com の考察・内省型ブログ記事を、著者がAIと対話し�
 | 3 | `/critique` | 掘った主張への批判レビュー | critique/critique_NN.md |
 | 4 | `/outline` | 見出し構成・展開順序の設計 | outline.md |
 | 5 | `/check-drift [テーマ] outline\|draft` | 段階間ドリフト点検 | drift/drift_NN.md |
-| 6 | `/write` | 記事執筆・推敲 | draft.md（＋空の draft_user.md） |
+| 6 | `/write` | 記事執筆・推敲（圧縮パス → 機械 lint → 読者シミュレーションを内包） | draft.md（＋空の draft_user.md） |
 | 7 | （ユーザーが執筆） | AI版を参考に独自の記事を書く | draft_user.md |
-| 8 | `/review-author-draft` | 著者下書きの編集レビュー | review/review_NN.md |
-| 9 | `/compare-drafts [テーマ] [公開URL]` | AI版↔公開記事（無ければ draft_user.md）の比較 | comparison/comparison.md |
+| 8 | `/review-author-draft` | 著者下書きの編集レビュー（機械 lint の結果を校正観点に含む） | review/review_NN.md |
+| 9 | `/compare-drafts [テーマ] [公開URL]` | AI版↔公開記事（実ブラウザ取得。無ければ draft_user.md）の定量・定性比較と、voice-style / lint 設定への変更案 | comparison/comparison.md, comparison/voice-style-patch.md |
 | 10 | `/publish-article` | 公開成果物の選別・公開適性点検・公開層への反映 | published/{yyyymmdd}_{テーマ}/ |
 
 補助スキル:
+- `/tighten-draft [テーマ]` — AI ドラフトを公開版の密度まで圧縮する（`/write` が自動実行。磨きこみで膨らんだ時は単独で）
 - `/import-wix-draft [path.mhtml]` — Wix 下書き MHTML から draft_user.md を取り込む（手順7の入力口）
 - `/illustrate` — 記事の概念図を作図し PNG 出力（`/write` が残す `<!-- 画像: ... -->` プレースホルダを埋める）
 - `/fetch-page` — WebFetch で取れないページ（SPA・要ログインの X 等）を実ブラウザ取得
@@ -45,7 +46,16 @@ yarakawa.com の考察・内省型ブログ記事を、著者がAIと対話し�
 - **`/brainstorm` → `/deepen` が標準**。brief.md だけで `/write` に直行しない。`/outline` 以降は任意。
 - **`/check-drift` は AI 生成工程の承認ゲート**。`/outline` 直後に `outline`、`/write` 直後に `draft` を回す（`/outline` を飛ばすなら `draft` の1点）。
 - **`/simulate-readers`** は `/write` 推敲の既定工程として fork 実行される（単独でも可、readers/readers_NN.md）。
-- `/critique`・`/check-drift`・`/simulate-readers`・`/review-author-draft` は `context: fork`（隔離コンテキスト）。対象をファイルから読み、連番ファイルに書き、実行サマリだけ返す。
+- `/critique`・`/check-drift`・`/simulate-readers`・`/review-author-draft`・`/tighten-draft` は `context: fork`（隔離コンテキスト）。対象をファイルから読み、ファイルに書き、実行サマリだけ返す。
+
+### 機械ゲート（文体の数値仕様）
+
+AI 版と公開版の差の本体は「談話の密度」（分量 1.4〜1.9 倍、段落 2.7〜3.7 文、保険文・多段論証・定型結び）にあり、LLM の自己チェックでは縮まなかった。数えられるものは `scripts/lint-draft.mjs` が数える（数値仕様・禁止句は `.claude/skills/write/references/voice-style.md` の「0.」と `scripts/draft-lint.config.json`、表記ゆれ・AI 定型は textlint `.textlintrc.json` と `scripts/prh.yml`）。
+
+- `/write` は執筆後に `/tighten-draft`（圧縮）→ lint（NG ゼロまで）→ 自己レビュー → `/simulate-readers` の順で推敲する
+- `.claude/settings.json` に PostToolUse hook を置くと、`output/**/draft*.md` への Edit/Write のたびに同じレポートが自動で返る（設定は README「セットアップ」）
+- 判定は警告であり、ブロックしない。直さない判断はドラフト冒頭の ℹ️ メモに理由を残す
+- `/compare-drafts` は公開のたびに指標を `output/_metrics/history.csv` へ追記し、voice-style / lint 設定への変更案を `comparison/voice-style-patch.md` に出す。承認された分だけ反映する（ループを提案止まりにしない）
 
 ## 公開境界（このリポは Public）
 
@@ -70,7 +80,8 @@ output/{yyyymmdd}_{テーマ}/           記事ごとの作業ディレクトリ
     critique_01.md                   ループ1回目の指摘
     critique_02.md                   ループ2回目の指摘 …
   outline.md                         記事の見出し構成・資料接続（/outline 生成、最新が正）
-  draft.md                           記事本文（/write 生成、AI版）
+  draft.md                           記事本文（/write 生成、AI版。/tighten-draft で圧縮済み）
+  draft_pre-tighten.md               圧縮前の AI 版（/tighten-draft が退避。比較・巻き戻し用）
   drift/                             段階間ドリフト点検の記録（/check-drift 生成、点検ごとに時系列に蓄積）
     drift_01.md                      1回目の点検（落とした背骨／無根拠 add）
     drift_02.md                      2回目の点検 …
@@ -81,12 +92,22 @@ output/{yyyymmdd}_{テーマ}/           記事ごとの作業ディレクトリ
     review_01.md                     1回目のレビュー指摘
     review_02.md                     2回目のレビュー指摘 …
   comparison/                        AI版とユーザー版の比較（/compare-drafts 生成。過去記事は直下 comparison.md のままでよい）
-    published.md                     公開Web記事の取得スナップショット（原則の比較対象。毎回上書き／URL 取得時のみ）
-    comparison.md                    比較・改善FB
+    published.md                     公開Web記事の取得スナップショット（原則の比較対象。実ブラウザ取得、毎回上書き）
+    comparison.md                    比較・改善FB（定量表＋差分の解釈）
+    voice-style-patch.md             voice-style.md / lint 設定への変更案（承認後に反映）
+
+output/_metrics/history.csv          記事ごとの指標の履歴（/compare-drafts が追記。ルールが効いたかを数値で判定する材料）
 
 .claude/skills/write/references/     /write スキル付属の文体ガイド
-  voice-style.md                     著者の文体・語り口・構造パターン・チェックリスト
-                                     ルール17-23は AI 的傾向への対抗ガイド
+  voice-style.md                     著者の文体・語り口の正本。0. 数値仕様 / 1. 公開記事の実例 / ルール1-16（型）/ 17-23（AI 的傾向への対抗）
+
+scripts/                             機械ゲート
+  lint-draft.mjs                     数値仕様・禁止句・textlint を1レポートにまとめる（CLI / hook / --metrics）
+  draft-lint.config.json             閾値と禁止句（voice-style「0.」と同期）
+  prh.yml                            表記辞書（textlint-rule-prh）
+  textlint-allowlist.yml             lint 除外（ℹ️/✍️ メモ・HTML コメント・URL）
+  wix-html-to-md.mjs                 公開記事（Wix）の HTML → Markdown（compare-drafts の取得用）
+.textlintrc.json                     textlint 設定（preset-ai-writing ＋ ja-technical-writing の選択適用）
 ```
 
 ## 参考資料の配置ルール

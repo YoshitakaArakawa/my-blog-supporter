@@ -1,0 +1,60 @@
+# 表記辞書（textlint-rule-prh）。voice-style.md ルール14「表記辞書」の機械化。
+# 揺れやすい語に気づいたら、この表に追記して育てる。
+version: 1
+rules:
+  # --- AI Agent を主題として指す時は英語表記に統一（一般名詞の「エージェント」は対象外）
+  - expected: AI Agent
+    patterns:
+      - AIエージェント
+      - AI エージェント
+      - AI agent
+      - AIAgent
+    specs:
+      - from: AIエージェント
+        to: AI Agent
+
+  # --- 製品・固有名詞
+  - expected: VizQL Data Service
+    patterns:
+      - VizQL data service
+      - Vizql Data Service
+  - expected: Tableau MCP
+    patterns:
+      - tableau MCP
+      - Tableau mcp
+  - expected: Tableau Cloud
+    pattern: Tableau cloud
+  - expected: Tableau Server
+    pattern: Tableau server
+  - expected: Tableau Prep
+    pattern: Tableau prep
+  - expected: Published Data Source
+    patterns:
+      - published data source
+      - Published data source
+  - expected: Claude Code
+    patterns:
+      - ClaudeCode
+      - claude code
+  - expected: LinkedIn
+    patterns:
+      - Linkedin
+      - linkedin
+  - expected: GitHub
+    pattern: Github
+  - expected: dbt
+    pattern: DBT
+  - expected: Analytics Engineering
+    pattern: Analytics engineering
+  - expected: Agentic Analytics
+    pattern: Agentic analytics
+
+  # --- 冗長・AI定型（置換先がある語のみ。置換先が無い禁止句は draft-lint.config.json 側）
+  - expected: まず
+    pattern: まず最初に
+  - expected: 例えば
+    pattern: たとえば
+  - expected: 一番
+    pattern: いちばん
+  - expected: 全部
+    pattern: ぜんぶ

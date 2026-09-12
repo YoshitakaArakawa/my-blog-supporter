@@ -1,0 +1,191 @@
+{
+  "_comment": "lint-draft.mjs の閾値と禁止句。数値は yarakawa.com 公開記事10本（2024〜2026）の計測レンジから決めた。詳細は .claude/skills/write/references/voice-style.md の「0. 数値仕様」",
+  "thresholds": {
+    "bodyCharsMax": 7000,
+    "bodyCharsMin": 4000,
+    "sentencesPerParagraphMax": 2,
+    "paragraphsOverLimitRatioMax": 0.2,
+    "kagiKakkoMax": 25,
+    "h2Max": 5,
+    "h3Max": 1,
+    "boldMax": 0,
+    "keyphraseRepeatMax": 5,
+    "englishQuoteMax": 3,
+    "sentenceCharsMax": 140,
+    "nakaguroMax": 3,
+    "closingSentencesMax": 18
+  },
+  "targetGlobs": [
+    "output/**/draft*.md",
+    "published/**/draft*.md"
+  ],
+  "skipBlockquoteMarkers": [
+    "ℹ️",
+    "✍️"
+  ],
+  "bannedPhrases": [
+    {
+      "pattern": "誤解されたくないので",
+      "group": "保険",
+      "hint": "削る。反論への返しは本文に置かず ℹ️ メモへ"
+    },
+    {
+      "pattern": "念のため(補足|書いて|付け加え|一文)",
+      "group": "保険",
+      "hint": "削る。自分で旗を立てていない懸念に保険を割かない"
+    },
+    {
+      "pattern": "公平に(見|言|書)",
+      "group": "保険",
+      "hint": "削る。誠実さの演出は要らない"
+    },
+    {
+      "pattern": "正直に(書く|言う|言え)と",
+      "group": "保険",
+      "hint": "前置きを消して主張だけ書く"
+    },
+    {
+      "pattern": "正直(なところ|に言って)",
+      "group": "保険",
+      "hint": "前置きを消して主張だけ書く"
+    },
+    {
+      "pattern": "(は|も)認めます",
+      "group": "保険",
+      "hint": "認める文を立てず、反論を認めたまま次の文へ進む"
+    },
+    {
+      "pattern": "これは論証ではありません",
+      "group": "保険",
+      "hint": "削る"
+    },
+    {
+      "pattern": "証言であって証拠ではない",
+      "group": "保険",
+      "hint": "削る"
+    },
+    {
+      "pattern": "線を引いておき",
+      "group": "保険",
+      "hint": "削る"
+    },
+    {
+      "pattern": "まだ見つけられていません",
+      "group": "保険",
+      "hint": "出典の性質開示は ℹ️ メモへ"
+    },
+    {
+      "pattern": "(^|。)だから(?!こそ)、?",
+      "group": "口癖",
+      "hint": "因果を押さない。「なので」「ということで」か、接続詞なしで続ける"
+    },
+    {
+      "pattern": "(^|。)ただ、",
+      "group": "口癖",
+      "hint": "「一方で」「ただし」にするか、接続詞なしで続ける"
+    },
+    {
+      "pattern": "んですよね",
+      "group": "口癖",
+      "hint": "「〜ですよね」「〜かなと。」に。体温は語尾でなく「まぁ」「...」「！」で出す"
+    },
+    {
+      "pattern": "なんです[。、]",
+      "group": "口癖",
+      "hint": "「〜です」に戻す"
+    },
+    {
+      "pattern": "んです[。、]",
+      "group": "口癖",
+      "hint": "「〜です」「〜ます」に戻す"
+    },
+    {
+      "pattern": "たぶん",
+      "group": "口癖",
+      "hint": "「おそらく」か、「〜かなと。」の推量語尾に"
+    },
+    {
+      "pattern": "この記事を書いた動機は",
+      "group": "結び",
+      "hint": "動機の再掲をしない。「ということで、〜でした」で畳む"
+    },
+    {
+      "pattern": "問いを(残し|返し|置い)",
+      "group": "結び",
+      "hint": "読者への問い返しで締めない。短い割り切り＋CTA で閉じる"
+    },
+    {
+      "pattern": "また(考えが変わったら|考えを改めたら|事例が出てきたら)",
+      "group": "結び",
+      "hint": "続編予告の定型を書かない"
+    },
+    {
+      "pattern": "ここまでは.{0,12}(話|内容)で(す|した)",
+      "group": "道案内",
+      "hint": "章間のロードマップ文を削る"
+    },
+    {
+      "pattern": "ここから(少し|は)",
+      "group": "道案内",
+      "hint": "章間のロードマップ文を削る"
+    },
+    {
+      "pattern": "(次は|以降は|後半は).{0,10}(話|見て|入って|考えて)",
+      "group": "道案内",
+      "hint": "章間のロードマップ文を削る"
+    },
+    {
+      "pattern": "重要なのは",
+      "group": "空句",
+      "hint": "主張をそのまま書く"
+    },
+    {
+      "pattern": "正面から",
+      "group": "空句",
+      "hint": "姿勢の宣言を消して中身を書く"
+    },
+    {
+      "pattern": "不可欠|核心的|鍵となる|多角的|包括的",
+      "group": "空句",
+      "hint": "何をどう見たかを書く"
+    },
+    {
+      "pattern": "掘り下げ|深掘り",
+      "group": "空句",
+      "hint": "何を書いたかを示す動詞に"
+    },
+    {
+      "pattern": "の観点から|という側面から",
+      "group": "空句",
+      "hint": "新情報が無ければ削る"
+    },
+    {
+      "pattern": "非常に|極めて",
+      "group": "空句",
+      "hint": "強調を消す"
+    },
+    {
+      "pattern": "fail-open|fail-safe|first-class|opt-out|opt-in|capability",
+      "group": "英語ラベル",
+      "hint": "日本語で言い直す（英語ラベルで精密さを演出しない）"
+    }
+  ],
+  "closingBanned": [
+    {
+      "pattern": "問い",
+      "hint": "「最後に」で読者への問い返しをしない"
+    }
+  ],
+  "authorSignals": [
+    "かなと",
+    "のでは、と",
+    "まぁ",
+    "\\.\\.\\.",
+    "！",
+    "例えば",
+    "一方で",
+    "ただし",
+    "ということで",
+    "好き"
+  ]
+}
