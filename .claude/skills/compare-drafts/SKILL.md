@@ -20,13 +20,15 @@ argument-hint: "[テーマ] [公開URL(任意)]"
 
 設計原則:
 - voice-style.md に既にあるルールに最初は縛られない。まず両版を素直に見比べる。voice-style.md はフェーズ3 で初めて読む
-- 著者版の論理破綻・明らかな文章ミスは対象外（AI が真似るべき特徴ではない）。review/ に著者側の改善余地として指摘済みのものも学習対象から外す
+- 著者版の論理破綻・明らかな文章ミスは対象外（AI が真似るべき特徴ではない）。`review/author_NN.md` に著者側の改善余地として指摘済みのものも学習対象から外す
 
 ## 手順
 
 ### 1. 比較対象の確定
 
-**AI 側**: `$OUTPUT_DIR/draft.md`（必須。なければ「先に `/write $ARGUMENTS` を実行してください」と案内して中断）。
+**AI 側**: `$OUTPUT_DIR/draft.md`（必須。なければ「先に `/article $ARGUMENTS` の書く工程を回してください」と案内して中断）。
+
+**文脈**: `$OUTPUT_DIR/core.md`（あれば読む。記事の問い・読者・読後を把握して差分の意味づけに使う）。
 
 **著者側**: 次の優先順で 1 つに確定する。
 
@@ -72,13 +74,13 @@ node scripts/lint-draft.mjs --metrics $OUTPUT_DIR/draft.md $OUTPUT_DIR/compariso
 
 ### 5. フェーズ3: voice-style.md と lint 設定への変更案
 
-ここで初めて `.claude/skills/write/references/voice-style.md` と `scripts/draft-lint.config.json`・`scripts/prh.yml` を読む。
+ここで初めて `.claude/skills/article/references/voice-style.md` と `scripts/draft-lint.config.json`・`scripts/prh.yml` を読む。
 
 観察を照合して分類する:
 - **既存ルールでカバー済みだが効いていない**: 「〜しすぎない」「任意」の書き方が原因なら、**既定＋例外条件**に書き換える案を出す。数えられる差分（語の出現・段落文数・字数）なら **lint の禁止句・閾値**に落とす案を出す（ルール文の追記より効く）
 - **既存ルールにない**: 新規ルール案。実例（voice-style「1.」）に著者版の段落を 1 つ足す案も検討する（実例は 8 個まで。増やすなら入れ替える）
 - **既存ルールが過剰反応の原因**: 緩和案
-- **著者側の改善余地**（review で指摘済み、または voice-style から外れる著者の癖）: 学習対象から除外し、メタコメントに記す
+- **著者側の改善余地**（`review/author_NN.md` で指摘済み、または voice-style から外れる著者の癖）: 学習対象から除外し、メタコメントに記す
 
 ### 6. 出力
 
@@ -89,7 +91,7 @@ node scripts/lint-draft.mjs --metrics $OUTPUT_DIR/draft.md $OUTPUT_DIR/compariso
 
 - 比較対象: `draft.md` (AI生成) vs {published.md（取得元 URL・取得日・取得手段）/ draft_user.md}
 - 生成日: {YYYY-MM-DD}
-- 記事テーマ: {brief.md から}
+- 記事テーマ: {core.md の「問い」行から}
 
 ## 0. 定量比較
 {--metrics の表}
@@ -140,6 +142,6 @@ node scripts/lint-draft.mjs --metrics $OUTPUT_DIR/draft.md $OUTPUT_DIR/compariso
 
 ## 注意事項
 
-- 著者版を無条件に正解にしない。review/ で著者側の改善余地と指摘された差分（章数過多・長い見出し等）は学習対象から外す
+- 著者版を無条件に正解にしない。`review/author_NN.md` で著者側の改善余地と指摘された差分（章数過多・長い見出し等）は学習対象から外す
 - 比較対象が同一の章立て・同一の長さである必要はない。構造が違うこと自体が観察対象
 - 取得で使ったブラウザは `playwright-cli close` で閉じ、`.playwright-cli/` の中間ファイルは残さない（fetch-page の規約と同じ）

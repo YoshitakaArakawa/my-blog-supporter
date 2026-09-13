@@ -11,8 +11,8 @@ fresh session で以下を投げ、起動の有無を確認する。
 
 ## 起動すべきでない
 
-- 「draft.md の主張に反論して」（critique）
-- 「outline から落ちた主張が無いか点検して」（check-drift）
-- 「初見の読者としてこの記事を読んでどう感じるか教えて」（simulate-readers）
-- 「draft_user.md を編集者の目でレビューして」（review-author-draft）
-- 「この記事を書き始めたい」（write）
+- 「draft.md の主張に反論して」（review の critique）
+- 「outline から落ちた主張が無いか点検して」（review の drift）
+- 「初見の読者としてこの記事を読んでどう感じるか教えて」（review の readers）
+- 「draft_user.md を編集者の目でレビューして」（review の author）
+- 「この記事を書き始めたい」（article）

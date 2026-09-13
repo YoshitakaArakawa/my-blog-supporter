@@ -3,7 +3,7 @@ purpose: yarakawa.com の著者の文体・語り口を、AI が draft.md を書
 sources:
   - https://www.yarakawa.com/tableaunote （公開記事。数値仕様の根拠は 2024〜2026 の10記事の計測）
 fetched_at: 2026-09-12
-note: /write と /tighten-draft が執筆・圧縮の基準に、/review-author-draft と /compare-drafts が照合の物差しに使う。数値仕様の閾値は scripts/draft-lint.config.json と同期させる（ここが正、config は機械化）。認知リズム（緊張・拍・密度）の規範は cognitive-rhythm.md に分けて置く
+note: /article の書く工程と /tighten-draft が執筆・圧縮の基準に、/review author と /compare-drafts が照合の物差しに使う。数値仕様の閾値は scripts/draft-lint.config.json と同期させる（ここが正、config は機械化）。認知リズム（緊張・拍・密度）の規範は cognitive-rhythm.md に分けて置く
 ---
 
 # 著者の文体・語り口メモ
@@ -283,7 +283,7 @@ AI が既定で出す傾向を、公開版との差分（compare-drafts の蓄�
 - **既定は宣言スタート**: 「この記事では〜について書きます」＋スコープ 1〜3 文＋執筆動機 1〜2 文。合計 3〜6 段落、600 字前後（実例1）
 - **体験スタートは参加記のみ**: 「○○に参加・登壇してきました」（カンファレンス・イベントの感想記事）
 - 年表・スコープ整理・前提の羅列で導入を重くしない。背景の時系列は本文の該当章へ送る
-- 執筆動機は AI が brief.md / thinking.md をもとに下書きする（著者は後から直す）。特定の瞬間の一次感情など AI が持たない素材だけを `> ✍️` の可視マーカーで残す
+- 執筆動機は AI が core.md / thinking.md をもとに下書きする（著者は後から直す）。特定の瞬間の一次感情など AI が持たない素材だけを `> ✍️` の可視マーカーで残す
 
 ### 20. 主体性の方向
 
@@ -339,7 +339,7 @@ AI は「ちゃんと書いている感」を足すために、新情報を運�
 
 機械で数えられるものは lint に任せ、LLM は判断が要るものだけ見る。
 
-1. `node scripts/lint-draft.mjs $OUTPUT_DIR/draft.md` を実行し、NG をゼロにするまで直す（/write の手順4）
+1. `node scripts/lint-draft.mjs $OUTPUT_DIR/draft.md` を実行し、NG をゼロにするまで直す（/article の書く工程の機械 lint）
 2. lint では見えないものを読み返す:
    - 実例 2〜4 の手触りに近いか（体温は「まぁ」「...」「！」で出ているか、反論を認めたまま次へ進んでいるか、引用素材を 1 段で渡しているか）
    - 見出しが節のオチを言い切っていないか（ルール 17）

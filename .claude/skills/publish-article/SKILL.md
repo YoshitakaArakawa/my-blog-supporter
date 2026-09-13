@@ -19,14 +19,17 @@ disable-model-invocation: true
 
 - `$OUTPUT_DIR` が存在しなければ、その旨を伝えて終了する。
 - 既定のホワイトリスト（存在するものだけコピー対象にする）:
-  - `brief.md` / `references.md` / `thinking.md` / `outline.md` / `draft.md` / `draft_user.md`
+  - `core.md` / `references.md` / `thinking.md` / `outline.md` / `draft.md` / `draft_user.md`
   - `draft_user_*.md`（言語版など、著者が公開した最終版の派生）
+  - `brief.md` は旧記事にだけ存在する（新記事では作らない）。あれば既定の対象に含める
 - opt-in（著者がこの実行で明示的に指定した時のみ対象に加える）:
-  - `critique/` / `drift/` / `readers/` / `review/` / `comparison/` / `brief_deepen.md`
+  - `review/`（lens 別ファイル: `critique_NN.md` / `drift_NN.md` / `readers_NN.md` / `author_NN.md`）/ `comparison/`
+  - 旧記事に残る `critique/` / `drift/` / `readers/` / `brief_deepen.md` も同じ扱い
   - 工程の実演として過程ごと見せたい記事だけ、著者の指定で公開する。
 - 常に除外（指定されても公開層に入れない）:
   - `references/`（第三者の raw 素材。gitignore でも二重に防いでいる）
-  - `*.mhtml` / 画像 / `pre-discussion/` などの未整理メモ / `draft_v2.md` 等の途中版
+  - `map.html`（計画の見取り図。正本は Markdown 側にあり、gitignore の `*.html` とも整合させる）
+  - `*.mhtml` / 画像 / `pre-discussion/` などの未整理メモ / `draft_pre-tighten.md` / `draft_v2.md` 等の途中版
 - コピー予定の一覧を著者に提示してから次へ進む。`$PUB_DIR` に既存ファイルがある場合は上書きになることを明示する。
 
 ### 2. コピー

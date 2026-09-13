@@ -124,12 +124,24 @@ section{display:flex;flex-direction:column;gap:20px}
 .thread.dash .lbl{color:var(--ink-mute)}
 .thread .d{color:var(--ink-soft);font-size:12px}
 
+/* ---------- core（core.md の5行。言い換えずそのまま写す） ---------- */
+.core{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.core > div{background:var(--surface);padding:12px 15px;display:flex;flex-direction:column;gap:5px}
+.core .k{font-family:var(--mono);font-size:10px;letter-spacing:.11em;color:var(--det)}
+.core .v{font-size:13px;line-height:1.7;color:var(--ink)}
+
 /* ---------- questions ---------- */
 .qs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
 .q{background:var(--surface);border:1px solid var(--rule-soft);border-top:3px solid var(--det);padding:17px 19px;display:flex;flex-direction:column;gap:8px}
 .q .qt{font-family:var(--serif);font-size:15.5px;font-weight:600;line-height:1.55}
 .q .qa{font-size:13px;color:var(--ink-soft);line-height:1.7}
 .q .qw{font-family:var(--mono);font-size:10px;letter-spacing:.07em;color:var(--ink-mute)}
+
+/* ---------- open（未決の問い。効く core 行を添える） ---------- */
+.opens{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.open{background:var(--surface);border:1px solid var(--rule-soft);border-top:3px solid var(--prob);padding:17px 19px;display:flex;flex-direction:column;gap:8px}
+.open .ot{font-family:var(--serif);font-size:15px;font-weight:600;line-height:1.55}
+.open .ow{font-family:var(--mono);font-size:10px;letter-spacing:.07em;color:var(--prob)}
 
 /* ---------- boundaries ---------- */
 .outs{display:flex;flex-direction:column;gap:1px;background:var(--rule);border:1px solid var(--rule)}
@@ -171,6 +183,22 @@ footer{border-top:1px solid var(--rule);padding-top:18px;font-family:var(--mono)
     <span>{{カテゴリ}}</span>
   </div>
 </header>
+
+<!-- 核。core.md の5行をそのまま写す。要約・言い換えをしない -->
+<section>
+  <div class="sechead">
+    <span class="eyebrow">Core</span>
+    <h2>この記事の核</h2>
+    <p>著者が承認した5行。地図の他のすべては、この5行に効くかどうかで測る。</p>
+  </div>
+  <div class="core">
+    <div><span class="k">問い</span><span class="v">{{core.md の問い}}</span></div>
+    <div><span class="k">読者</span><span class="v">{{core.md の読者}}</span></div>
+    <div><span class="k">読後</span><span class="v">{{core.md の読後}}</span></div>
+    <div><span class="k">動機</span><span class="v">{{core.md の動機}}</span></div>
+    <div><span class="k">現在地</span><span class="v">{{core.md の現在地}}</span></div>
+  </div>
+</section>
 
 <section>
   <div class="sechead">
@@ -248,20 +276,37 @@ footer{border-top:1px solid var(--rule);padding-top:18px;font-family:var(--mono)
   </div>
 </section>
 
+<!-- 未決の問い。thinking.md の「未決」節。各カードに効く core 行を表示する -->
+<section>
+  <div class="sechead">
+    <span class="eyebrow">Open</span>
+    <h2>まだ決まっていない問い</h2>
+    <p>著者に返っている問い。書き始める前に埋めるかどうかは著者が決める。</p>
+  </div>
+  <div class="opens">
+    <div class="open">
+      <span class="ot">{{未決の問い}}</span>
+      <span class="ow">効く核: {{問い|読者|読後|動機|現在地}}</span>
+    </div>
+  </div>
+</section>
+
 <section>
   <div class="sechead">
     <span class="eyebrow">Boundaries</span>
     <h2>この記事では扱わないこと</h2>
-    <p>地図の外側。焦点を保つために意図的に外した領域と、その行き先。</p>
+    <p>地図の外側。焦点を保つために意図的に外した領域と、thinking.md の駐車場に退避した論点。</p>
   </div>
   <div class="outs">
+    <!-- 意図的に外した領域はチップなし。thinking.md の駐車場から来た行は chip sub を付ける -->
     <div class="outrow"><span class="what">{{外した領域}}</span><span class="why">{{行き先}}</span></div>
+    <div class="outrow"><span class="what"><span class="chip sub">駐車場</span> {{退避した論点}}</span><span class="why">{{行き先}}</span></div>
   </div>
 </section>
 
 <footer>
   この地図は {{正本のファイル名を列挙}} のレンダリング。正本は Markdown 側にある。<br>
-  内容を変えるときは Markdown を直して <code>/draw-map</code> を再実行する。この HTML を手で直すと乖離する。
+  内容を変えるときは Markdown を直して地図を再生成する。この HTML を手で直すと乖離する。
 </footer>
 
 </div>
