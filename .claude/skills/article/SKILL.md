@@ -75,7 +75,7 @@ argument-hint: "[テーマ] [core|deepen|outline|write|map](任意)"
 
 thinking.md の主張と参考資料から、見出し構成・展開順序・資料接続を著者と対話で設計し `$OUTPUT_DIR/outline.md` に書く。詳細な手順と outline.md のテンプレートは [references/phase-outline.md](references/phase-outline.md) を読む。
 
-**何を・どの順で語りたいかは著者の思想が要る**。いきなり構成案を書き出さず、著者の語りたい筋を先に聞く。確定後に地図を更新し、隔離レビューの `drift outline` を提案する。
+**何を・どの順で語るかの最終判断は著者が握る**。著者は掘る対話の全量を覚えていないため、AI が thinking.md から構成の叩き台を先に出し（各章に根拠の観点を添える）、著者の並べ替え・削除を受けて固める。確定後に地図を更新し、隔離レビューの `drift outline` を提案する。
 
 この工程は飛ばしてよい。飛ばす場合は書く工程で thinking.md を直接の設計図にする。
 
