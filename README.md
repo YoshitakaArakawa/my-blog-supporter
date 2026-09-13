@@ -75,6 +75,7 @@ scripts/                             機械ゲートと変換
   prh.yml                            表記辞書（textlint-rule-prh）
   textlint-allowlist.yml             lint 除外（ℹ️/✍️ メモ・HTML コメント・URL）
   render-map.mjs                     地図の抽出結果（map.json）から map.html を生成する
+  render-preview.mjs                 draft.md から確認用の HTML（preview/index.html）を生成する（CLI / hook）
   wix-html-to-md.mjs                 公開記事（Wix）の HTML → Markdown
 .textlintrc.json                     textlint 設定（preset-ai-writing ＋ ja-technical-writing の選択適用）
 ```
@@ -101,7 +102,8 @@ draft を Edit/Write するたびに同じレポートを自動で受け取る�
       {
         "matcher": "Write|Edit",
         "hooks": [
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/scripts/lint-draft.mjs\" --hook", "timeout": 120 }
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/scripts/lint-draft.mjs\" --hook", "timeout": 120 },
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/scripts/render-preview.mjs\" --hook", "timeout": 30 }
         ]
       }
     ]
@@ -109,7 +111,13 @@ draft を Edit/Write するたびに同じレポートを自動で受け取る�
 }
 ```
 
-hook が反応するのは `scripts/draft-lint.config.json` の `targetGlobs` に載っているファイルだけです。ドラフト（`output/**/draft*.md` と `published/**/draft*.md`）に加えて、核（`core.md`、5 行と各行の字数）も対象です。掘った思考（`thinking.md`）は中間成果物なので対象にしていません。警告を返すだけでブロックはしません。
+lint の hook が反応するのは `scripts/draft-lint.config.json` の `targetGlobs` に載っているファイルだけです。ドラフト（`output/**/draft*.md` と `published/**/draft*.md`）に加えて、核（`core.md`、5 行と各行の字数）も対象です。掘った思考（`thinking.md`）は中間成果物なので対象にしていません。警告を返すだけでブロックはしません。
+
+プレビューの hook は `output/{記事}/draft.md` を書くたびに、同じフォルダの `preview/index.html` を再生成します。正本は draft.md で、HTML は生成物なので手で編集しません。成功時は何も返さず、画像が見つからない時と生成に失敗した時だけ知らせます。手動で生成する場合は次のとおりです:
+
+```bash
+node scripts/render-preview.mjs output/{yyyymmdd}_{テーマ}/draft.md
+```
 
 ## リポジトリの公開境界
 

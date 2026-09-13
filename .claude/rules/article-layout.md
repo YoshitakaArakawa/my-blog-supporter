@@ -17,6 +17,8 @@ output/{yyyymmdd}_{テーマ}/           記事ごとの作業ディレクトリ
   map.html                           計画の見取り図（節目ごとに上書き。正本は Markdown 側）
   draft.md                           記事本文（AI版。/tighten-draft で圧縮済み）
   draft_pre-tighten.md               圧縮前の AI 版（/tighten-draft が退避。比較・巻き戻し用）
+  preview/index.html                 draft.md の HTML プレビュー（scripts/render-preview.mjs の生成物。手で編集しない）
+  images/                            /illustrate の図（{図名}.svg / .html はソース、.png は成果物）
   draft_user.md                      記事本文（著者推敲版。書く工程の完了時に空で作成）
   review/                            /review の出力。lens ごとに独立した連番で時系列に蓄積
     critique_01.md / drift_01.md / readers_01.md / author_01.md   lens ごとの指摘

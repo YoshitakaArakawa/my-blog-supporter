@@ -70,6 +70,8 @@ const isList = (s) => /^\s*([-*+]|\d+\.)\s/.test(s);
 const isQuote = (s) => /^\s*>/.test(s);
 const isHr = (s) => /^\s*-{3,}\s*$/.test(s);
 const isHtml = (s) => /^\s*</.test(s);
+// 図だけの行（![alt](path)）。段落に数えると字数 0 の段落になり、段落あたりの指標が下がるため除外する
+const isImage = (s) => /^\s*!\[[^\]]*\]\([^)]*\)\s*$/.test(s);
 
 /** リンク記法と URL を落とした素の文字列 */
 function plain(s) {
@@ -94,7 +96,7 @@ function paragraphs(lines) {
     if (cur.length) {
       const text = cur.join("\n");
       const first = cur[0];
-      if (!(isHeading(first) || isList(first) || isQuote(first) || isHr(first) || isHtml(first))) paras.push({ n: start, text });
+      if (!(isHeading(first) || isList(first) || isQuote(first) || isHr(first) || isHtml(first) || isImage(first))) paras.push({ n: start, text });
     }
     cur = [];
   };
