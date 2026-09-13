@@ -300,15 +300,14 @@ function isTarget(file) {
   return CONFIG.targetGlobs.some((g) => globToRegex(g).test(rel));
 }
 
-/** ファイル名で判定種別を切り替える。draft*.md はこれまで通り、thinking.md / core.md は専用の軽量判定 */
+/** ファイル名で判定種別を切り替える。draft*.md は本文判定、core.md は専用の軽量判定 */
 function fileKind(file) {
   const base = path.basename(file);
-  if (base === "thinking.md") return "thinking";
   if (base === "core.md") return "core";
   return "draft";
 }
 
-/** draft 以外（thinking / core）向けの簡易レポート。指標表だけを出し、段落・禁止句・textlint のセクションは持たない */
+/** draft 以外（core）向けの簡易レポート。指標表だけを出し、段落・禁止句・textlint のセクションは持たない */
 function reportSimple(file, rows, extraSections = []) {
   const ng = rows.filter((r) => !r.ok);
   const out = [];
@@ -321,21 +320,6 @@ function reportSimple(file, rows, extraSections = []) {
   for (const r of rows) out.push(`| ${r.label} | ${r.value} | ${r.limit} | ${r.ok ? "OK" : "NG"}${r.note ? " " + r.note : ""} |`);
   for (const s of extraSections) { out.push(""); out.push(s); }
   return out.join("\n");
-}
-
-/** thinking.md: 本文字数だけを見る。字数の数え方は draft と同じ metrics().chars を再利用する */
-function lintThinking(file, text) {
-  const m = metrics(text);
-  const rows = [
-    {
-      label: "本文字数",
-      value: m.chars,
-      limit: `≤${T.thinkingCharsMax}`,
-      ok: m.chars <= T.thinkingCharsMax,
-      note: m.chars > T.thinkingCharsMax ? `${m.chars - T.thinkingCharsMax} 字超過。駐車場へ退避するか観点を絞る` : "",
-    },
-  ];
-  return { m, banned: [], tl: { messages: [] }, rows, text: reportSimple(file, rows) };
 }
 
 /** core.md: 箇条書き行数と各行の字数だけを見る。見出し行・承認:・改訂: の行は数えない */
@@ -362,7 +346,6 @@ function lintCore(file, text) {
 async function lintOne(file, opts) {
   const text = fs.readFileSync(file, "utf8");
   const kind = fileKind(file);
-  if (kind === "thinking") return lintThinking(file, text);
   if (kind === "core") return lintCore(file, text);
   const m = metrics(text);
   const banned = bannedHits(m);

@@ -109,7 +109,7 @@ draft を Edit/Write するたびに同じレポートを自動で受け取る�
 }
 ```
 
-hook が反応するのは `scripts/draft-lint.config.json` の `targetGlobs` に載っているファイルだけです。ドラフト（`output/**/draft*.md` と `published/**/draft*.md`）に加えて、掘った思考（`thinking.md`、本文字数の上限）と核（`core.md`、5 行と各行の字数）も対象です。警告を返すだけでブロックはしません。
+hook が反応するのは `scripts/draft-lint.config.json` の `targetGlobs` に載っているファイルだけです。ドラフト（`output/**/draft*.md` と `published/**/draft*.md`）に加えて、核（`core.md`、5 行と各行の字数）も対象です。掘った思考（`thinking.md`）は中間成果物なので対象にしていません。警告を返すだけでブロックはしません。
 
 ## リポジトリの公開境界
 

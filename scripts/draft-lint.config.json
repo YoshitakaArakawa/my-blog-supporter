@@ -1,6 +1,6 @@
 {
   "_comment": "lint-draft.mjs の閾値と禁止句。数値は yarakawa.com 公開記事10本（2024〜2026）の計測レンジから決めた。詳細は .claude/skills/article/references/voice-style.md の「0. 数値仕様」",
-  "_commentExtra": "thinkingCharsMax は draft 本文上限 7,000 字の約1.4倍（掘った思考が本文の倍を超えると、本文に載らない論点が過半になる）。coreLinesMax / coreLineCharsMax は core.md の5行仕様（見出し行・承認:・改訂: の行は対象外）に対応する閾値。",
+  "_commentExtra": "coreLinesMax / coreLineCharsMax は core.md の5行仕様（見出し行・承認:・改訂: の行は対象外）に対応する閾値。thinking.md は中間成果物のため字数を判定しない（分量は深掘りリストの点数で守る）。",
   "thresholds": {
     "bodyCharsMax": 7000,
     "bodyCharsMin": 4000,
@@ -15,14 +15,12 @@
     "sentenceCharsMax": 140,
     "nakaguroMax": 3,
     "closingSentencesMax": 18,
-    "thinkingCharsMax": 10000,
     "coreLinesMax": 5,
     "coreLineCharsMax": 120
   },
   "targetGlobs": [
     "output/**/draft*.md",
     "published/**/draft*.md",
-    "output/**/thinking.md",
     "output/**/core.md"
   ],
   "skipBlockquoteMarkers": [
