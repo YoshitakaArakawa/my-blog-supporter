@@ -115,6 +115,25 @@ function metrics(text) {
   const bodyText = nonHeading.map((l) => plain(l.text)).join("\n");
   const paras = paragraphs(lines);
   const paraSent = paras.map((p) => ({ n: p.n, count: splitSentences(p.text).length, head: plain(p.text).replace(/\s+/g, "").slice(0, 24) }));
+  // 段落あたり字数。1文ずつ改行して並べると文数の仕様は満たしたまま段落が痩せるため、字数でも見る
+  const paraChars = paras.map((p) => ({ n: p.n, len: plain(p.text).replace(/\s+/g, "").length, head: plain(p.text).replace(/\s+/g, "").slice(0, 24) }));
+  const paraCharsAvg = paraChars.length ? Math.round(paraChars.reduce((a, p) => a + p.len, 0) / paraChars.length) : 0;
+  const parasShort = paraChars.filter((p) => p.len < T.shortParagraphCharsMax);
+
+  // 章ごとの字数（判定しない。outline.md の目安と比べるための参考値）。## と ### をそれぞれ1章として数える
+  const sections = [];
+  let curSec = { title: "導入", chars: 0 };
+  for (const l of lines) {
+    const hm = l.text.match(/^#{2,3}\s+(.*)/);
+    if (hm) {
+      if (curSec.chars > 0 || curSec.title !== "導入") sections.push(curSec);
+      curSec = { title: hm[1].trim(), chars: 0 };
+      continue;
+    }
+    if (isHeading(l.text) || isHr(l.text)) continue;
+    curSec.chars += plain(l.text).replace(/\s/g, "").length;
+  }
+  sections.push(curSec);
   const sentences = nonHeading.flatMap((l) => splitSentences(l.text));
   const headings = lines.filter((l) => isHeading(l.text)).map((l) => ({ n: l.n, text: l.text }));
   const kagi = (bodyText.match(/「/g) || []).length;
@@ -141,7 +160,9 @@ function metrics(text) {
 
   // 結び
   const closingIdx = lines.findIndex((l) => /^##\s*最後に/.test(l.text));
-  const closingLines = closingIdx >= 0 ? lines.slice(closingIdx + 1) : [];
+  // 結びは次の見出しまで。「## 最後に」の後ろに置く「### 余談」は結びに数えない
+  const closingEnd = closingIdx >= 0 ? lines.findIndex((l, i) => i > closingIdx && /^#{2,3}\s/.test(l.text)) : -1;
+  const closingLines = closingIdx >= 0 ? lines.slice(closingIdx + 1, closingEnd >= 0 ? closingEnd : undefined) : [];
   const closingSentences = closingLines.flatMap((l) => splitSentences(l.text));
   const closingText = closingLines.map((l) => l.text).join("\n");
 
@@ -152,8 +173,10 @@ function metrics(text) {
     avgSentenceLen: sentences.length ? +(sentences.reduce((a, s) => a + s.length, 0) / sentences.length).toFixed(1) : 0,
     sentPerPara: paraSent.length ? +(paraSent.reduce((a, p) => a + p.count, 0) / paraSent.length).toFixed(2) : 0,
     parasOver: paraSent.filter((p) => p.count > T.sentencesPerParagraphMax),
+    paraCharsAvg, parasShort, sections,
     h2: headings.filter((h) => /^##\s/.test(h.text)).length,
-    h3: headings.filter((h) => /^###\s/.test(h.text)).length,
+    // 余談の ### は構成上の例外として数えない（voice-style ルール8・11）
+    h3: headings.filter((h) => /^###\s/.test(h.text) && !/^###\s*余談/.test(h.text)).length,
     headings, kagi, bold, dashes, nakaguro, longSentences, hedge, english, repeated, inHeading,
     introKind, introHasRefBlock, introHasFixedHeader,
     closingFound: closingIdx >= 0, closingSentences: closingSentences.length, closingText,
@@ -198,9 +221,9 @@ function evaluate(m, banned, tl) {
   const overRatio = m.paragraphs ? m.parasOver.length / m.paragraphs : 0;
   add("段落あたり文数（平均）", m.sentPerPara, `≤${T.sentencesPerParagraphMax}`, m.sentPerPara <= T.sentencesPerParagraphMax + 0.3);
   add(`${T.sentencesPerParagraphMax + 1}文以上の段落`, `${m.parasOver.length}/${m.paragraphs}`, `≤${Math.round(T.paragraphsOverLimitRatioMax * 100)}%`, overRatio <= T.paragraphsOverLimitRatioMax);
-  add("「」の個数", m.kagi, `≤${T.kagiKakkoMax}`, m.kagi <= T.kagiKakkoMax);
+  add("段落あたり字数（平均）", m.paraCharsAvg, `≥${T.paragraphCharsAvgMin}`, m.paraCharsAvg >= T.paragraphCharsAvgMin, m.paraCharsAvg < T.paragraphCharsAvgMin ? "1文ずつ改行して並べている。同じ論点の段落をまとめ、背景・理由・例を1段落で運ぶ" : "");  add("「」の個数", m.kagi, `≤${T.kagiKakkoMax}`, m.kagi <= T.kagiKakkoMax);
   add("## の本数", m.h2, `≤${T.h2Max}`, m.h2 <= T.h2Max);
-  add("### の本数", m.h3, `≤${T.h3Max}`, m.h3 <= T.h3Max);
+  add("### の本数（余談を除く）", m.h3, `≤${T.h3Max}`, m.h3 <= T.h3Max);
   add("太字", m.bold, `${T.boldMax}`, m.bold <= T.boldMax);
   add("ダッシュ（—―）", m.dashes, "0", m.dashes === 0);
   add("和文の中黒（・）", m.nakaguro, `≤${T.nakaguroMax}`, m.nakaguro <= T.nakaguroMax);
@@ -240,6 +263,12 @@ function report(file, m, banned, tl, rows) {
     for (const p of m.parasOver.slice(0, 15)) out.push(`- L${p.n}（${p.count}文）${p.head}…`);
     if (m.parasOver.length > 15) out.push(`- …ほか ${m.parasOver.length - 15} 件`);
   }
+  if (m.paraCharsAvg < T.paragraphCharsAvgMin && m.parasShort.length) {
+    out.push("");
+    out.push(`## ${T.shortParagraphCharsMax}字未満の段落（${m.parasShort.length} 件。まとめる候補）`);
+    for (const p of m.parasShort.slice(0, 15)) out.push(`- L${p.n}（${p.len}字）${p.head}…`);
+    if (m.parasShort.length > 15) out.push(`- …ほか ${m.parasShort.length - 15} 件`);
+  }
   if (banned.length) {
     out.push("");
     out.push(`## 禁止句（${banned.length} 件）`);
@@ -263,13 +292,14 @@ function report(file, m, banned, tl, rows) {
   out.push("");
   out.push("## 参考（判定しない）");
   out.push(`- 著者の指紋: ${Object.entries(m.authorSignals).map(([k, v]) => `${k}=${v}`).join(", ")}`);
-  out.push(`- 思う系語尾 ${m.hedge} / 文 ${m.sentences}、平均文長 ${m.avgSentenceLen} 字、段落 ${m.paragraphs}`);
+  out.push(`- 思う系語尾 ${m.hedge} / 文 ${m.sentences}、平均文長 ${m.avgSentenceLen} 字、段落 ${m.paragraphs}、${T.shortParagraphCharsMax}字未満の段落 ${m.parasShort.length}`);
+  out.push(`- 章ごとの字数（outline.md の目安と比べる）: ${m.sections.map((s) => `${s.title} ${s.chars}`).join(" / ")}`);
   return out.join("\n");
 }
 
 function metricsTable(files, csv) {
-  const cols = ["chars", "paragraphs", "sentPerPara", "avgSentenceLen", "h2", "h3", "kagi", "bold", "english", "hedge"];
-  const labels = ["本文字数", "段落数", "文/段落", "平均文長", "##", "###", "「」", "太字", "英文引用", "思う系語尾"];
+  const cols = ["chars", "paragraphs", "sentPerPara", "paraCharsAvg", "avgSentenceLen", "h2", "h3", "kagi", "bold", "english", "hedge"];
+  const labels = ["本文字数", "段落数", "文/段落", "字/段落", "平均文長", "##", "###（余談除く）", "「」", "太字", "英文引用", "思う系語尾"];
   const data = files.map((f) => {
     const m = metrics(fs.readFileSync(f, "utf8"));
     const banned = bannedHits(m).length;

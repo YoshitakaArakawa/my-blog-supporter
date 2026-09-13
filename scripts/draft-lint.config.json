@@ -1,10 +1,12 @@
 {
   "_comment": "lint-draft.mjs の閾値と禁止句。数値は yarakawa.com 公開記事10本（2024〜2026）の計測レンジから決めた。詳細は .claude/skills/article/references/voice-style.md の「0. 数値仕様」",
-  "_commentExtra": "coreLinesMax / coreLineCharsMax は core.md の5行仕様（見出し行・承認:・改訂: の行は対象外）に対応する閾値。thinking.md は中間成果物のため字数を判定しない（分量は深掘りリストの点数で守る）。",
+  "_commentExtra": "coreLinesMax / coreLineCharsMax は core.md の5行仕様（見出し行・承認:・改訂: の行は対象外）に対応する閾値。thinking.md は中間成果物のため字数を判定しない（分量は深掘りリストの点数で守る）。paragraphCharsAvgMin は、公開記事4本の段落あたり字数（この lint の数え方で 67〜80 字、20260913 計測）と、1文ずつ改行して並べた AI ドラフト（61 字）の間に置いた下限。shortParagraphCharsMax は参考表示用で、40字未満の段落の割合は公開記事でも 17〜26% とばらつき、判定には使わない。",
   "thresholds": {
     "bodyCharsMax": 7000,
     "bodyCharsMin": 4000,
     "sentencesPerParagraphMax": 2,
+    "paragraphCharsAvgMin": 65,
+    "shortParagraphCharsMax": 40,
     "paragraphsOverLimitRatioMax": 0.2,
     "kagiKakkoMax": 25,
     "h2Max": 5,
@@ -129,7 +131,7 @@
       "hint": "章間のロードマップ文を削る"
     },
     {
-      "pattern": "ここから(少し|は)",
+      "pattern": "ここから(少し|は)(?!余談)",
       "group": "道案内",
       "hint": "章間のロードマップ文を削る"
     },
@@ -176,7 +178,7 @@
   ],
   "closingBanned": [
     {
-      "pattern": "問い",
+      "pattern": "(でしょうか|ませんか|ますか)[？?]|問いを(残|返|置)",
       "hint": "「最後に」で読者への問い返しをしない"
     }
   ],
