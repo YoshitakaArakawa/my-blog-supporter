@@ -20,9 +20,9 @@ yarakawa.com の考察・内省型ブログ記事を、著者がAIと対話し�
 
 記事の話題が出たら、コマンドを待たず `Skill` ツールで `article` を起動する。新規テーマ・前の記事の続き・掘りたい・構成・本文・地図のどれでも同じ。工程の判定と他スキルへの受け渡しは `article` が持つ。
 
-例外は `/publish-article` だけ。Public リポへの commit を伴うため、実行タイミングを著者が握る（`disable-model-invocation: true`）。
+公開も同じで、著者が「公開する」と決めたら `publish-article` を起動してよい。Public リポへの commit だけは、スキル内の著者承認を経てから行う。
 
-記事の作業層は `output/{yyyymmdd}_{テーマ}/`。著者が能動的に行うのは4つだけ: core.md の文言の承認、レビュー指摘の採否、「核を変えるか」への回答、`/publish-article` の起動と commit の承認。
+記事の作業層は `output/{yyyymmdd}_{テーマ}/`。著者が能動的に行うのは4つだけ: core.md の文言の承認、レビュー指摘の採否、「核を変えるか」への回答、公開時の commit の承認。
 
 ## 機械ゲート
 

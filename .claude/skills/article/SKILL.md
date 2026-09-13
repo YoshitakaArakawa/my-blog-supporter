@@ -58,7 +58,7 @@ argument-hint: "[テーマ] [core|deepen|outline|write|map](任意)"
 | 「公開した。比べて」＋URL | `/compare-drafts` |
 | 「図を入れたい」 | `/illustrate` |
 | Web 取得が要る（SPA・要ログイン） | `/fetch-page`（不変条件4の承認を得てから） |
-| 「公開する」 | `/publish-article`（著者が自分で起動する） |
+| 「公開する」 | `/publish-article`（commit は著者承認後） |
 
 ## 工程1: 核
 
