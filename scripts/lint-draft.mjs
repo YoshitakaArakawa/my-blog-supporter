@@ -14,8 +14,13 @@
  *
  * hook モードでは対象パス（config.targetGlobs）にマッチした時だけレポートを
  * hookSpecificOutput.additionalContext として返し、それ以外は何も出さず exit 0 で終わる。
+ * 同じファイルへの2回目以降の hook は、前回（一時ディレクトリに保存した状態）との差分だけを返す。
+ * Edit のたびに全文レポートが会話に積み上がり、本文より lint が目立つのを防ぐため。
+ * 全文が要る時は手動で `node scripts/lint-draft.mjs <file>` を実行する。
  */
 import fs from "node:fs";
+import os from "node:os";
+import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -320,6 +325,69 @@ function metricsTable(files, csv) {
   return lines.join("\n");
 }
 
+// ---------- hook の差分 ----------
+
+// hook の前回状態を置く場所。リポジトリ外（一時ディレクトリ）に置き、ファイルの絶対パスで引く
+const HOOK_STATE_DIR = path.join(os.tmpdir(), "draft-lint-state");
+
+function hookStatePath(file) {
+  const key = crypto.createHash("sha1").update(path.resolve(file)).digest("hex");
+  return path.join(HOOK_STATE_DIR, `${key}.json`);
+}
+
+/** 差分比較に使う「論点の集合」。行番号は Edit で動くので鍵に含めず、内容で同一視する */
+function issueSet(r) {
+  const rows = {};
+  for (const x of r.rows) rows[x.label] = { value: String(x.value), ok: x.ok };
+  // 件数と出現行を持つ。行番号は Edit で動くので同一視の鍵にはせず、増えた時にどこかを示す用途だけに使う
+  const count = (list, keyOf, lineOf) => { const m = {}; for (const it of list) { const k = keyOf(it); (m[k] ||= { n: 0, lines: [] }); m[k].n += 1; m[k].lines.push(lineOf(it)); } return m; };
+  const banned = count(r.banned, (b) => `[${b.group}] 「${b.text}」 → ${b.hint}`, (b) => b.n);
+  const sev = { 2: "error", 1: "warning", 0: "info" };
+  const tl = count((r.tl.messages || []).filter((x) => x.severity >= 1), (x) => `${sev[x.severity]}:${x.ruleId} ${x.message.replace(/\n/g, " ").slice(0, 80)}`, (x) => x.line);
+  return { rows, banned, tl };
+}
+
+/** 前回状態との差分レポート。変化が無ければ1行で返す */
+function diffReport(file, prev, cur, r) {
+  const rel = path.relative(ROOT, file).replace(/\\/g, "/");
+  const ngNow = Object.entries(cur.rows).filter(([, v]) => !v.ok).map(([k]) => k);
+  const head = `# draft lint: ${rel} — ${ngNow.length ? `NG ${ngNow.length} 件: ${ngNow.join(" / ")}` : "NG なし"}`;
+  const lines = [];
+  const keys = (a, b) => [...new Set([...Object.keys(a), ...Object.keys(b)])];
+  for (const k of keys(prev.rows, cur.rows)) {
+    const p = prev.rows[k], c = cur.rows[k];
+    if (!c) continue;
+    if (!p) { lines.push(`- 新規: ${k} = ${c.value}（${c.ok ? "OK" : "NG"}）`); continue; }
+    if (p.ok && !c.ok) lines.push(`- NG になった: ${k} ${p.value} → ${c.value}`);
+    else if (!p.ok && c.ok) lines.push(`- 解消: ${k} ${p.value} → ${c.value}`);
+    else if (!c.ok && p.value !== c.value) lines.push(`- NG のまま変化: ${k} ${p.value} → ${c.value}`);
+  }
+  const diffCount = (label, a, b) => {
+    for (const k of keys(a, b)) {
+      const pa = a[k] || { n: 0, lines: [] }, pb = b[k] || { n: 0, lines: [] };
+      const d = pb.n - pa.n;
+      if (d > 0) {
+        // 前回に無かった行を「増えた場所」として示す（行ずれで外れたら末尾の出現で代替）
+        const fresh = pb.lines.filter((l) => !pa.lines.includes(l));
+        const where = (fresh.length ? fresh : pb.lines.slice(-d)).map((l) => `L${l}`).join(", ");
+        lines.push(`- ${label}が増えた（${where}）: ${k}${d > 1 ? ` ×${d}` : ""}`);
+      } else if (d < 0) lines.push(`- ${label}が減った: ${k.split(" → ")[0]}${d < -1 ? ` ×${-d}` : ""}`);
+    }
+  };
+  diffCount("禁止句", prev.banned, cur.banned);
+  diffCount("textlint", prev.tl, cur.tl);
+  if (!lines.length) return `${head}\n変化なし。全文は \`node scripts/lint-draft.mjs ${rel}\``;
+  return `${head}\n前回からの差分:\n${lines.join("\n")}`;
+}
+
+function loadHookState(file) {
+  try { return JSON.parse(fs.readFileSync(hookStatePath(file), "utf8")); } catch { return null; }
+}
+
+function saveHookState(file, state) {
+  try { fs.mkdirSync(HOOK_STATE_DIR, { recursive: true }); fs.writeFileSync(hookStatePath(file), JSON.stringify(state)); } catch { /* 状態が書けなくても lint 自体は返す */ }
+}
+
 // ---------- 入口 ----------
 
 function globToRegex(g) {
@@ -399,7 +467,11 @@ async function main() {
     if (!file || !fs.existsSync(file) || !isTarget(file)) return;
     try {
       const r = await lintOne(file, { noTextlint: false });
-      let ctx = r.text;
+      const cur = issueSet(r);
+      const prev = loadHookState(file);
+      saveHookState(file, cur);
+      // 初回は全文、2回目以降は差分だけ（同じレポートの積み上がりを防ぐ）
+      let ctx = prev ? diffReport(file, prev, cur, r) : r.text;
       if (ctx.length > HOOK_REPORT_MAX) ctx = ctx.slice(0, HOOK_REPORT_MAX) + "\n…（省略。全文は `node scripts/lint-draft.mjs <file>`）";
       process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "PostToolUse", additionalContext: `[draft lint / 機械ゲート]\n${ctx}` } }));
     } catch (e) {

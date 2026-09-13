@@ -26,7 +26,7 @@ note: 既定は単一案モード。著者が「複数案」「N 案」「いく
 単一案モードの手順をそのまま実行させる。差分は 3 点:
 
 - **philosophy を 3〜5 段落書く**（単一案は 1 段落）。命名した美学方針＝movement 名＋原則＋なぜこの概念に合うか。分散と完成度は厚い philosophy から生まれる
-- 出力は `output/{記事}/images/variant_{kk}.svg`（または `.html`）と `variant_{kk}.png`
+- 出力は `output/{記事}/images/src/variant_{kk}.svg`（または `.html`）と `output/{記事}/images/variant_{kk}.png`
 - 戻り値は `{path, philosophy, 自己採点, 一言}`
 
 ## 並列実行の衝突回避
