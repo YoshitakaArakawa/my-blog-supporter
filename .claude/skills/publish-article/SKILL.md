@@ -26,7 +26,7 @@ argument-hint: "[テーマ]"
 - 常に除外（指定されても公開層に入れない）:
   - `references/`（第三者の raw 素材。gitignore でも二重に防いでいる）
   - `map.html`（計画の見取り図。正本は Markdown 側にあり、gitignore の `*.html` とも整合させる）
-  - `*.mhtml` / 画像 / `pre-discussion/` などの未整理メモ / `draft_pre-tighten.md` / `draft_v2.md` 等の途中版
+  - `*.mhtml` / 画像 / `pre-discussion/` などの未整理メモ / `draft_pre-*.md` / `draft_v2.md` 等の途中版
 - コピー予定の一覧を著者に提示してから次へ進む。`$PUB_DIR` に既存ファイルがある場合は上書きになることを明示する。
 
 ### 1b. URL slug の提案

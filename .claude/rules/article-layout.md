@@ -15,8 +15,7 @@ output/{yyyymmdd}_{テーマ}/           記事ごとの作業ディレクトリ
   outline.md                         記事の見出し構成・資料接続（任意。最新が正）
   map.json                           地図の抽出結果（map.html の入力）
   map.html                           計画の見取り図（節目ごとに上書き。正本は Markdown 側）
-  draft.md                           記事本文（AI版。/tighten-draft で圧縮済み）
-  draft_pre-tighten.md               圧縮前の AI 版（/tighten-draft が退避。比較・巻き戻し用）
+  draft.md                           記事本文（AI版）
   preview/index.html                 draft.md の HTML プレビュー（scripts/render-preview.mjs の生成物。手で編集しない）
   images/                            /illustrate の成果物 PNG だけ（ブログへ載せるもの。改訂は上書き）
     src/                             図のソース（{図名}.svg / .html）

@@ -37,7 +37,9 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 自分で書いた記事を編集者の目で見て
 - draft_user.md の誤字と表記ゆれを拾って
 - 公開前に下書きの完成度を点検して
+- Wix の下書きを取り込んでレビューして（.mhtml から draft_user.md を抽出してから点検）
 - /review ai-bi-platform author
+- /review ai-bi-platform author Posts_Wix.mhtml
 
 ## lens 未指定の扱い
 
@@ -53,7 +55,7 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 記事の構成を一緒に考えたい（→ /article の組む工程）
 - 本文を書いてみて（→ /article の書く工程）
 - 全体像を1枚で見たい・地図を見せて（→ /article の地図）
-- ドラフトが長いので公開版の密度まで削って（→ /tighten-draft）
+- ドラフトが長いので削って（→ /article の書く工程。レビューではなく編集）
 - 公開した記事と AI 版を比べて（→ /compare-drafts）
 - 記事に入れる概念図を1枚描いて（→ /illustrate）
 - 公開する成果物を選別して commit したい（→ /publish-article）

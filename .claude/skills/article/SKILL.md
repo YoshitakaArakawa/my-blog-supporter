@@ -53,8 +53,7 @@ argument-hint: "[テーマ] [core|deepen|outline|write|map](任意)"
 
 | 著者の発言 | 渡す先 |
 |---|---|
-| 「短くして」「削って」 | `tighten-draft`（`Skill` ツールで引数 `{テーマ}`） |
-| 「Wix から取り込んで」 | `/import-wix-draft` → 続けて `review` の `author` |
+| 「Wix から取り込んで」「下書きを見て」 | `review` の `author`（Wix の下書きは `.mhtml` を `$OUTPUT_DIR/` に置いて渡す。取り込みは lens 側が行う） |
 | 「公開した。比べて」＋URL | `/compare-drafts` |
 | 「図を入れたい」 | `/illustrate` |
 | Web 取得が要る（SPA・要ログイン） | `/fetch-page`（不変条件4の承認を得てから） |
@@ -84,13 +83,13 @@ thinking.md の主張と参考資料から、見出し構成・展開順序・�
 
 ## 工程4: 書く
 
-`$OUTPUT_DIR/draft.md` を書き、圧縮・機械 lint・点検を通してから著者と磨きこむ。詳細な執筆規範・採否基準・完了時の案内は [references/phase-write.md](references/phase-write.md) を読む。文体の正本は [references/voice-style.md](references/voice-style.md)、緩急の規範は [references/cognitive-rhythm.md](references/cognitive-rhythm.md)。
+`$OUTPUT_DIR/draft.md` を書き、機械 lint・点検を通してから著者と磨きこむ。詳細な執筆規範・採否基準・完了時の案内は [references/phase-write.md](references/phase-write.md) を読む。文体の正本は [references/voice-style.md](references/voice-style.md)、緩急の規範は [references/cognitive-rhythm.md](references/cognitive-rhythm.md)。
 
-**内部の呼び出し順**（著者はこの順序を意識しなくてよい）: draft.md の生成（core.md 必須。無ければ工程1へ戻す）→ 圧縮パス（`tighten-draft`）→ 機械 lint（`node scripts/lint-draft.mjs $OUTPUT_DIR/draft.md`。NG がゼロになるまで最大3周）→ プレビュー生成（`node scripts/render-preview.mjs $OUTPUT_DIR/draft.md`。hook があれば draft.md を書くたびに自動）→ 自己レビュー → 読者シミュレーション（`readers`）→ 段階間ドリフト点検（`drift draft`）→ 指摘を反映して著者と磨きこむ（膨らんだら圧縮パスへ戻る）→ 空の `$OUTPUT_DIR/draft_user.md` を作る。
+**内部の呼び出し順**（著者はこの順序を意識しなくてよい）: draft.md の生成（core.md 必須。無ければ工程1へ戻す）→ 機械 lint（`node scripts/lint-draft.mjs $OUTPUT_DIR/draft.md`。NG がゼロになるまで最大3周）→ プレビュー生成（`node scripts/render-preview.mjs $OUTPUT_DIR/draft.md`。hook があれば draft.md を書くたびに自動）→ 自己レビュー → 読者シミュレーション（`readers`）→ 段階間ドリフト点検（`drift draft`）→ 指摘を反映して著者と磨きこむ → 空の `$OUTPUT_DIR/draft_user.md` を作る。
 
 著者に返すのは、本文とプレビュー（`$OUTPUT_DIR/preview/index.html`）へのパスと3行の要約（全体の流れ／lint の残件と直さなかった理由／フィードバックがほしい箇所）と図の一覧。全文を会話に貼らない。
 
-進捗（手順ごとのチェックリスト）と、会話で決まった著者判断は draft.md 冒頭の ℹ️ メモに持たせ、手順を終えるたびに更新する。`tighten-draft` の引数はテーマだけにし、字数方針などの指示は ℹ️ メモの著者判断に書く。
+進捗（手順ごとのチェックリスト）と、会話で決まった著者判断は draft.md 冒頭の ℹ️ メモに持たせ、手順を終えるたびに更新する。
 
 ## セッションの区切り
 

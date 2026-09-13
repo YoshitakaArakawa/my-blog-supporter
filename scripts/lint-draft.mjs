@@ -224,7 +224,9 @@ async function runTextlint(file) {
 function evaluate(m, banned, tl) {
   const rows = [];
   const add = (label, value, limit, ok, note = "") => rows.push({ label, value, limit, ok, note });
-  add("本文字数", m.chars, `${T.bodyCharsMin}〜${T.bodyCharsMax}`, m.chars <= T.bodyCharsMax && m.chars >= T.bodyCharsMin, m.chars > T.bodyCharsMax ? `${m.chars - T.bodyCharsMax} 字超過。保険文→道案内→多段論証→定型結びの順に削る` : "");
+  // 字数は判定しない（参考値）。長さは主張の数で決まり、字数を目標に削ると著者が残したい段落まで痩せる。レンジ外は注記だけ出す
+  const charsNote = m.chars > T.bodyCharsMax ? `参考: 公開記事の上限 ${T.bodyCharsMax} を ${m.chars - T.bodyCharsMax} 字超。保険文・道案内・多段論証があれば削る` : m.chars < T.bodyCharsMin ? `参考: 公開記事の下限 ${T.bodyCharsMin} より短い` : "";
+  add("本文字数（参考）", m.chars, `${T.bodyCharsMin}〜${T.bodyCharsMax}`, true, charsNote);
   const overRatio = m.paragraphs ? m.parasOver.length / m.paragraphs : 0;
   add("段落あたり文数（平均）", m.sentPerPara, `≤${T.sentencesPerParagraphMax}`, m.sentPerPara <= T.sentencesPerParagraphMax + 0.3);
   add(`${T.sentencesPerParagraphMax + 1}文以上の段落`, `${m.parasOver.length}/${m.paragraphs}`, `≤${Math.round(T.paragraphsOverLimitRatioMax * 100)}%`, overRatio <= T.paragraphsOverLimitRatioMax);

@@ -46,11 +46,10 @@ note: description・本文の修正時に fresh session で全プロンプトを
 
 ## 起動すべきでない（should not fire）
 
-- ドラフトが公開版の 1.5 倍に太っているので削ってほしい（→ /tighten-draft）
 - この主張の想定反論を出して（→ /review の critique）
 - outline.md から主張が落ちていないか点検して（→ /review の drift）
 - 記事のドラフトを読者視点で読んでみて（→ /review の readers）
-- Wix の下書きをレビューして（→ /import-wix-draft → /review の author）
+- Wix の下書きをレビューして（→ /review の author。取り込みも lens 側）
 - 記事の中に入れる概念図を1枚描いて（→ /illustrate）
 - 公開したので AI 版と比べて改善案を出して（→ /compare-drafts）
 - この記事を公開層に反映して（→ /publish-article）

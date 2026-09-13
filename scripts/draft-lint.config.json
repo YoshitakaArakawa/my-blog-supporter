@@ -1,5 +1,5 @@
 {
-  "_comment": "lint-draft.mjs の閾値と禁止句。数値は yarakawa.com 公開記事10本（2024〜2026）の計測レンジから決めた。詳細は .claude/skills/article/references/voice-style.md の「0. 数値仕様」",
+  "_comment": "lint-draft.mjs の閾値と禁止句。数値は yarakawa.com 公開記事10本（2024〜2026）の計測レンジから決めた。詳細は .claude/skills/article/references/voice-style.md の「0. 数値仕様」。bodyCharsMax / bodyCharsMin は参考表示のみで NG 判定に使わない（字数を目標に削らせないため）",
   "_commentExtra": "coreLinesMax / coreLineCharsMax は core.md の5行仕様（見出し行・承認:・改訂: の行は対象外）に対応する閾値。thinking.md は中間成果物のため字数を判定しない（分量は深掘りリストの点数で守る）。paragraphCharsAvgMin は、公開記事4本の段落あたり字数（この lint の数え方で 67〜80 字、20260913 計測）と、1文ずつ改行して並べた AI ドラフト（61 字）の間に置いた下限。shortParagraphCharsMax は参考表示用で、40字未満の段落の割合は公開記事でも 17〜26% とばらつき、判定には使わない。",
   "thresholds": {
     "bodyCharsMax": 7000,

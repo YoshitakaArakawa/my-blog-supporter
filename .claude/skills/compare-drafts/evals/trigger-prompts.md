@@ -17,7 +17,7 @@ note: description・本文の修正時に fresh session で全プロンプトを
 
 - 下書きをレビューして（→ /review の author。比較対象の公開記事が無い）
 - draft_user.md の誤字と表記ゆれを拾って（→ /review の author）
-- ドラフトが長いので公開版の密度まで削って（→ /tighten-draft。差分の観察ではなく圧縮）
+- ドラフトが長いので削って（→ /article の書く工程。差分の観察ではなく編集）
 - 前回の記事の構成と今回の構成を比べたい（記事間の比較であって AI 版↔著者版ではない）
 - 公開する成果物を選別して commit したい（→ /publish-article）
 
