@@ -4,6 +4,7 @@ description: 記事の成果物を隔離コンテキストでレビューし、�
 argument-hint: "[テーマ] [critique|drift|readers|author] [対象(任意: outline|draft|ファイル名)]"
 context: fork
 agent: general-purpose
+background: false
 ---
 
 # 記事レビュー
@@ -35,7 +36,7 @@ agent: general-purpose
 
 ### 2. 出力ディレクトリと core.md
 
-出力先は `output/{yyyymmdd}_$0/`。既存フォルダがあればそれを使う。テーマに日付プレフィックスが既に付いている場合（例: `20260101_theme`）はそのままフォルダ名として使う。以降 `$OUTPUT_DIR` はこのディレクトリを指す。
+出力先は `output/{yyyymmdd}_{テーマ}/`。`output/` を Glob し、`_{テーマ}` で終わるフォルダを採る（テーマに日付プレフィックスが付いていればそのまま使う）。以降 `$OUTPUT_DIR` はこのディレクトリを指す。
 
 `$OUTPUT_DIR/core.md` を**最初に読む**。無ければ点検せずに「core.md が無いので点検していない。先に `/article` で core.md を作ってください」という旨をサマリで返して終了する。
 
@@ -44,6 +45,8 @@ core.md は記事の核（問い／読者／読後／動機／現在地の5行�
 ### 3. lens ファイルの読み込み
 
 `${CLAUDE_SKILL_DIR}/references/lens-$1.md` を読む。そこに書かれた「入力」を読み込み、「観点」で点検し、「出力テンプレート」の形に整え、「やらないこと」を守る。
+
+lens が `author` の時は、物差しとして `${CLAUDE_PROJECT_DIR}/.claude/skills/article/references/voice-style.md` と同 `cognitive-rhythm.md` も読む。
 
 必須の入力が欠けている場合は、lens ファイルの指示に従って欠落をサマリで報告して終了する。**他ファイルで代替しない**。
 

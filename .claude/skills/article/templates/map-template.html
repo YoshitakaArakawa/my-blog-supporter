@@ -1,4 +1,4 @@
-<title>{{記事タイトル}}の全体地図</title>
+<title>{{TITLE}}の全体地図</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;800&family=Noto+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -69,7 +69,7 @@ section{display:flex;flex-direction:column;gap:20px}
 .map{
   min-width:1060px;
   display:grid;
-  grid-template-columns:70px repeat(6,minmax(0,1fr));
+  grid-template-columns:70px repeat({{CHAPTER_COUNT}},minmax(0,1fr));
   gap:8px;
   align-items:stretch;
 }
@@ -163,24 +163,26 @@ footer{border-top:1px solid var(--rule);padding-top:18px;font-family:var(--mono)
 </style>
 
 <!--
-  使い方: このファイルをコピーし {{...}} を置換する。CSS は変更しない。
-  章の本数が 6 と違う場合のみ .map の grid-template-columns の repeat() を合わせる。
-  入力ファイルに対応が無い箇所は推測で埋めず <span class="tbd">未定</span> を置く。
+  このファイルは scripts/render-map.mjs が読み込むテンプレートであり、直接編集した完成品ではない。
+  {{...}} はスカラー値の単純文字列置換、<!-- NAME:START/END --> で囲んだ区間はスクリプトが
+  生成した繰り返し HTML（章・カード・行）に丸ごと差し替わる。CSS と構造はどちらも変更しない
+  （変更する場合は render-map.mjs 側の対応するレンダリング関数も合わせて直す）。
+  入力に対応が無い箇所はスクリプトが推測せず「未定」を出す。
 -->
 
 <div class="wrap">
 
 <header>
-  <span class="eyebrow">記事の見取り図 / {{yyyymmdd}}</span>
-  <h1>{{記事タイトル}}</h1>
-  <p class="lede">{{この地図の読み方を1〜2文。横軸は読む順序、縦は主張から素材への深さ、下段の帯は章をまたぐ軸、という説明}}</p>
-  <p class="thesis">{{この記事の一番伝えたい一文}}</p>
+  <span class="eyebrow">記事の見取り図 / {{DATE}}</span>
+  <h1>{{TITLE}}</h1>
+  <p class="lede">{{LEDE}}</p>
+  <p class="thesis">{{THESIS}}</p>
   <div class="meta">
-    <span>本文 {{N}} 字</span>
-    <span>大見出し {{N}} 本＋結び</span>
-    <span>主張 {{N}} 本</span>
-    <span>貫く軸 {{N}} 本</span>
-    <span>{{カテゴリ}}</span>
+    <span>{{META_BODY}}</span>
+    <span>{{META_HEADINGS}}</span>
+    <span>{{META_CLAIMS}}</span>
+    <span>{{META_THREADS}}</span>
+    <span>{{META_CATEGORY}}</span>
   </div>
 </header>
 
@@ -192,11 +194,11 @@ footer{border-top:1px solid var(--rule);padding-top:18px;font-family:var(--mono)
     <p>著者が承認した5行。地図の他のすべては、この5行に効くかどうかで測る。</p>
   </div>
   <div class="core">
-    <div><span class="k">問い</span><span class="v">{{core.md の問い}}</span></div>
-    <div><span class="k">読者</span><span class="v">{{core.md の読者}}</span></div>
-    <div><span class="k">読後</span><span class="v">{{core.md の読後}}</span></div>
-    <div><span class="k">動機</span><span class="v">{{core.md の動機}}</span></div>
-    <div><span class="k">現在地</span><span class="v">{{core.md の現在地}}</span></div>
+    <div><span class="k">問い</span><span class="v">{{CORE_Q}}</span></div>
+    <div><span class="k">読者</span><span class="v">{{CORE_READER}}</span></div>
+    <div><span class="k">読後</span><span class="v">{{CORE_AFTER}}</span></div>
+    <div><span class="k">動機</span><span class="v">{{CORE_MOTIVE}}</span></div>
+    <div><span class="k">現在地</span><span class="v">{{CORE_NOW}}</span></div>
   </div>
 </section>
 
@@ -204,58 +206,26 @@ footer{border-top:1px solid var(--rule);padding-top:18px;font-family:var(--mono)
   <div class="sechead">
     <span class="eyebrow">Map</span>
     <h2>章ごとに何を扱うか</h2>
-    <p>{{展開の型（例: 否定 → 具体 → 抽象 → 帰結）と、その順序にした理由を1〜2文}}</p>
+    <p>{{MAP_LEDE}}</p>
   </div>
 
   <div class="mapwrap">
     <div class="map">
 
-      <!-- 章の行。重心の章だけ class="ch hot"（1つまで）。gauge の width は最大章を 100% とした比率 -->
-      <span class="rowlab">章</span>
-      <div class="ch"><span class="num">導入</span><span class="ttl">{{見出し}}</span><span class="cnt">{{N}} 字</span><span class="gauge"><i style="width:{{N}}%"></i></span></div>
-      <div class="ch"><span class="num">01</span><span class="ttl">{{見出し}}</span><span class="cnt">{{N}} 字</span><span class="gauge"><i style="width:{{N}}%"></i></span></div>
-      <div class="ch hot"><span class="num">02 ／ 重心</span><span class="ttl">{{見出し}}</span><span class="cnt">{{N}} 字</span><span class="gauge"><i style="width:100%"></i></span></div>
-      <div class="ch"><span class="num">03</span><span class="ttl">{{見出し}}</span><span class="cnt">{{N}} 字</span><span class="gauge"><i style="width:{{N}}%"></i></span></div>
-      <div class="ch"><span class="num">04</span><span class="ttl">{{見出し}}</span><span class="cnt">{{N}} 字</span><span class="gauge"><i style="width:{{N}}%"></i></span></div>
-      <div class="ch"><span class="num">結び</span><span class="ttl">{{見出し}}</span><span class="cnt">{{N}} 字</span><span class="gauge"><i style="width:{{N}}%"></i></span></div>
+      <!-- CH_CELLS:START -->
+      <!-- CH_CELLS:END -->
 
-      <!-- 主張の行。各章で立てる一文。重心の章は class="cell hot" -->
-      <span class="rowlab">主張</span>
-      <div class="cell"><span class="role">枠組み</span><span class="claim">{{主張}}</span></div>
-      <div class="cell"><span class="role">主張 01</span><span class="claim">{{主張}}</span></div>
-      <div class="cell hot"><span class="role">主張 02</span><span class="claim">{{主張}}</span></div>
-      <div class="cell"><span class="role">主張 03</span><span class="claim">{{主張}}</span></div>
-      <div class="cell"><span class="role">帰結</span><span class="claim">{{主張}}</span></div>
-      <div class="cell"><span class="role">結び</span><span class="claim">{{主張}}</span></div>
+      <!-- CLAIM_CELLS:START -->
+      <!-- CLAIM_CELLS:END -->
 
-      <!-- 論点の行。chip main が主論点、chip sub が従。テキストは扱い方の注意 -->
-      <span class="rowlab">論点</span>
-      <div class="cell"><div class="chips"><span class="chip main">{{論点}}</span><span class="chip sub">{{従の論点}}</span></div><span>{{扱い方の注意}}</span></div>
-      <div class="cell"><div class="chips"><span class="chip main">{{論点}}</span></div><span>{{扱い方の注意}}</span></div>
-      <div class="cell hot"><div class="chips"><span class="chip main">{{論点}}</span></div><span>{{扱い方の注意}}</span></div>
-      <div class="cell"><div class="chips"><span class="chip main">{{論点}}</span></div><span>{{扱い方の注意}}</span></div>
-      <div class="cell tbd-cell"><span class="tbd">未定</span></div>
-      <div class="cell"><span>{{扱い方の注意}}</span></div>
+      <!-- ISSUE_CELLS:START -->
+      <!-- ISSUE_CELLS:END -->
 
-      <!-- 素材の行。src は references.md 側のファイル名・出典。出典が無い素材は書かない -->
-      <span class="rowlab">素材</span>
-      <div class="cell"><ul><li>{{素材}}</li><li>{{素材}}</li></ul><span class="src">{{出典}}</span></div>
-      <div class="cell"><ul><li>{{素材}}</li></ul><span class="src">{{出典}}</span></div>
-      <div class="cell hot"><ul><li>{{素材}}</li></ul><span class="src">{{出典}}</span></div>
-      <div class="cell"><ul><li>{{素材}}</li></ul><span class="src">{{出典}}</span></div>
-      <div class="cell"><ul><li>{{素材}}</li></ul><span class="src">{{出典}}</span></div>
-      <div class="cell"><ul><li>{{素材}}</li></ul><span class="src">{{出典}}</span></div>
+      <!-- MATERIAL_CELLS:START -->
+      <!-- MATERIAL_CELLS:END -->
 
-      <!-- 貫く軸。grid-column の開始/終了で射程を示す（列 1 は行ラベル。章 N は列 N+1） -->
-      <!-- thread=標準 / thread alt=強調 / thread dash=通奏（背景なし） -->
-      <span class="rowlab">貫く軸</span>
-      <div class="thread dash" style="grid-column:2 / 8"><span class="lbl">通奏</span><span class="d">{{軸の説明}}</span></div>
-
-      <span class="rowlab"></span>
-      <div class="thread alt" style="grid-column:3 / 8"><span class="lbl">構造</span><span class="d">{{軸の説明}}</span></div>
-
-      <span class="rowlab"></span>
-      <div class="thread" style="grid-column:3 / 7"><span class="lbl">用語</span><span class="d">{{軸の説明}}</span></div>
+      <!-- THREAD_ROWS:START -->
+      <!-- THREAD_ROWS:END -->
 
     </div>
   </div>
@@ -268,11 +238,8 @@ footer{border-top:1px solid var(--rule);padding-top:18px;font-family:var(--mono)
     <p>読者がこの記事に持ち込む問いと、記事が返す答え。どの章で返すかも添えた。</p>
   </div>
   <div class="qs">
-    <div class="q">
-      <span class="qt">{{読者が持ち込む問い}}</span>
-      <span class="qa">{{記事が返す答え}}</span>
-      <span class="qw">章{{N}} で返す</span>
-    </div>
+    <!-- QUESTIONS_CARDS:START -->
+    <!-- QUESTIONS_CARDS:END -->
   </div>
 </section>
 
@@ -284,10 +251,8 @@ footer{border-top:1px solid var(--rule);padding-top:18px;font-family:var(--mono)
     <p>著者に返っている問い。書き始める前に埋めるかどうかは著者が決める。</p>
   </div>
   <div class="opens">
-    <div class="open">
-      <span class="ot">{{未決の問い}}</span>
-      <span class="ow">効く核: {{問い|読者|読後|動機|現在地}}</span>
-    </div>
+    <!-- OPEN_CARDS:START -->
+    <!-- OPEN_CARDS:END -->
   </div>
 </section>
 
@@ -298,14 +263,13 @@ footer{border-top:1px solid var(--rule);padding-top:18px;font-family:var(--mono)
     <p>地図の外側。焦点を保つために意図的に外した領域と、thinking.md の駐車場に退避した論点。</p>
   </div>
   <div class="outs">
-    <!-- 意図的に外した領域はチップなし。thinking.md の駐車場から来た行は chip sub を付ける -->
-    <div class="outrow"><span class="what">{{外した領域}}</span><span class="why">{{行き先}}</span></div>
-    <div class="outrow"><span class="what"><span class="chip sub">駐車場</span> {{退避した論点}}</span><span class="why">{{行き先}}</span></div>
+    <!-- BOUNDARIES_ROWS:START -->
+    <!-- BOUNDARIES_ROWS:END -->
   </div>
 </section>
 
 <footer>
-  この地図は {{正本のファイル名を列挙}} のレンダリング。正本は Markdown 側にある。<br>
+  この地図は {{CANONICAL_FILES}} のレンダリング。正本は Markdown 側にある。<br>
   内容を変えるときは Markdown を直して地図を再生成する。この HTML を手で直すと乖離する。
 </footer>
 

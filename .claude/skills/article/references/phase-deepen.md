@@ -25,7 +25,6 @@ note: SKILL.md の不変条件（core.md が北極星／問いの規律／本筋
 - `$OUTPUT_DIR/references.md`（あれば。概要レベルで対話に活かす）
 - `$OUTPUT_DIR/references/` の raw 資料（あれば。PDF・画像・テキストは Read で読める）
 - `$OUTPUT_DIR/review/critique_*.md` の最新（あれば。前回の指摘を今回の深掘りの起点にする）
-- 旧記事なら `$OUTPUT_DIR/brief.md`（あれば。素材・観点の供給源として読む。更新はしない）
 
 ## 1. スコープの確定
 
@@ -144,7 +143,6 @@ thinking.md を更新したら、未決を最大3件に絞る。4件目以降は
 ## やらないこと
 
 - 記事の見出し構成を設計する（組む工程の担当）
-- brief.md を新規に作る・更新する
 - critique を自動で走らせる、AI が critique の指摘に自答してループを回す
 - 著者固有の論点を AI の一般論で埋める
 - 想定反論の先回りを本文に積む（駐車場へ送る）
