@@ -45,7 +45,7 @@ node scripts/wix-html-to-md.mjs .playwright-cli/post.html --source <URL> > outpu
 playwright-cli close
 ```
 
-`[data-hook='post-description']` が取れない場合は `article` で試す。取得後、`published.md` の見出しの数と末尾の段落が公開ページと一致しているかを 1 度確認する。用途は、公開後の改訂を差分で見返す時の基準（README「固めた後の直しを、差分だけ色付きで見返す」）と、`/publish-article` の slug 重複確認。
+`[data-hook='post-description']` が取れない場合は `article` で試す。取得後、`published.md` の見出しの数と末尾の段落が公開ページと一致しているかを 1 度確認する。用途は、公開後の改訂を `/revise` で差分にする時に本文を Wix の最新へ揃えることと、`/publish-article` の slug 重複確認。
 
 ## X（旧 Twitter）
 

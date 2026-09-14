@@ -62,3 +62,7 @@ Wix 側の記事 URL（`https://www.yarakawa.com/single-post/{slug}`）は著者
 ### 5. コミット
 
 著者の承認後に `$PUB_DIR` を git add し、`published: {テーマ} の記事成果物を公開` の形でコミットする。承認前にコミットしない。push は著者の指示があった時のみ行う。
+
+### 6. 公開版を基準として固める
+
+コミット後、`node ${CLAUDE_PROJECT_DIR}/scripts/revise.mjs freeze $OUTPUT_DIR/draft_user.md` を実行し、公開時点の本文を `$OUTPUT_DIR/revision/baseline.md` に保存する。公開後に追記や修正をする時、`/revise` がこの基準からの差分だけを色付きで示す。

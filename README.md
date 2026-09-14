@@ -28,6 +28,7 @@
 | `/article` | 核（core.md）を決め、論点を掘り、構成を組み、本文を書く | 対話の本体 |
 | `/review` | 成果物を隔離コンテキストで点検する。4 つの lens を切り替える（`author` は Wix の下書き .mhtml の取り込みも担う） | 叩く・点検する |
 | `/publish-article` | 公開してよい成果物を選別して公開層（`published/`）へ出す | 公開する |
+| `/revise` | 固まった本文や公開済み記事への直し・追記を、基準からの差分だけ色付きで見返しながら進める | 直す |
 | `/illustrate` | 記事の概念図を作図して PNG で書き出す | 図にする |
 | `/fetch-page` | WebFetch で取れないページを実ブラウザで取得する | 取ってくる |
 
@@ -73,6 +74,10 @@ scripts/                             機械ゲートと変換
   textlint-allowlist.yml             lint 除外（ℹ️/✍️ メモ・HTML コメント・URL）
   render-map.mjs                     地図の抽出結果（map.json）から map.html を生成する
   render-preview.mjs                 draft.md から確認用の HTML（preview/index.html）を生成する（CLI / hook）
+  serve-preview.mjs                  プレビューを図込みでブラウザに出すためのローカル静的サーバー（.claude/launch.json から起動）
+  revise.mjs                         固めた時点の本文を基準に保存し（freeze）、その後の直しを差分 HTML にする（show）
+  diff-drafts.mjs                    2つの Markdown を比べ、差分をマーカー付き Markdown にする（revise.mjs が使う）
+  render-revision.mjs                マーカー付き Markdown を、変更箇所だけ色付きの HTML にする
   wix-html-to-md.mjs                 公開記事（Wix）の HTML → Markdown
 .textlintrc.json                     textlint 設定（preset-ai-writing ＋ ja-technical-writing の選択適用）
 ```
@@ -115,6 +120,21 @@ lint の hook が反応するのは `scripts/draft-lint.config.json` の `target
 ```bash
 node scripts/render-preview.mjs output/{yyyymmdd}_{テーマ}/draft.md
 ```
+
+### 図込みでプレビューを読む
+
+`file://` で開くと相対パスの画像が出ない環境があるので、`.claude/launch.json` に登録したローカルサーバー（`preview`、`scripts/serve-preview.mjs`）を経由して読みます。Claude Code の Browser ペインなら `preview` を起動するだけで、`http://localhost:8765/output/{記事}/preview/index.html` が図込みで開きます。図を見ながら AI と会話して推敲する、という使い方のためのものです。
+
+### 固めた後の直しを、差分だけ色付きで見返す
+
+ほぼ完成した本文に細かい修正や追記を入れたい時や、公開後に一節を足したい時は、「何を足して何を削ったか」だけが見えると判断が速くなります。固めたと思った時点で基準を切り、あとは本文をそのまま直し続けると、基準からの差分だけを追加は緑・削除は赤で示した HTML が出ます。公開版かどうかは問いません:
+
+```bash
+node scripts/revise.mjs freeze output/{記事}/draft_user.md   # 今の本文を基準（revision/baseline.md）として保存
+node scripts/revise.mjs show   output/{記事}/draft_user.md   # 基準と今の本文を比べて revision/index.html を作る
+```
+
+基準を切り直すと前の基準は `revision/_archive/` に退避します。差分の正本は `revision/draft_revision.md` で、マーカーは `{+ 追加 +}` `{- 削除 -}` `{? 著者への確認メモ ?}` の3種です。AI が改訂案を出す時は、この正本にマーカーで直接書き込み、`scripts/render-revision.mjs` だけを再実行しても同じ HTML になります。採用が決まったら `revise.mjs apply` がマーカーを剥がして本文へ書き戻します。この一連の進め方（基準は AI が触らない、著者固有の事実は確認メモで返す、採否は著者）は `/revise` スキルが持ち、著者が「固まった」「一節足したい」と言えば立ち上がります。公開時は `/publish-article` が公開版を基準として自動で固めます。
 
 ## リポジトリの公開境界
 
