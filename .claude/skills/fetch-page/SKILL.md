@@ -41,7 +41,7 @@ playwright-cli eval "el => el.innerText" "article"   # 特定要素だけなら�
 ```bash
 playwright-cli open <URL>
 playwright-cli eval "el => el.innerHTML" "[data-hook='post-description']" > .playwright-cli/post.html
-node scripts/wix-html-to-md.mjs .playwright-cli/post.html --source <URL> > output/{記事}/published.md
+node ${CLAUDE_SKILL_DIR}/scripts/wix-html-to-md.mjs .playwright-cli/post.html --source <URL> > output/{記事}/published.md
 playwright-cli close
 ```
 

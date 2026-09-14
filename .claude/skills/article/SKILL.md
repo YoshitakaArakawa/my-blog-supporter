@@ -120,7 +120,7 @@ outline.md は確定済み（drift outline 済み）。書く工程を手順1か
 
 ## 地図の更新
 
-`$OUTPUT_DIR/map.html` は計画の見取り図であり、**「この設計で書き始めてよいか」を著者が一目で判断するための合意ゲート**。抽出結果を `$OUTPUT_DIR/map.json` に書き、`node scripts/render-map.mjs $OUTPUT_DIR/map.json` で map.html を生成する（詳細は [references/map-spec.md](references/map-spec.md)）。生成は隔離せず、この対話の中で行う。
+`$OUTPUT_DIR/map.html` は計画の見取り図であり、**「この設計で書き始めてよいか」を著者が一目で判断するための合意ゲート**。抽出結果を `$OUTPUT_DIR/map.json` に書き、`node ${CLAUDE_SKILL_DIR}/scripts/render-map.mjs $OUTPUT_DIR/map.json` で map.html を生成する（詳細は [references/map-spec.md](references/map-spec.md)）。生成は隔離せず、この対話の中で行う。
 
 | きっかけ | 扱い |
 |---|---|

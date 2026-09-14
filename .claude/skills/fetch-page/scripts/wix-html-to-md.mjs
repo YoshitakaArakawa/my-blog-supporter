@@ -8,7 +8,7 @@
  * Markdown にする。
  *
  * 使い方:
- *   node scripts/wix-html-to-md.mjs <post.html> [--source <URL>] [--title <タイトル>] > published.md
+ *   node .claude/skills/fetch-page/scripts/wix-html-to-md.mjs <post.html> [--source <URL>] [--title <タイトル>] > published.md
  *   （<post.html> を "-" にすると stdin から読む。playwright-cli eval の出力が JSON 文字列でも可）
  *
  * 依存: node-html-parser（npm install 済みであること）

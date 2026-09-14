@@ -65,6 +65,8 @@ AI 版と公開記事を6本ぶん比べると、差は語尾や表記ではな�
   voice-style.md                     著者の文体・語り口の正本。0. 数値仕様 / 1. 公開記事の実例 / ルール1-16（型）/ 17-23（AI 的傾向への対抗）
   cognitive-rhythm.md                認知リズム（緊張・拍・密度波形）の設計規範
 .claude/skills/article/templates/    core.md と地図の骨格
+.claude/skills/article/scripts/      render-map.mjs（地図の抽出結果 map.json から map.html を生成する）
+.claude/skills/fetch-page/scripts/   wix-html-to-md.mjs（公開記事 Wix の HTML → Markdown）
 .claude/skills/review/references/    lens ごとの入力・観点・出力テンプレート（lens-critique / lens-drift / lens-readers / lens-author）
 
 scripts/                             機械ゲートと変換
@@ -72,13 +74,11 @@ scripts/                             機械ゲートと変換
   draft-lint.config.json             閾値と禁止句（voice-style「0.」と同期）
   prh.yml                            表記辞書（textlint-rule-prh）
   textlint-allowlist.yml             lint 除外（ℹ️/✍️ メモ・HTML コメント・URL）
-  render-map.mjs                     地図の抽出結果（map.json）から map.html を生成する
   render-preview.mjs                 draft.md から確認用の HTML（preview/index.html）を生成する（CLI / hook）
   serve-preview.mjs                  プレビューを図込みでブラウザに出すためのローカル静的サーバー（.claude/launch.json から起動）
   revise.mjs                         固めた時点の本文を基準に保存し（freeze）、その後の直しを差分 HTML にする（show）
   diff-drafts.mjs                    2つの Markdown を比べ、差分をマーカー付き Markdown にする（revise.mjs が使う）
   render-revision.mjs                マーカー付き Markdown を、変更箇所だけ色付きの HTML にする
-  wix-html-to-md.mjs                 公開記事（Wix）の HTML → Markdown
 .textlintrc.json                     textlint 設定（preset-ai-writing ＋ ja-technical-writing の選択適用）
 ```
 

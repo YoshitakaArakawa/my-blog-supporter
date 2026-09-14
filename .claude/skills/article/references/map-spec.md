@@ -21,7 +21,7 @@ core.md も thinking.md も outline.md も読み下す形式であり、章と�
 1. **レンダリングに徹する**。分析・評価・改善提案を HTML に書かない。書けるのは、入力ファイルに既にある内容の写像だけ。良し悪しの判断は著者が下す
 2. **正本を二重化しない**。正本は Markdown（core.md / thinking.md / outline.md）。HTML は一方向の写像であり、著者が HTML を手で直すと乖離する。変更は Markdown 側に入れて再生成する。この旨をフッタに明記する
 3. **推測で埋めない**。入力に無い箇所は `未定` として表示する。**埋まっていない箇所が見えること自体が、この地図の価値の半分**
-4. **テンプレートとスクリプトを改変しない**。`templates/map-template.html` の構造とトークン、`scripts/render-map.mjs` のレンダリングロジックはそのまま使う。記事間で見た目を揃え、浮いた時間は中身の写し取りに使う
+4. **テンプレートとスクリプトを改変しない**。`templates/map-template.html` の構造とトークン、`scripts/render-map.mjs`（この Skill 内）のレンダリングロジックはそのまま使う。記事間で見た目を揃え、浮いた時間は中身の写し取りに使う
 5. **出力は output/ に置く**。`published/` へは持ち出さない
 6. **上書きする**。`map.html` は最新が正。世代を `map_NN.html` として溜めない
 
@@ -61,7 +61,7 @@ core.md も thinking.md も outline.md も読み下す形式であり、章と�
 抽出結果を `$OUTPUT_DIR/map.json` に書き、スクリプトでレンダリングする。HTML を直接書かない。
 
 ```
-node scripts/render-map.mjs $OUTPUT_DIR/map.json
+node .claude/skills/article/scripts/render-map.mjs $OUTPUT_DIR/map.json
 ```
 
 `--out` 省略時は `map.json` と同じディレクトリの `map.html` に書き出す。テンプレートは既定で `templates/map-template.html` を使う（変更しない。守る規範4）。

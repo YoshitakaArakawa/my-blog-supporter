@@ -8,8 +8,8 @@
  * .claude/skills/article/references/map-spec.md を参照。
  *
  * 使い方:
- *   node scripts/render-map.mjs <map.json> [--template <path>] [--out <path>]
- *   --template 省略時: .claude/skills/article/templates/map-template.html
+ *   node .claude/skills/article/scripts/render-map.mjs <map.json> [--template <path>] [--out <path>]
+ *   --template 省略時: ../templates/map-template.html（同じ Skill 内のテンプレート）
  *                      （このスクリプトからの相対パスで解決。カレントディレクトリに依存しない）
  *   --out      省略時: map.json と同じディレクトリの map.html
  *
@@ -60,8 +60,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(SCRIPT_DIR, "..");
-const DEFAULT_TEMPLATE = path.join(ROOT, ".claude/skills/article/templates/map-template.html");
+const SKILL_DIR = path.resolve(SCRIPT_DIR, "..");           // .claude/skills/article
+const ROOT = path.resolve(SKILL_DIR, "../../..");           // リポジトリルート（出力パスの表示用）
+const DEFAULT_TEMPLATE = path.join(SKILL_DIR, "templates/map-template.html");
 
 const TBD = "未定";
 
@@ -295,7 +296,7 @@ function main() {
     positional.push(args[i]);
   }
   if (positional.length !== 1) {
-    console.error("usage: node scripts/render-map.mjs <map.json> [--template <path>] [--out <path>]");
+    console.error("usage: node .claude/skills/article/scripts/render-map.mjs <map.json> [--template <path>] [--out <path>]");
     process.exit(1);
   }
   const mapJsonPath = path.resolve(positional[0]);
