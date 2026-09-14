@@ -75,4 +75,3 @@ lens 固有の追加節として、`## 指摘` の後ろに次を置く:
 - 主張の正しさの判定（lens=critique の領分）。あくまで「前段から保たれたか／前段に根があるか」だけを見る
 - 定量指標（carryover 率・件数比など）の算出。著者が知りたいのは *どの* idea がドリフトしたかであって率ではない
 - 著者が書いた原稿（`draft_user.md`）の点検（lens=author の領分）。この lens は **AI が生成した** outline.md / draft.md が対象
-- 著者の公開版との比較（`/compare-drafts` の領分）

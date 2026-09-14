@@ -56,7 +56,6 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 本文を書いてみて（→ /article の書く工程）
 - 全体像を1枚で見たい・地図を見せて（→ /article の地図）
 - ドラフトが長いので削って（→ /article の書く工程。レビューではなく編集）
-- 公開した記事と AI 版を比べて（→ /compare-drafts）
 - 記事に入れる概念図を1枚描いて（→ /illustrate）
 - 公開する成果物を選別して commit したい（→ /publish-article）
 - コードの変更をレビューして（記事の成果物が対象ではない）

@@ -1,7 +1,7 @@
 ---
 name: fetch-page
-description: 実ブラウザ（Chromium／playwright-cli）を起動して、JS レンダリング後のページ本文やログイン必須ページを取得する。WebFetch が失敗した・要約しか返さないとき、ユーザーが playwright やブラウザ経由の取得を明示的に指示したとき、X（旧 Twitter）などログイン必須サイトや既知の SPA を読むときに使う。通常の公開ページ・静的サイトでは WebFetch が先で、このスキルはその代替手段
-allowed-tools: Bash(playwright-cli:*) Bash(rm:*) Read
+description: 実ブラウザ（Chromium／playwright-cli）を起動して、JS レンダリング後のページ本文やログイン必須ページを取得する。WebFetch が失敗した・要約しか返さないとき、ユーザーが playwright やブラウザ経由の取得を明示的に指示したとき、X（旧 Twitter）などログイン必須サイトや既知の SPA を読むとき、公開済みの自分の記事（yarakawa.com）を Markdown で取り直すときに使う。通常の公開ページ・静的サイトでは WebFetch が先で、このスキルはその代替手段
+allowed-tools: Bash(playwright-cli:*) Bash(node:*) Bash(rm:*) Read
 ---
 
 # Web ページ取得（playwright-cli 経由）
@@ -33,6 +33,19 @@ playwright-cli close
 playwright-cli goto <次のURL>
 playwright-cli eval "el => el.innerText" "article"   # 特定要素だけなら第 2 引数にセレクタ
 ```
+
+## yarakawa.com の公開記事
+
+自分のブログ（Wix の SPA）の公開記事を Markdown で取る時の手順。WebFetch は本文を要約し見出しを誤生成するので、ここは最初から実ブラウザで取る。保存先は記事の作業ディレクトリ直下の `published.md`（毎回上書き）。
+
+```bash
+playwright-cli open <URL>
+playwright-cli eval "el => el.innerHTML" "[data-hook='post-description']" > .playwright-cli/post.html
+node scripts/wix-html-to-md.mjs .playwright-cli/post.html --source <URL> > output/{記事}/published.md
+playwright-cli close
+```
+
+`[data-hook='post-description']` が取れない場合は `article` で試す。取得後、`published.md` の見出しの数と末尾の段落が公開ページと一致しているかを 1 度確認する。用途は、公開後の改訂を差分で見返す時の基準（README「固めた後の直しを、差分だけ色付きで見返す」）と、`/publish-article` の slug 重複確認。
 
 ## X（旧 Twitter）
 

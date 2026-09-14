@@ -3,7 +3,7 @@ purpose: yarakawa.com の著者の文体・語り口を、AI が draft.md を書
 sources:
   - https://www.yarakawa.com/tableaunote （公開記事。数値仕様の根拠は 2024〜2026 の10記事の計測）
 fetched_at: 2026-09-12
-note: /article の書く工程が執筆の基準に、/review author と /compare-drafts が照合の物差しに使う。数値仕様の閾値は scripts/draft-lint.config.json と同期させる（ここが正、config は機械化）。認知リズム（緊張・拍・密度）の規範は cognitive-rhythm.md に分けて置く
+note: /article の書く工程が執筆の基準に、/review author が照合の物差しに使う。数値仕様の閾値は scripts/draft-lint.config.json と同期させる（ここが正、config は機械化）。認知リズム（緊張・拍・密度）の規範は cognitive-rhythm.md に分けて置く
 ---
 
 # 著者の文体・語り口メモ
@@ -282,7 +282,7 @@ note: /article の書く工程が執筆の基準に、/review author と /compar
 
 ## 3. AI 的傾向への対抗ガイド（ルール 17〜23）
 
-AI が既定で出す傾向を、公開版との差分（compare-drafts の蓄積）から特定したもの。「〜しすぎない」ではなく「既定でやらない」と読む。
+AI が既定で出す傾向を、公開版との差分の蓄積（2026年5〜6月の記事で AI 版と公開版を比較した結果）から特定したもの。「〜しすぎない」ではなく「既定でやらない」と読む。
 
 ### 17. 構造化のミニマリズム
 

@@ -54,7 +54,7 @@ argument-hint: "[テーマ] [core|deepen|outline|write|map](任意)"
 | 著者の発言 | 渡す先 |
 |---|---|
 | 「Wix から取り込んで」「下書きを見て」 | `review` の `author`（Wix の下書きは `.mhtml` を `$OUTPUT_DIR/` に置いて渡す。取り込みは lens 側が行う） |
-| 「公開した。比べて」＋URL | `/compare-drafts` |
+| 「公開記事を取ってきて」「公開後に直したい」＋URL | `/fetch-page`（yarakawa.com の手順で `published.md` を取る）。直しは README「固めた後の直しを、差分だけ色付きで見返す」の手順 |
 | 「図を入れたい」 | `/illustrate` |
 | Web 取得が要る（SPA・要ログイン） | `/fetch-page`（不変条件4の承認を得てから） |
 | 「公開する」 | `/publish-article`（commit は著者承認後） |

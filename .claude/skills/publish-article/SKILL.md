@@ -18,10 +18,10 @@ argument-hint: "[テーマ]"
 
 - `$OUTPUT_DIR` が存在しなければ、その旨を伝えて終了する。
 - 既定のホワイトリスト（存在するものだけコピー対象にする）:
-  - `core.md` / `references.md` / `thinking.md` / `outline.md` / `draft.md` / `draft_user.md`
+  - `core.md` / `references.md` / `thinking.md` / `outline.md` / `draft.md` / `draft_user.md` / `published.md`（公開記事の取得スナップショット。slug の重複確認に使う）
   - `draft_user_*.md`（言語版など、著者が公開した最終版の派生）
 - opt-in（著者がこの実行で明示的に指定した時のみ対象に加える）:
-  - `review/`（lens 別ファイル: `critique_NN.md` / `drift_NN.md` / `readers_NN.md` / `author_NN.md`）/ `comparison/`
+  - `review/`（lens 別ファイル: `critique_NN.md` / `drift_NN.md` / `readers_NN.md` / `author_NN.md`）
   - 工程の実演として過程ごと見せたい記事だけ、著者の指定で公開する。
 - 常に除外（指定されても公開層に入れない）:
   - `references/`（第三者の raw 素材。gitignore でも二重に防いでいる）
@@ -35,8 +35,8 @@ Wix 側の記事 URL（`https://www.yarakawa.com/single-post/{slug}`）は著者
 
 - 入力: `draft_user.md` のタイトル（先頭行）と core.md の「問い」「読後」行。
 - 候補を3つ提示する。各候補に、タイトルのどの語を採り、何を落としたかを1行で添える。
-- 形式: 小文字英語・ハイフン区切り・2〜5語。日本語のローマ字化は避け、主題を英語で言い直す。同じ主題で以前の記事があるときは、年月の接尾辞（例: `-2026-09`）で区別する。既存の `published/*/comparison/published.md` の取得元 URL を参照して、公開済み slug と衝突しないことを確かめる。
-- 著者が選んだ slug（または著者が別途指定した文字列）を手順4の提示に含める。著者が Wix で設定した後、`/compare-drafts` に渡す公開 URL になる。
+- 形式: 小文字英語・ハイフン区切り・2〜5語。日本語のローマ字化は避け、主題を英語で言い直す。同じ主題で以前の記事があるときは、年月の接尾辞（例: `-2026-09`）で区別する。既存の `published/*/published.md`（2026年6月以前の記事は `comparison/published.md`）の取得元 URL を参照して、公開済み slug と衝突しないことを確かめる。
+- 著者が選んだ slug（または著者が別途指定した文字列）を手順4の提示に含める。著者が Wix で設定した後、`/fetch-page` で公開記事を取る時の URL になる。
 
 ### 2. コピー
 

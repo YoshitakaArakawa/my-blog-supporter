@@ -2,7 +2,7 @@
 /**
  * wix-html-to-md.mjs — Wix ブログ本文の HTML を Markdown に変換する
  *
- * compare-drafts が公開記事（著者の最終形）を取得する時に使う。WebFetch は SPA の本文を
+ * fetch-page が公開記事（著者の最終形）を取得する時に使う。WebFetch は SPA の本文を
  * 要約したり見出しを誤生成するため、実ブラウザで `[data-hook='post-description']` の
  * innerHTML を取り、このスクリプトで見出し・段落・リスト・引用・リンク・画像を保った
  * Markdown にする。
@@ -146,7 +146,7 @@ function main() {
   const title = opt("--title");
   const md = toMarkdown(readInput(file));
   const today = new Date().toISOString().slice(0, 10);
-  const head = [`<!-- source: ${source || "(unknown)"} / fetched: ${today} / method: playwright-cli + wix-html-to-md -->`, "<!-- 公開記事の取得スナップショット（compare-drafts の著者側比較対象）。毎回上書き。 -->", ""];
+  const head = [`<!-- source: ${source || "(unknown)"} / fetched: ${today} / method: playwright-cli + wix-html-to-md -->`, "<!-- 公開記事の取得スナップショット（fetch-page の yarakawa.com 手順）。毎回上書き。 -->", ""];
   if (title) head.push(`# ${title}`, "");
   process.stdout.write(head.join("\n") + md);
 }
