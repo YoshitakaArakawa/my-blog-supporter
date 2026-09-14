@@ -29,6 +29,7 @@ yarakawa.com の考察・内省型ブログ記事を、著者がAIと対話し�
 ## 機械ゲート
 
 - `.claude/settings.json`（ローカル専用）に PostToolUse hook を置くと、`scripts/draft-lint.config.json` の対象ファイルを Edit/Write するたびに `scripts/lint-draft.mjs` のレポートが自動で返る（設定は README「セットアップ」）。
+- 同じ hook で `scripts/render-preview.mjs` が `output/{記事}/draft.md` の HTML プレビューを再生成する。図込みで読むには `.claude/launch.json` の `preview` サーバー経由（`http://localhost:8765/output/{記事}/preview/index.html`）で開く。
 - 判定は警告であり、ブロックしない。
 - 直さない判断はドラフト冒頭の ℹ️ メモに理由を残す。
 
