@@ -114,6 +114,8 @@ function restoreImages(text, base) {
   }
   const lines = text.split("\n");
   const out = [];
+  const used = new Set();
+  const pending = [];   // どの図にも当たらなかったキャプション無しの位置（out の index）
   let restored = 0, dropped = 0;
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(/^\s*<!--\s*画像[:：]\s*(.*?)\s*-->\s*$/);
@@ -123,7 +125,10 @@ function restoreImages(text, base) {
       let k = out.length - 1;
       while (k >= 0 && !out[k].trim()) k--;
       const hitPrev = k >= 0 && byPrev.get(out[k].trim());
-      if (hitPrev) { out.push(hitPrev); restored++; continue; }
+      if (hitPrev) { out.push(hitPrev); used.add(hitPrev); restored++; continue; }
+      pending.push(out.length);
+      out.push(lines[i]);
+      continue;
     }
     // 直後の空行を挟んだ行
     let j = i + 1;
@@ -133,18 +138,27 @@ function restoreImages(text, base) {
     if (desc && link && link[1].trim() === desc) { dropped++; continue; }           // リンクのプレビュー画像
     const hit = desc && byCaption.get(desc);
     if (hit) {
-      out.push(hit); restored++;
+      out.push(hit); used.add(hit); restored++;
       if (next.trim() === desc) i = j;                                                // キャプション行は図の title に含まれる
       continue;
     }
     out.push(lines[i]);
   }
-  return { text: out.join("\n"), restored, dropped };
+  // 残ったキャプション無しの位置には、基準の図のうち未使用の作図（images/*.png、Keynote の切り抜きでないもの）を
+  // 出現順に当てる。著者が図の位置を動かした時の推定で、当てた図は報告に出す
+  const spare = [...new Set(baseLines.map((l) => l.trim()).filter((l) => /^!\[.*\]\(images\/[^)]*\.png(\s|\))/.test(l) && !/images\/keynote-/.test(l) && !used.has(l)))];
+  const guessed = [];
+  for (const idx of pending) {
+    const fig = spare.shift();
+    if (!fig) break;
+    out[idx] = fig; guessed.push(fig.match(/\(([^)\s]+)/)[1]); restored++;
+  }
+  return { text: out.join("\n"), restored, dropped, guessed };
 }
 const restoredDraft = restoreImages(fs.readFileSync(draft, "utf8"), fs.readFileSync(baseline, "utf8"));
 const diffInput = path.join(dir, ".draft_for_diff.md");
 fs.writeFileSync(diffInput, restoredDraft.text, "utf8");
-if (restoredDraft.restored || restoredDraft.dropped) console.log(`図の復元: ${restoredDraft.restored} 枚を基準の図に戻し、リンクのプレビュー ${restoredDraft.dropped} 件を除外`);
+if (restoredDraft.restored || restoredDraft.dropped) console.log(`図の復元: ${restoredDraft.restored} 枚を基準の図に戻し、リンクのプレビュー ${restoredDraft.dropped} 件を除外${restoredDraft.guessed.length ? `（位置から推定: ${restoredDraft.guessed.join(", ")}）` : ""}`);
 try {
   execFileSync(process.execPath, [path.join(SCRIPT_DIR, "diff-drafts.mjs"), baseline, diffInput, "--out", revision], { stdio: "inherit" });
 } finally {
