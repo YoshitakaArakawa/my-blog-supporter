@@ -69,7 +69,7 @@ function charDiff(a, b) {
   let run = null; // { type, text }
   const flush = () => {
     if (!run) return;
-    s += run.type === "del" ? `{-${run.text}-}` : run.type === "add" ? `{+${run.text}+}` : run.text;
+    s += run.type === "same" ? run.text : wrapLines(run.type === "del" ? "-" : "+", run.text);
     run = null;
   };
   for (const o of ops) {
@@ -122,9 +122,23 @@ while (k < ops.length) {
 }
 
 /** 区切り線は編集対象にならないので素通しにする */
+/**
+ * マーカーは行をまたがない（引用の > や見出しの # を包むと描画が崩れる）。
+ * 改行を含む文字列は行ごとに包み、行頭の引用記号（> ）はマーカーの外に出す。
+ * コードフェンス（```）の行は包まない（包むとフェンスとして認識されず、以降が全部コード扱いになる）
+ */
+function wrapLines(sign, text) {
+  const [o, c] = sign === "-" ? ["{-", "-}"] : ["{+", "+}"];
+  return text.split("\n").map((seg) => {
+    if (/^\s*```/.test(seg)) return seg;
+    const [, prefix, rest] = seg.match(/^((?:>\s?)*)([\s\S]*)$/);
+    return rest === "" ? prefix : `${prefix}${o}${rest}${c}`;
+  }).join("\n");
+}
+
 function wrap(sign, p) {
   if (/^-{3,}$/.test(p.trim())) return sign === "+" ? p : "";
-  return `{${sign}${p}${sign}}`;
+  return wrapLines(sign, p);
 }
 
 const text = result.filter((p) => p !== "").join("\n\n") + "\n";

@@ -46,7 +46,12 @@ const md = fs.readFileSync(src, "utf8").replace(/^> ℹ️[\s\S]*?(?=\n\n(?!>))/
   /^\{([+-])\s*!\[([^\]]*)\](\([^)]*\))\s*[+-]\}\s*$/gm,
   (_, k, alt, rest) => `![${k === "+" ? "REV_ADD::" : "REV_DEL::"}${alt}]${rest}`
 );
-fs.writeFileSync(tmp, md, "utf8");
+// 未作図プレースホルダー（<!-- 画像: ... -->）をマーカーで包んだ行は、素の行に戻して説明に印を付ける
+const md2 = md.replace(
+  /^\{([+-])\s*<!--\s*画像[:：]\s*([\s\S]*?)\s*-->\s*[+-]\}\s*$/gm,
+  (_, k, desc) => `<!-- 画像: ${k === "+" ? "【追加】" : "【削除】"}${desc} -->`
+);
+fs.writeFileSync(tmp, md2, "utf8");
 try {
   execFileSync(process.execPath, [PREVIEW, tmp, "--out", out], { stdio: "inherit" });
 } finally {
