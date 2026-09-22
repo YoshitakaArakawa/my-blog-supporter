@@ -36,10 +36,29 @@ if (!src || !fs.existsSync(src)) {
 }
 out = out ?? path.join(path.dirname(src), "index.html");
 
-execFileSync(process.execPath, [PREVIEW, src, "--out", out], { stdio: "inherit" });
+// 画像パス（images/...）は記事ディレクトリ基準で書かれているので、revision/ の1つ上に一時コピーして描画する
+const articleDir = path.basename(path.dirname(src)) === "revision" ? path.dirname(path.dirname(src)) : path.dirname(src);
+const tmp = path.join(articleDir, ".draft_revision.tmp.md");
+// 冒頭の ℹ️ 引き継ぎメモ（"> ℹ️" で始まる引用ブロック）は差分 HTML に出さない。
+// 図の1行をマーカーで囲んだもの（{+ ![..](..) +} / {- ![..](..) -}）は、そのままでは figure にならず素の <img> になる。
+// alt に印を付けた単独行に戻して描画し、後で figure に色を付ける
+const md = fs.readFileSync(src, "utf8").replace(/^> ℹ️[\s\S]*?(?=\n\n(?!>))/m, "").replace(
+  /^\{([+-])\s*!\[([^\]]*)\](\([^)]*\))\s*[+-]\}\s*$/gm,
+  (_, k, alt, rest) => `![${k === "+" ? "REV_ADD::" : "REV_DEL::"}${alt}]${rest}`
+);
+fs.writeFileSync(tmp, md, "utf8");
+try {
+  execFileSync(process.execPath, [PREVIEW, tmp, "--out", out], { stdio: "inherit" });
+} finally {
+  fs.rmSync(tmp, { force: true });
+}
 
 let html = fs.readFileSync(out, "utf8");
 const count = { add: 0, del: 0, note: 0 };
+html = html.replace(/<figure>(\s*<img src="[^"]*" alt=")REV_(ADD|DEL)::/g, (_, pre, k) => {
+  if (k === "ADD") count.add++; else count.del++;
+  return `<figure class="${k === "ADD" ? "rev-add-fig" : "rev-del-fig"}">${pre}`;
+});
 html = html
   .replace(/\{\+\s?/g, () => { count.add++; return '<ins class="rev-add">'; })
   .replace(/\s?\+\}/g, "</ins>")
@@ -51,6 +70,9 @@ html = html
 const css = `
   ins.rev-add { text-decoration: none; background: #e3f6e6; color: #14532d; border-bottom: 2px solid #34a853; padding: 0 .1em; }
   del.rev-del { background: #fde8e8; color: #9b1c1c; text-decoration: line-through; padding: 0 .1em; }
+  figure.rev-add-fig { outline: 3px solid #34a853; outline-offset: 6px; background: #e3f6e6; }
+  figure.rev-del-fig { outline: 3px solid #e02424; outline-offset: 6px; background: #fde8e8; opacity: .55; }
+  figure.rev-del-fig figcaption { text-decoration: line-through; color: #9b1c1c; }
   .rev-note { background: #fff3bf; color: #7a5a00; font-size: .85em; padding: 0 .35em; border-radius: 3px; margin: 0 .2em; }
   .rev-legend {
     position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid #e3e3e3;
@@ -69,7 +91,7 @@ const legend = `<div class="rev-legend">
 </div>`;
 const script = `<script>
   (function(){
-    var items = Array.prototype.slice.call(document.querySelectorAll("ins.rev-add, del.rev-del"));
+    var items = Array.prototype.slice.call(document.querySelectorAll("ins.rev-add, del.rev-del, figure.rev-add-fig, figure.rev-del-fig"));
     var cur = -1;
     window.revJump = function(d){
       if (!items.length) return;
