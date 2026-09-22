@@ -52,6 +52,7 @@ function inline(node) {
       return href && !href.startsWith("#") ? `[${t}](${href})` : t;
     }
     case "img": {
+      if (!(node.getAttribute("src") || "").trim()) return "";   // エディタの空ウィジェット等、実体の無い img は出さない
       const alt = (node.getAttribute("alt") || "").trim();
       return `\n<!-- 画像: ${alt} -->\n`;
     }

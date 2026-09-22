@@ -95,5 +95,59 @@ if (!fs.existsSync(baseline)) {
   console.error(`基準がありません。先に固めてください: node scripts/revise.mjs freeze ${rel(draft)}`);
   process.exit(1);
 }
-execFileSync(process.execPath, [path.join(SCRIPT_DIR, "diff-drafts.mjs"), baseline, draft, "--out", revision], { stdio: "inherit" });
+// Wix から取った本文（fetch-page）では画像が <!-- 画像: キャプション --> のプレースホルダーになり、
+// 直後にキャプションの行が続く。基準に同じキャプション（title または alt）の図があればその行に戻し、
+// リンクのプレビュー（直後が同じ文言のリンク行）はプレースホルダーを落とす。差分に図の消失が出ないようにする
+function restoreImages(text, base) {
+  const byCaption = new Map();
+  const byPrev = new Map();   // キャプション無しの図は、直前の非空行が同じ図に当てる
+  const baseLines = base.split("\n");
+  for (let i = 0; i < baseLines.length; i++) {
+    const line = baseLines[i];
+    const m = line.match(/^\s*!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)\s*$/);
+    if (!m) continue;
+    if (m[3]) byCaption.set(m[3].trim(), line.trim());
+    if (m[1]) byCaption.set(m[1].trim(), line.trim());
+    let k = i - 1;
+    while (k >= 0 && !baseLines[k].trim()) k--;
+    if (k >= 0) byPrev.set(baseLines[k].trim(), line.trim());
+  }
+  const lines = text.split("\n");
+  const out = [];
+  let restored = 0, dropped = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^\s*<!--\s*画像[:：]\s*(.*?)\s*-->\s*$/);
+    if (!m) { out.push(lines[i]); continue; }
+    const desc = m[1];
+    if (!desc) {
+      let k = out.length - 1;
+      while (k >= 0 && !out[k].trim()) k--;
+      const hitPrev = k >= 0 && byPrev.get(out[k].trim());
+      if (hitPrev) { out.push(hitPrev); restored++; continue; }
+    }
+    // 直後の空行を挟んだ行
+    let j = i + 1;
+    while (j < lines.length && !lines[j].trim()) j++;
+    const next = lines[j] ?? "";
+    const link = next.match(/^\s*\[([^\]]+)\]\([^)]+\)\s*$/);
+    if (desc && link && link[1].trim() === desc) { dropped++; continue; }           // リンクのプレビュー画像
+    const hit = desc && byCaption.get(desc);
+    if (hit) {
+      out.push(hit); restored++;
+      if (next.trim() === desc) i = j;                                                // キャプション行は図の title に含まれる
+      continue;
+    }
+    out.push(lines[i]);
+  }
+  return { text: out.join("\n"), restored, dropped };
+}
+const restoredDraft = restoreImages(fs.readFileSync(draft, "utf8"), fs.readFileSync(baseline, "utf8"));
+const diffInput = path.join(dir, ".draft_for_diff.md");
+fs.writeFileSync(diffInput, restoredDraft.text, "utf8");
+if (restoredDraft.restored || restoredDraft.dropped) console.log(`図の復元: ${restoredDraft.restored} 枚を基準の図に戻し、リンクのプレビュー ${restoredDraft.dropped} 件を除外`);
+try {
+  execFileSync(process.execPath, [path.join(SCRIPT_DIR, "diff-drafts.mjs"), baseline, diffInput, "--out", revision], { stdio: "inherit" });
+} finally {
+  fs.rmSync(diffInput, { force: true });
+}
 execFileSync(process.execPath, [path.join(SCRIPT_DIR, "render-revision.mjs"), revision], { stdio: "inherit" });
