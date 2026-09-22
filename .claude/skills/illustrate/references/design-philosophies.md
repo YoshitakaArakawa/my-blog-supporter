@@ -32,7 +32,7 @@ note: illustrate スキルの variants モードが参照する。各変種エ�
    - **HTML/CSS** … gradient・影・blend・リッチなレイアウト・実フォントが要るとき。chromium が高品質に描く。**同じ playwright 描画パイプで撮れる**（SVG をラップする代わりに HTML 全体を data URL で開く）。
 3. **実フォントを使う（同梱フォントを base64 で埋め込む）**：システム既定に頼らない。タイポの質は第一印象を大きく左右する。本スキルは Zen Kaku Gothic New（Regular/Bold, OFL）を `references/fonts/` に同梱し、SKILL.md のレンダリング手順で **base64 を `@font-face` にインライン**して使う（Web からの `@import` はネットワーク依存で無言フォールバックの恐れ。file:// からの `url()` フォントは CORS で失敗する）。撮影前に `playwright-cli eval "document.fonts.ready.then(()=>Array.from(document.fonts).map(f=>f.status).join(','))"` で全 status=loaded を確認してから screenshot する。別の書体が要るときは `references/fonts/` に .ttf を足す。
 4. **構図と余白**：グリッドで整列、余白を惜しまない、焦点の階層（主役を大きく・濃く）を明確に。
-5. **抑制**：パレットは 2〜3 色＋ニュートラル。テキストは最小。装飾枠を足さない。
+5. **抑制**：パレットは style-guide.md の共通パレットから 2〜3 色＋ニュートラル。テキストは最小。装飾枠を足さない。テキストを減らすのは要素数であって文字サイズではなく、脇役の淡色化・縮小は readability-floor.md の下限の範囲内で行う。
 6. **second-pass で磨く**：自己レビュー後、バグ修正だけで終わらせず「もう一段良くする」推敲を1回入れる（間延び・凡庸さの除去）。
 
 ## 変種を作るときの固定/可変

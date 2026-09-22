@@ -29,6 +29,8 @@ allowed-tools: Bash(playwright-cli:*) Bash(bash:*) Bash(rm:*) Bash(mkdir:*) Read
 - **medium を選ぶ**：図・幾何は SVG、gradient/影/リッチなタイポが要るなら HTML/CSS（同じ描画パイプで撮れる）。
 - **実フォント**：同梱の Zen Kaku Gothic New（`references/fonts/`）を使う。レンダリングスクリプトが base64 で `@font-face` にインラインする。Web からの `@import` は使わない（ネットワーク依存・無言フォールバック・file:// での CORS 失敗）。
 - **構図・余白・抑制**：整列、十分な余白、2〜3色＋ニュートラル、最小テキスト。
+- **可読性の下限**：本文幅（約 720px）に縮小されても読める文字サイズ・コントラスト・縦横比を [references/readability-floor.md](references/readability-floor.md) で守る。淡色化・縮小はこの下限の範囲内で行う。
+- **ブログ共通の見た目**：配色・文字階層・キャンバス・繰り返し出る要素の描き方は [references/style-guide.md](references/style-guide.md) に従う。記事ごと・図ごとに色を選び直さない。
 - **second-pass**：自己レビュー後にバグ修正でなく「もう一段良くする」推敲を 1 回入れる。
 
 ## 手順（単一案モード）
