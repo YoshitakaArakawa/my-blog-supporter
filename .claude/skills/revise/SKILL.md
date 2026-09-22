@@ -25,7 +25,7 @@ argument-hint: "[テーマ] [freeze|show|apply](任意)"
 
 進捗:
 
-- [ ] **現在地**: `node ${CLAUDE_PROJECT_DIR}/scripts/revise.mjs status <本文>` で基準の有無を見る。公開済み記事なら、基準の有無にかかわらず毎回 `/fetch-page` の yarakawa.com 手順で `published.md` を取り、本文ファイルをそれに揃えてから `freeze` を打ち直す（Wix 上の直しを取りこぼさないため。公開時に `/publish-article` が切った基準は上書きされ `_archive/` に残る）。未公開の本文で基準が無ければ「今の本文を基準にしてよいか」を確認して `freeze` する。
+- [ ] **現在地**: `node ${CLAUDE_PROJECT_DIR}/scripts/revise.mjs status <本文>` で基準の有無を見る。公開済み記事なら、基準の有無にかかわらず毎回 `/fetch-page` の yarakawa.com 手順で `published.md` を取り、本文ファイルをそれに揃えてから `freeze` を打ち直す（Wix 上の直しを取りこぼさないため。公開時に `/publish-article` が切った基準は上書きされ `_archive/` に残る）。未公開の本文で基準が無ければ「今の本文を基準にしてよいか」を確認して `freeze` する。著者が Wix の編集画面で直している時は、`/fetch-page` の「Wix の編集画面の下書き」手順で `draft_user.md` を取り直してから `show` を出す（.mhtml を渡された時は `review` の抽出スクリプトで取り込む）。
 - [ ] **経路を決める**: 著者が自分で本文を直す（直した）なら次へ。AI が改訂案を出すなら、`baseline.md` の本文を `revision/draft_revision.md` へ写し、そこにマーカーで書く。「何をどう変えるべきか提案して」と言われた時は、書く前に変更箇所と方針を3〜5点で示して合意を取る。
 - [ ] **差分を出す**: 著者が直した経路は `node ${CLAUDE_PROJECT_DIR}/scripts/revise.mjs show <本文>`。AI 経路は `node ${CLAUDE_PROJECT_DIR}/scripts/render-revision.mjs $OUTPUT_DIR/revision/draft_revision.md`。HTML は `.claude/launch.json` の `preview` サーバー経由（`http://localhost:8765/output/{記事}/revision/index.html`）で開くと図も出る。
 - [ ] **著者に返す**: HTML のパス、変更点の要約、`{? ?}` の一覧。著者の採否と `{? ?}` への回答を受けて差分ファイルを直し、再描画する。却下された追加は `{+ +}` ごと消し、却下された削除は `{- -}` を外して元の文に戻す。
