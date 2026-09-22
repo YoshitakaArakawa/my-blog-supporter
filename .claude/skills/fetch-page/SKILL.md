@@ -1,7 +1,7 @@
 ---
 name: fetch-page
-description: 実ブラウザ（Chromium／playwright-cli）を起動して、JS レンダリング後のページ本文やログイン必須ページを取得する。WebFetch が失敗した・要約しか返さないとき、ユーザーが playwright やブラウザ経由の取得を明示的に指示したとき、X（旧 Twitter）などログイン必須サイトや既知の SPA を読むとき、公開済みの自分の記事（yarakawa.com）を Markdown で取り直すときに使う。通常の公開ページ・静的サイトでは WebFetch が先で、このスキルはその代替手段
-allowed-tools: Bash(playwright-cli:*) Bash(node:*) Bash(rm:*) Read
+description: 実ブラウザ（Chromium／playwright-cli）を起動して、JS レンダリング後のページ本文やログイン必須ページを取得する。WebFetch が失敗した・要約しか返さないとき、ユーザーが playwright やブラウザ経由の取得を明示的に指示したとき、X（旧 Twitter）などログイン必須サイトや既知の SPA を読むとき、公開済みの自分の記事（yarakawa.com）を Markdown で取り直すとき、著者が Wix の編集画面で書いている下書きを draft_user.md に取り込むときに使う。通常の公開ページ・静的サイトでは WebFetch が先で、このスキルはその代替手段
+allowed-tools: Bash(playwright-cli:*) Bash(node:*) Bash(rm:*) Bash(cat:*) Read
 ---
 
 # Web ページ取得（playwright-cli 経由）
@@ -47,6 +47,22 @@ playwright-cli close
 
 `[data-hook='post-description']` が取れない場合は `article` で試す。取得後、`published.md` の見出しの数と末尾の段落が公開ページと一致しているかを 1 度確認する。用途は、公開後の改訂を `/revise` で差分にする時に本文を Wix の最新へ揃えることと、`/publish-article` の slug 重複確認。
 
+## Wix の編集画面の下書き
+
+著者が Wix のエディタで書いている途中の本文を `draft_user.md` に取る手順。エディタは要ログインなので、著者が普段使う Chrome に Playwright Extension（Chrome Web Store の「Playwright Extension」、Microsoft 提供）を入れ、`attach --extension=chrome` で接続する。取得は本文をファイルへ直接書くので、会話にはほぼトークンを使わない。DOM の読み取りだけを行い、クリック・入力・保存・公開には触れない。
+
+前提: 著者が Chrome で対象記事の編集画面（`manage.wix.com/dashboard/.../blog/.../edit`）を開いていること。接続時に拡張側でタブの許可を求められることがある。
+
+```bash
+playwright-cli attach --extension=chrome
+playwright-cli --s=chrome eval "el => el.outerHTML" ".ProseMirror" > .playwright-cli/wix-editor.html
+playwright-cli --s=chrome eval "el => el.value" "textarea[data-hook='post-form__title-input']" > .playwright-cli/wix-editor-title.txt
+node ${CLAUDE_SKILL_DIR}/scripts/wix-html-to-md.mjs .playwright-cli/wix-editor.html --source "<編集画面のURL>" --title-file .playwright-cli/wix-editor-title.txt --note "Wix 編集画面の下書き（fetch-page の Wix 下書き手順）。毎回上書き。" > output/{記事}/draft_user.md
+playwright-cli --s=chrome detach
+```
+
+`attach` の出力の Page URL が編集画面でなければ、著者にタブを前面にしてもらって取り直す。`.ProseMirror` が取れない時は `[contenteditable="true"]` で試す。取得後、`draft_user.md` の見出しの数と末尾の段落がエディタと一致しているかを 1 度確認する。画像はエディタ内では `<!-- 画像: キャプション -->` のプレースホルダーになり、直後にキャプションの行が続く。`draft_user.md` が既に非空でも上書きしてよい（Wix 側が正のため）。用途は `/revise` で著者の直しを差分にする時と、`/review` の author レンズの入力。編集画面を .mhtml で保存して `review` の抽出スクリプトに渡す経路は、拡張が使えない時の予備。
+
 ## X（旧 Twitter）
 
 ログインが要るので手順が別。[references/x-login-flow.md](references/x-login-flow.md) を読んでから実行する。
@@ -62,7 +78,7 @@ playwright-cli close-all   # 全セッション終了（Cookie/メモリも消�
 rm -rf .playwright-cli/    # 作業ファイルを一掃
 ```
 
-タイミングの目安は、ユーザーが「ブラウザはもういい」「閉じて」と伝えた時、記事執筆の一段落（`/article` の掘る工程・書く工程を終えた時）で取得が一通り済んだ時、会話の終わりが近いと判断できる時。中間ファイルを残す特別な理由が無い限り、上の 2 コマンドを実行する。
+`attach` で接続した Chrome は `close-all` の対象にせず `detach` で切る（著者のブラウザを閉じないため）。タイミングの目安は、ユーザーが「ブラウザはもういい」「閉じて」と伝えた時、記事執筆の一段落（`/article` の掘る工程・書く工程を終えた時）で取得が一通り済んだ時、会話の終わりが近いと判断できる時。中間ファイルを残す特別な理由が無い限り、上の 2 コマンドを実行する。
 
 ## 注意
 

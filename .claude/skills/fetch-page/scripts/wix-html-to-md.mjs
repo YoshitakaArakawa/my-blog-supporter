@@ -2,14 +2,15 @@
 /**
  * wix-html-to-md.mjs — Wix ブログ本文の HTML を Markdown に変換する
  *
- * fetch-page が公開記事（著者の最終形）を取得する時に使う。WebFetch は SPA の本文を
- * 要約したり見出しを誤生成するため、実ブラウザで `[data-hook='post-description']` の
- * innerHTML を取り、このスクリプトで見出し・段落・リスト・引用・リンク・画像を保った
- * Markdown にする。
+ * fetch-page が公開記事（著者の最終形）や編集画面の下書きを取得する時に使う。WebFetch は
+ * SPA の本文を要約したり見出しを誤生成するため、実ブラウザで本文コンテナ（公開記事は
+ * `[data-hook='post-description']`、編集画面は `.ProseMirror`）の HTML を取り、このスクリプトで
+ * 見出し・段落・リスト・引用・リンク・画像を保った Markdown にする。
  *
  * 使い方:
- *   node .claude/skills/fetch-page/scripts/wix-html-to-md.mjs <post.html> [--source <URL>] [--title <タイトル>] > published.md
- *   （<post.html> を "-" にすると stdin から読む。playwright-cli eval の出力が JSON 文字列でも可）
+ *   node .claude/skills/fetch-page/scripts/wix-html-to-md.mjs <post.html> [--source <URL>] [--title <タイトル> | --title-file <eval出力>] [--note <2行目の注記>] > published.md
+ *   （<post.html> を "-" にすると stdin から読む。playwright-cli eval の出力が JSON 文字列でも可。
+ *     --title-file は eval でタイトル欄の value を取った出力ファイルを渡す。--note の既定は公開記事用の注記）
  *
  * 依存: node-html-parser（npm install 済みであること）
  */
@@ -143,10 +144,12 @@ function main() {
   const file = args.find((a) => !a.startsWith("--")) || "-";
   const opt = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : ""; };
   const source = opt("--source");
-  const title = opt("--title");
+  const titleFile = opt("--title-file");
+  const title = opt("--title") || (titleFile ? readInput(titleFile).replace(/\s+/g, " ").trim() : "");
+  const note = opt("--note") || "公開記事の取得スナップショット（fetch-page の yarakawa.com 手順）。毎回上書き。";
   const md = toMarkdown(readInput(file));
   const today = new Date().toISOString().slice(0, 10);
-  const head = [`<!-- source: ${source || "(unknown)"} / fetched: ${today} / method: playwright-cli + wix-html-to-md -->`, "<!-- 公開記事の取得スナップショット（fetch-page の yarakawa.com 手順）。毎回上書き。 -->", ""];
+  const head = [`<!-- source: ${source || "(unknown)"} / fetched: ${today} / method: playwright-cli + wix-html-to-md -->`, `<!-- ${note} -->`, ""];
   if (title) head.push(`# ${title}`, "");
   process.stdout.write(head.join("\n") + md);
 }
