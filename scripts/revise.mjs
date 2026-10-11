@@ -9,6 +9,10 @@
  * 使い方（<draft> は直している本文。draft_user.md でも draft.md でもよい）:
  *   node scripts/revise.mjs freeze <draft>    今の本文を基準として保存する（revision/baseline.md）
  *   node scripts/revise.mjs show   <draft>    基準と今の本文を比べ、revision/index.html を作る
+ *   node scripts/revise.mjs show   <draft> --until "<本文側の境界>" [--from "<基準側の境界>"]
+ *                                             本文の後半が未着手の時。境界の文字列を含む最初の行から先は
+ *                                             基準のまま継いで比べる（境界の行は基準側）。本文の仮置き行と
+ *                                             基準の見出しが違う時は --from で基準側の境界を別に指定する
  *   node scripts/revise.mjs status <draft>    基準の有無と日時を表示する
  *   node scripts/revise.mjs apply  <draft>    revision/draft_revision.md のマーカーを剥がして <draft> に書き戻す
  *
@@ -28,9 +32,18 @@ import { fileURLToPath } from "node:url";
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const argv = process.argv.slice(2);
 const force = argv.includes("--force");
-const [cmd, draftArg] = argv.filter((a) => a !== "--force");
-if (!cmd || !draftArg || !["freeze", "show", "status", "apply"].includes(cmd)) {
-  console.error("usage: node scripts/revise.mjs <freeze|show|status|apply> <draft.md> [--force]");
+let until = null;   // show --until "<文字列>": その文字列を含む最初の行から先は基準のまま継ぐ（本文の後半が未着手の時）
+let from = null;    // show --from "<文字列>": 基準側の境界。本文の仮置き行と基準の見出しが違う時に使う
+const positional = [];
+for (let i = 0; i < argv.length; i++) {
+  if (argv[i] === "--force") continue;
+  if (argv[i] === "--until") { until = argv[++i] ?? ""; continue; }
+  if (argv[i] === "--from") { from = argv[++i] ?? ""; continue; }   // 基準側の境界を別の文字列にする（省略時は --until と同じ）
+  positional.push(argv[i]);
+}
+const [cmd, draftArg] = positional;
+if (!cmd || !draftArg || !["freeze", "show", "status", "apply"].includes(cmd) || (until !== null && (cmd !== "show" || !until))) {
+  console.error("usage: node scripts/revise.mjs <freeze|show|status|apply> <draft.md> [--force] [show --until \"<本文側の境界>\" [--from \"<基準側の境界>\"]]");
   process.exit(1);
 }
 const draft = path.resolve(draftArg);
@@ -155,13 +168,59 @@ function restoreImages(text, base) {
   }
   return { text: out.join("\n"), restored, dropped, guessed };
 }
-const restoredDraft = restoreImages(fs.readFileSync(draft, "utf8"), fs.readFileSync(baseline, "utf8"));
+// --until: 本文の後半が未着手（Wix で仮置きのまま等）の時、境界の文字列を含む最初の行から先を基準のまま継ぐ。
+// 境界の行は基準側に含める。どちらかに境界が無ければ止まる（黙って全文を比べない）
+function spliceUntil(draftText, baseText, marker, baseMarker = marker) {
+  const findLine = (t, m) => t.split("\n").findIndex((l) => l.includes(m));
+  const d = findLine(draftText, marker), b = findLine(baseText, baseMarker);
+  if (d < 0 || b < 0) {
+    console.error(`境界が見つかりません: ${d < 0 ? `本文（"${marker}"）` : ""}${d < 0 && b < 0 ? "・" : ""}${b < 0 ? `基準（"${baseMarker}"）` : ""}`);
+    process.exit(1);
+  }
+  const head = draftText.split("\n").slice(0, d).join("\n").replace(/\s+$/, "");
+  const tail = baseText.split("\n").slice(b).join("\n");
+  return { text: `${head}\n\n${tail}`, draftLine: d + 1, baseLine: b + 1 };
+}
+// 冒頭の ℹ️ 引き継ぎメモは基準にだけあることが多い（Wix から取った本文には無い）。差分に「メモの削除」が出ないよう、
+// 本文にメモが無く基準にあれば、基準のメモを本文側に写してから比べる（render-revision が表示から外す）
+function carryMemo(draftText, baseText) {
+  const re = /^> ℹ️[\s\S]*?(?=\n\n(?!>))/m;
+  if (re.test(draftText)) return draftText;
+  const memo = baseText.match(re);
+  if (!memo) return draftText;
+  const lines = draftText.split("\n");
+  const h1 = lines.findIndex((l) => /^# /.test(l));
+  if (h1 < 0) return draftText;
+  // メモの直後に空行を置く。無いと次の行（Wix のコードフェンス等）がメモと同じ段落になり、表示から外す時に道連れになる
+  return [...lines.slice(0, h1 + 1), "", memo[0], "", ...lines.slice(h1 + 1)].join("\n");
+}
+const baseText = fs.readFileSync(baseline, "utf8").replace(/\r\n?/g, "\n");
+let draftText = fs.readFileSync(draft, "utf8").replace(/\r\n?/g, "\n");
+if (until) {
+  const s = spliceUntil(draftText, baseText, until, from ?? until);
+  draftText = s.text;
+  console.log(`境界: 本文 ${s.draftLine} 行目（"${until}"）の直前までを本文、基準 ${s.baseLine} 行目（"${from ?? until}"）から先を基準のまま継いだ`);
+}
+draftText = carryMemo(draftText, baseText);
+// 基準が Wix から取った本文（図がプレースホルダー）に切り替わった後も図を戻せるよう、図の出どころには退避した基準も含める
+const archiveDir = path.join(dir, "_archive");
+const archived = fs.existsSync(archiveDir)
+  ? fs.readdirSync(archiveDir).filter((f) => /^baseline_\d+\.md$/.test(f)).sort().reverse().map((f) => fs.readFileSync(path.join(archiveDir, f), "utf8").replace(/\r\n?/g, "\n"))
+  : [];
+const imageSource = [baseText, ...archived].join("\n\n");
+const restoredDraft = restoreImages(draftText, imageSource);
+// 基準そのものが Wix 由来（図がプレースホルダー）なら、基準側も同じ復元をかけて比べる。baseline.md は書き換えない
+const restoredBase = restoreImages(baseText, imageSource);
 const diffInput = path.join(dir, ".draft_for_diff.md");
+const diffBase = path.join(dir, ".baseline_for_diff.md");
 fs.writeFileSync(diffInput, restoredDraft.text, "utf8");
+fs.writeFileSync(diffBase, restoredBase.text, "utf8");
 if (restoredDraft.restored || restoredDraft.dropped) console.log(`図の復元: ${restoredDraft.restored} 枚を基準の図に戻し、リンクのプレビュー ${restoredDraft.dropped} 件を除外${restoredDraft.guessed.length ? `（位置から推定: ${restoredDraft.guessed.join(", ")}）` : ""}`);
+if (restoredBase.restored) console.log(`基準側も ${restoredBase.restored} 枚を退避した基準の図に戻して比較`);
 try {
-  execFileSync(process.execPath, [path.join(SCRIPT_DIR, "diff-drafts.mjs"), baseline, diffInput, "--out", revision], { stdio: "inherit" });
+  execFileSync(process.execPath, [path.join(SCRIPT_DIR, "diff-drafts.mjs"), diffBase, diffInput, "--out", revision], { stdio: "inherit" });
 } finally {
   fs.rmSync(diffInput, { force: true });
+  fs.rmSync(diffBase, { force: true });
 }
 execFileSync(process.execPath, [path.join(SCRIPT_DIR, "render-revision.mjs"), revision], { stdio: "inherit" });
