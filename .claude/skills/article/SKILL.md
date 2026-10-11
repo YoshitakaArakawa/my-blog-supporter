@@ -53,8 +53,9 @@ argument-hint: "[テーマ] [core|deepen|outline|write|map](任意)"
 
 | 著者の発言 | 渡す先 |
 |---|---|
-| 「Wix から取り込んで」「下書きを見て」 | `review` の `author`（Wix の下書きは、編集画面を Chrome で開いたまま `/fetch-page` の Wix 下書き手順で取るか、`.mhtml` を `$OUTPUT_DIR/` に置いて渡す。取り込みは lens 側が行う） |
-| 「公開記事を取ってきて」＋URL | `/fetch-page`（yarakawa.com の手順で `published.md` を取る） |
+| 「Wix に流し込んで」「Wix から取り込んで」「Wix の最新に揃えて」 | `/wix-sync`（push は著者の承認後。pull は `draft_user.md` を上書き） |
+| 「下書きを見て」 | `review` の `author`（Wix で書いているなら、先に `/wix-sync` で `draft_user.md` を取り込む） |
+| 「公開記事を取ってきて」 | `/wix-sync` の `pull --published`（`published.md` を取る。API が使えない時は `/fetch-page` の yarakawa.com 手順） |
 | 「固まった」「ここから細かく直したい」「公開後に一節足したい」「差分で見せて」 | `/revise`（固めた時点からの差分だけを色付きで見返しながら直す。`$OUTPUT_DIR/revision/baseline.md` があれば、書く工程ではなくこちらを案内する） |
 | 「図を入れたい」 | `/illustrate` |
 | Web 取得が要る（SPA・要ログイン） | `/fetch-page`（不変条件4の承認を得てから） |

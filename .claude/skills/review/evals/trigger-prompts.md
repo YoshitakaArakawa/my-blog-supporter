@@ -37,7 +37,7 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 自分で書いた記事を編集者の目で見て
 - draft_user.md の誤字と表記ゆれを拾って
 - 公開前に下書きの完成度を点検して
-- Wix の下書きを取り込んでレビューして（.mhtml から draft_user.md を抽出してから点検）
+- Wix の下書きを取り込んでレビューして（取り込みは wix-sync の pull を先に済ませてから点検）
 - /review ai-bi-platform author
 - /review ai-bi-platform author Posts_Wix.mhtml
 
@@ -59,3 +59,4 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 記事に入れる概念図を1枚描いて（→ /illustrate）
 - 公開する成果物を選別して commit したい（→ /publish-article）
 - コードの変更をレビューして（記事の成果物が対象ではない）
+- Wix で直したから取り込んで（→ /wix-sync。レビューの依頼ではない）
