@@ -20,13 +20,15 @@ output/{yyyymmdd}_{テーマ}/           記事ごとの作業ディレクトリ
   images/                            /illustrate の成果物 PNG だけ（ブログへ載せるもの。改訂は上書き）
     src/                             図のソース（{図名}.svg / .html）
     _archive/                        著者が見比べを求めた時だけ旧版を移す（任意）
-  draft_user.md                      記事本文（著者推敲版。書く工程の完了時に空で作成）
+  draft_user.md                      記事本文（著者推敲版。書く工程の完了時に空で作成。Wix で書く時は /wix-sync の pull で上書き）
+  wix.json                           Wix の投稿との結び付き（投稿 ID・上げた画像の ID・同期時点。/wix-sync が書く。手で編集しない）
+  wix-dryrun.json                    /wix-sync push --dry-run の変換結果（確認用。消してよい）
   revision/                          固めた後の直し・追記の差分（ほぼ完成した時点や公開後に、細かい修正を見返す時に作る）
     baseline.md                      固めた時点の本文のスナップショット（scripts/revise.mjs freeze で保存。切り直すと _archive/ へ退避）
     draft_revision.md                基準からの差分を {+ +} {- -} {? ?} で書いた正本（scripts/revise.mjs show が生成。AI が直接書いてもよい）
     index.html                       変更箇所だけ色付きの HTML（scripts/render-revision.mjs の生成物。手で編集しない）
   review/                            /review の出力。lens ごとに独立した連番で時系列に蓄積
     critique_01.md / drift_01.md / readers_01.md / author_01.md   lens ごとの指摘
-  published.md                       公開 Web 記事の取得スナップショット（/fetch-page の yarakawa.com 手順。改訂の基準と slug 重複確認に使う。2026年6月以前の記事は comparison/published.md）
+  published.md                       公開 Web 記事の取得スナップショット（/wix-sync の pull --published。予備は /fetch-page の yarakawa.com 手順。改訂の基準と slug 重複確認に使う。2026年6月以前の記事は comparison/published.md）
 
 ```

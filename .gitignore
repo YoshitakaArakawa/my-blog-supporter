@@ -35,3 +35,6 @@ Thumbs.db
 
 # Node dependencies (textlint etc.)
 node_modules/
+
+# Local secrets (Wix API key etc.)
+.env

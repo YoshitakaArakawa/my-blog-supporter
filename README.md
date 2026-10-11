@@ -26,6 +26,7 @@
 | `/revise` | 固めた本文への直しを、基準からの差分だけ色付きで見返す |
 | `/illustrate` | 概念図を作図して PNG にする |
 | `/publish-article` | 公開してよい成果物を選別して `published/` へ出す |
+| `/wix-sync` | Wix ブログの下書きを API で作る・取り込む（公開はしない） |
 | `/fetch-page` | WebFetch で取れないページを実ブラウザで取る |
 
 ## 守っていること
@@ -74,6 +75,22 @@ draft を書くたびに lint とプレビューを自動で受け取るには�
   }
 }
 ```
+
+### Wix 連携
+
+`/wix-sync` は Wix Blog API で下書きを作り、取り込みます。使うには API キーが要ります。
+
+1. サイトのオーナーアカウントで [API Keys Manager](https://manage.wix.com/account/api-keys) を開き、キーを作る
+   - 対象サイト: このブログのサイトだけ
+   - 権限: Wix Blog の管理、Media Manager の管理、Rich Content（Ricos）の管理、Members の読み取り
+2. リポジトリ直下に `.env`（gitignore 済み）を置く
+
+```
+WIX_API_KEY=<作成したキー>
+WIX_SITE_ID=<ダッシュボードの URL で /dashboard/ の直後にある ID>
+```
+
+`node .claude/skills/wix-sync/scripts/wix-sync.mjs check` で認証を確かめられます。Node 22 以上が要ります。
 
 ## 公開境界
 

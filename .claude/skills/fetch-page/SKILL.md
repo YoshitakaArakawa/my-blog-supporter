@@ -1,6 +1,6 @@
 ---
 name: fetch-page
-description: 実ブラウザ（Chromium／playwright-cli）を起動して、JS レンダリング後のページ本文やログイン必須ページを取得する。WebFetch が失敗した・要約しか返さないとき、ユーザーが playwright やブラウザ経由の取得を明示的に指示したとき、X（旧 Twitter）などログイン必須サイトや既知の SPA を読むとき、公開済みの自分の記事（yarakawa.com）を Markdown で取り直すとき、著者が Wix の編集画面で書いている下書きを draft_user.md に取り込むときに使う。通常の公開ページ・静的サイトでは WebFetch が先で、このスキルはその代替手段
+description: 実ブラウザ（Chromium／playwright-cli）を起動して、JS レンダリング後のページ本文やログイン必須ページを取得する。WebFetch が失敗した・要約しか返さないとき、ユーザーが playwright やブラウザ経由の取得を明示的に指示したとき、X（旧 Twitter）などログイン必須サイトや既知の SPA を読むときに使う。自分の Wix ブログの記事・下書きの取り込みは wix-sync が担い、Wix Blog API が使えない時だけこのスキルの Wix 手順を予備に使う。通常の公開ページ・静的サイトでは WebFetch が先で、このスキルはその代替手段
 allowed-tools: Bash(playwright-cli:*) Bash(node:*) Bash(rm:*) Bash(cat:*) Read
 ---
 
@@ -36,7 +36,7 @@ playwright-cli eval "el => el.innerText" "article"   # 特定要素だけなら�
 
 ## yarakawa.com の公開記事
 
-自分のブログ（Wix の SPA）の公開記事を Markdown で取る時の手順。WebFetch は本文を要約し見出しを誤生成するので、ここは最初から実ブラウザで取る。保存先は記事の作業ディレクトリ直下の `published.md`（毎回上書き）。
+`wix-sync` の `pull --published` が使えない時の予備。自分のブログ（Wix の SPA）の公開記事を Markdown で取る時の手順。WebFetch は本文を要約し見出しを誤生成するので、ここは最初から実ブラウザで取る。保存先は記事の作業ディレクトリ直下の `published.md`（毎回上書き）。
 
 ```bash
 playwright-cli open <URL>
@@ -49,7 +49,7 @@ playwright-cli close
 
 ## Wix の編集画面の下書き
 
-著者が Wix のエディタで書いている途中の本文を `draft_user.md` に取る手順。エディタは要ログインなので、著者が普段使う Chrome に Playwright Extension（Chrome Web Store の「Playwright Extension」、Microsoft 提供）を入れ、`attach --extension=chrome` で接続する。取得は本文をファイルへ直接書くので、会話にはほぼトークンを使わない。DOM の読み取りだけを行い、クリック・入力・保存・公開には触れない。
+`wix-sync` の pull が使えない時の予備。著者が Wix のエディタで書いている途中の本文を `draft_user.md` に取る手順。エディタは要ログインなので、著者が普段使う Chrome に Playwright Extension（Chrome Web Store の「Playwright Extension」、Microsoft 提供）を入れ、`attach --extension=chrome` で接続する。取得は本文をファイルへ直接書くので、会話にはほぼトークンを使わない。DOM の読み取りだけを行い、クリック・入力・保存・公開には触れない。
 
 前提: 著者が Chrome で対象記事の編集画面（`manage.wix.com/dashboard/.../blog/.../edit`）を開いていること。接続時に拡張側でタブの許可を求められることがある。
 
