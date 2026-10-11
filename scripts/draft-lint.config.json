@@ -1,5 +1,6 @@
 {
   "_comment": "lint-draft.mjs の閾値と禁止句。数値は yarakawa.com 公開記事10本（2024〜2026）の計測レンジから決めた。詳細は .claude/skills/article/references/voice-style.md の「0. 数値仕様」。bodyCharsMax / bodyCharsMin は参考表示のみで NG 判定に使わない（字数を目標に削らせないため）",
+  "_commentHeading": "headingPatterns は ## / ### の見出し行だけに当てる（voice-style ルール17）。headingLabelPrefixes の語で始まる見出しは、その語（後ろの番号も含む）とコロンを外した残りを判定する（公開記事の「最後に：」「余談：」は著者の型）。どの型も単独では AI 的とは言えないため警告どまり。2句を「と」や読点で結ぶ型は誤検出が多いので入れない",
   "_commentExtra": "coreLinesMax / coreLineCharsMax は core.md の5行仕様（見出し行・承認:・改訂: の行は対象外）に対応する閾値。thinking.md は中間成果物のため字数を判定しない（分量は深掘りリストの点数で守る）。paragraphCharsAvgMin は、公開記事4本の段落あたり字数（この lint の数え方で 67〜80 字、20260913 計測）と、1文ずつ改行して並べた AI ドラフト（61 字）の間に置いた下限。shortParagraphCharsMax は参考表示用で、40字未満の段落の割合は公開記事でも 17〜26% とばらつき、判定には使わない。",
   "thresholds": {
     "bodyCharsMax": 7000,
@@ -174,6 +175,27 @@
       "pattern": "fail-open|fail-safe|first-class|opt-out|opt-in|capability",
       "group": "英語ラベル",
       "hint": "日本語で言い直す（英語ラベルで精密さを演出しない）"
+    }
+  ],
+  "headingLabelPrefixes": [
+    "余談",
+    "最後に"
+  ],
+  "headingPatterns": [
+    {
+      "pattern": "：",
+      "group": "コロン",
+      "hint": "「主題：要約」に分けない。対象を短い名詞句か問いで言い、要約は直下の1文目へ"
+    },
+    {
+      "pattern": "^[^、]+は[^、]+、[^、]+は[^、]+$",
+      "group": "対句",
+      "hint": "「AはX、BはY」の対句にしない。片方を章の主題にし、対比は本文で運ぶ"
+    },
+    {
+      "pattern": "ではなく|じゃなく",
+      "group": "対句",
+      "hint": "「〜ではなく〜」を見出しに置かない。言いたい側だけを見出しにする"
     }
   ],
   "closingBanned": [

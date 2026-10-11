@@ -206,6 +206,22 @@ function bannedHits(m) {
   return hits;
 }
 
+// ---------- 見出しの型 ----------
+
+/** ## / ### の見出しに出る生成 AI 的な型（コロン分割・対句）。「余談：」「最後に：」のラベルは外してから見る */
+function headingHits(m) {
+  const hits = [];
+  const label = new RegExp(`^(${CONFIG.headingLabelPrefixes.join("|")})[0-9０-９]*\\s*[：:]\\s*`);
+  for (const h of m.headings) {
+    if (!/^#{2,3}\s/.test(h.text)) continue;
+    const src = plain(h.text.replace(/^#{2,3}\s+/, "")).trim().replace(label, "");
+    for (const rule of CONFIG.headingPatterns) {
+      if (new RegExp(rule.pattern).test(src)) hits.push({ n: h.n, group: rule.group, text: src, hint: rule.hint });
+    }
+  }
+  return hits;
+}
+
 // ---------- textlint ----------
 
 async function runTextlint(file) {
@@ -221,7 +237,7 @@ async function runTextlint(file) {
 
 // ---------- 判定とレポート ----------
 
-function evaluate(m, banned, tl) {
+function evaluate(m, banned, tl, heads = []) {
   const rows = [];
   const add = (label, value, limit, ok, note = "") => rows.push({ label, value, limit, ok, note });
   // 字数は判定しない（参考値）。長さは主張の数で決まり、字数を目標に削ると著者が残したい段落まで痩せる。レンジ外は注記だけ出す
@@ -239,6 +255,7 @@ function evaluate(m, banned, tl) {
   add(`${T.sentenceCharsMax}字超の文`, m.longSentences, "0", m.longSentences === 0);
   add("英文引用（文）", m.english, `≤${T.englishQuoteMax}`, m.english <= T.englishQuoteMax);
   add("「」語の反復", m.repeated.length ? m.repeated.map(([k, c]) => `「${k}」×${c}`).join(" ") : 0, `各≤${T.keyphraseRepeatMax}`, m.repeated.length === 0);
+  add("見出しの型（コロン・対句）", heads.length, "0", heads.length === 0);
   add("見出しに使った「」語", m.inHeading.length ? m.inHeading.map((k) => `「${k}」`).join(" ") : 0, "0", m.inHeading.length === 0);
   add("冒頭", m.introKind, "宣言 or 体験", m.introKind !== "不明");
   add("冒頭の参考資料ブロック／固定ヘッダ", `${m.introHasRefBlock ? "参考資料あり" : "なし"}${m.introHasFixedHeader ? "・Tableau NOTEあり" : ""}`, "なし", !m.introHasRefBlock && !m.introHasFixedHeader);
@@ -256,7 +273,7 @@ function evaluate(m, banned, tl) {
   return rows;
 }
 
-function report(file, m, banned, tl, rows) {
+function report(file, m, banned, tl, rows, heads = []) {
   const ng = rows.filter((r) => !r.ok);
   const out = [];
   out.push(`# draft lint: ${path.relative(ROOT, file).replace(/\\/g, "/")}`);
@@ -282,6 +299,11 @@ function report(file, m, banned, tl, rows) {
     out.push("");
     out.push(`## 禁止句（${banned.length} 件）`);
     for (const b of banned) out.push(`- L${b.n} [${b.group}] 「${b.text}」 → ${b.hint}`);
+  }
+  if (heads.length) {
+    out.push("");
+    out.push(`## 見出しの型（${heads.length} 件。警告。単独では AI 的の証拠にならない）`);
+    for (const h of heads) out.push(`- L${h.n} [${h.group}] 「${h.text}」 → ${h.hint}`);
   }
   if (tl.error) {
     out.push("");
@@ -452,8 +474,9 @@ async function lintOne(file, opts) {
   const m = metrics(text);
   const banned = bannedHits(m);
   const tl = opts.noTextlint ? { messages: [] } : await runTextlint(file);
-  const rows = evaluate(m, banned, tl);
-  return { m, banned, tl, rows, text: report(file, m, banned, tl, rows) };
+  const heads = headingHits(m);
+  const rows = evaluate(m, banned, tl, heads);
+  return { m, banned, heads, tl, rows, text: report(file, m, banned, tl, rows, heads) };
 }
 
 async function main() {
@@ -494,7 +517,7 @@ async function main() {
   const r = await lintOne(file, { noTextlint: flag("--no-textlint") });
   if (flag("--json")) {
     const { lines, ...m } = r.m;
-    console.log(JSON.stringify({ file, metrics: m, banned: r.banned, textlint: r.tl.messages || [], rows: r.rows }, null, 1));
+    console.log(JSON.stringify({ file, metrics: m, banned: r.banned, headings: r.heads, textlint: r.tl.messages || [], rows: r.rows }, null, 1));
   } else {
     console.log(r.text);
   }
