@@ -2,7 +2,7 @@
 /**
  * lint-draft.mjs — 記事ドラフトの機械ゲート
  *
- * voice-style.md「0. 数値仕様」の閾値と禁止句（scripts/draft-lint.config.json）を数え、
+ * scripts/draft-lint.config.json（閾値と禁止句の正本。文脈は voice-style.md のルール本文）を数え、
  * 併せて textlint（.textlintrc.json）を走らせて、1つの Markdown レポートにまとめる。
  * LLM の自己申告チェックリストでは縮まなかった指標（分量・段落文数・「」個数・禁止句）を
  * 決定的に検出するのが役割。判定は「警告」であり、ブロックはしない。

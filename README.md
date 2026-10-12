@@ -39,7 +39,7 @@
 
 **AI が書いたものは別の目で点検する。** `/review drift` が前段から背骨を落としていないか・根拠なく足していないかを読み比べ、`/review readers` が初見の読者として通読します。書いた本人に自分の追加を正当化させないためです。
 
-**文体はルールより数値と実例で寄せる。** AI 版と公開記事の差は語尾ではなく密度にありました（保険文・多段の論証・章間の道案内・定型の結び）。[voice-style.md](.claude/skills/article/references/voice-style.md) は公開記事の実測値と抜粋を先頭に置き、数えられるものは `scripts/lint-draft.mjs` が判定します。
+**文体はルールより数値と実例で寄せる。** AI 版と公開記事の差は語尾ではなく密度にありました（保険文・多段の論証・章間の道案内・定型の結び）。[voice-style.md](.claude/skills/article/references/voice-style.md) は公開記事の抜粋を先頭に置き、数えられるものは `scripts/draft-lint.config.json` の閾値で `scripts/lint-draft.mjs` が判定します。
 
 ## 構成
 
@@ -60,23 +60,7 @@ git config core.hooksPath .githooks
 
 前者で textlint 一式が入ります。後者は `output/` の誤 commit を防ぐ pre-commit hook を有効にします。
 
-draft を書くたびに lint とプレビューを自動で受け取るには、`.claude/settings.json`（gitignore 済み）に PostToolUse hook を置きます。対象ファイルと判定の扱いは `CLAUDE.md` の「機械ゲート」を参照してください。
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/scripts/lint-draft.mjs\" --hook", "timeout": 120 },
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/scripts/render-preview.mjs\" --hook", "timeout": 30 }
-        ]
-      }
-    ]
-  }
-}
-```
+draft を書くたびに lint とプレビューを自動で返す PostToolUse hook は `.claude/settings.json` に入っており、clone すればそのまま動きます。対象ファイルと判定の扱いは `CLAUDE.md` の「機械ゲート」を参照してください。permissions などの個人設定は `.claude/settings.local.json`（gitignore 済み）に置きます。
 
 ### Wix 連携
 

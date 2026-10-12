@@ -1,0 +1,21 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/lint-draft.mjs\" --hook",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/render-preview.mjs\" --hook",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -20,21 +20,13 @@ yarakawa.com の考察・内省型ブログ記事を、著者がAIと対話し�
 
 記事の話題が出たら、コマンドを待たず `Skill` ツールで `article` を起動する。新規テーマ・前の記事の続き・掘りたい・構成・本文・地図のどれでも同じ。工程の判定と他スキルへの受け渡しは `article` が持つ。
 
-記事の公開そのものは著者が Wix の画面で行う。公開後に作業層の成果物をリポの公開層へ出すのは `promote-to-public` で、`wix-sync` の `pull --published` や `revise` が「公開層に反映しますか」と提案し、著者が頷いたら起動する。Public リポへの commit だけは、スキル内の著者承認を経てから行う。
-
-Wix との行き来は `wix-sync` が担う。著者が「Wix に流し込んで」「Wix から取り込んで」と言ったら起動する。Wix へ書く（push）のは著者の承認後だけで、公開は API でせず著者が Wix の画面で行う。
-
-記事のサムネイル（カバー画像）は `thumbnail` が担う。著者が「サムネイルを作って」と言ったら起動する。型は固定で、決めるのはタイトルの改行位置だけ。Wix のカバーへの設定は著者が画面で行う。
-
-公開した記事を X で告知する文案は `announce-article` が担う。著者が「X で告知したい」「告知ポストの案を」と言ったら起動する。著者の過去の告知ポストを見本にして書き、投稿は著者が X の画面で行う。
-
-本文が固まった後の細かい直しと、公開後の追記は `revise` が担う。著者が「固まった」「細かく直したい」「一節足したい」「差分で見せて」と言ったら起動し、固めた時点からの差分だけを色付きで見せながら進める。書く工程の途中では使わない。
+他のスキル（`review` / `revise` / `illustrate` / `thumbnail` / `wix-sync` / `promote-to-public` / `announce-article` / `fetch-page`）は、各スキルの description にある起動語で起動する。外へ出る操作は著者の承認を経てから行う: Wix へ書く（`wix-sync` の push）、Public リポへ commit する（`promote-to-public`）。記事の公開・X への投稿はスキルがせず、著者が画面で行う。
 
 記事の作業層は `output/{yyyymmdd}_{テーマ}/`。著者が能動的に行うのは5つだけ: core.md の文言の承認、レビュー指摘の採否、「核を変えるか」への回答、Wix への流し込みの承認、公開時の commit の承認。
 
 ## 機械ゲート
 
-- `.claude/settings.json`（ローカル専用）に PostToolUse hook を置くと、`scripts/draft-lint.config.json` の対象ファイルを Edit/Write するたびに `scripts/lint-draft.mjs` のレポートが自動で返る（設定は README「セットアップ」）。
+- `.claude/settings.json` の PostToolUse hook が、`scripts/draft-lint.config.json` の対象ファイルを Edit/Write するたびに `scripts/lint-draft.mjs` のレポートを自動で返す。閾値と禁止句の正本は同 config で、文体の文脈は `voice-style.md` のルール本文が持つ。
 - 同じ hook で `scripts/render-preview.mjs` が `output/{記事}/draft.md` の HTML プレビューを再生成する。図込みで読むには `.claude/launch.json` の `preview` サーバー経由（`http://localhost:8765/output/{記事}/preview/index.html`）で開く。
 - 判定は警告であり、ブロックしない。
 - 直さない判断はドラフト冒頭の ℹ️ メモに理由を残す。
