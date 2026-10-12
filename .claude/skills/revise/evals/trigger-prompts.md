@@ -21,5 +21,5 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - この主張の想定反論を出して（→ /review の critique）
 - ドラフトを読者視点で読んでみて（→ /review の readers）
 - 公開した記事を取ってきて（→ /wix-sync の pull --published。取得だけ）
-- この記事を公開層に反映して（→ /publish-article）
+- この記事を公開層に反映して（→ /promote-to-public）
 - 記事に入れる概念図を描いて（→ /illustrate）

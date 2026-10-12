@@ -577,7 +577,7 @@ function toMarkdown(nodes, imageMap, wixImages, wixNodes = []) {
         const captionNodes = n.nodes.filter((x) => x.type === "CAPTION").flatMap((x) => x.nodes);
         const captionMd = inlineMd(captionNodes);
         // push で上げた画像はローカルのファイルに戻す。それ以外（著者が Wix で足した画像）は
-        // fetch-page と同じ「プレースホルダー＋キャプション行」にし、ID は wix.json に控えて push で戻せるようにする
+        // 「プレースホルダー＋キャプション行」にし、ID は wix.json に控えて push で戻せるようにする
         if (imageMap[id]) block(`![${plain}](${imageMap[id]})`);
         else {
           block(`<!-- 画像: ${plain} -->`);

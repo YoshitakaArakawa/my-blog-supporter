@@ -5,7 +5,7 @@ paths: ["output/**", "published/**"]
 # 記事ディレクトリの構成
 
 ```
-published/{yyyymmdd}_{テーマ}/        公開層。/publish-article が選別・点検した成果物のみ（構成は下記のサブセット）
+published/{yyyymmdd}_{テーマ}/        公開層。/promote-to-public が選別・点検した成果物のみ（構成は下記のサブセット）
 
 output/{yyyymmdd}_{テーマ}/           記事ごとの作業ディレクトリ（非公開・gitignore）
   core.md                            著者の核（問い／読者／読後／動機／現在地の5行）。全工程の不変条件。承認後はAIが書き換えない
@@ -33,6 +33,6 @@ output/{yyyymmdd}_{テーマ}/           記事ごとの作業ディレクトリ
   review/                            /review の出力。lens ごとに独立した連番で時系列に蓄積
     critique_01.md / drift_01.md / readers_01.md / author_01.md   lens ごとの指摘
   x-posts.md                         X 告知ポストの文案（/announce-article の出力。採否と投稿は著者が行う）
-  published.md                       公開 Web 記事の取得スナップショット（/wix-sync の pull --published。予備は /fetch-page の yarakawa.com 手順。改訂の基準と slug 重複確認に使う。2026年6月以前の一部の記事は comparison/published.md にある。無い記事もある）
+  published.md                       公開 Web 記事の取得スナップショット（/wix-sync の pull --published。改訂の基準と slug 重複確認に使う。2026年6月以前の一部の記事は comparison/published.md にある。無い記事もある）
 
 ```

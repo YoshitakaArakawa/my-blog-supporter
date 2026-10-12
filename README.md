@@ -26,10 +26,10 @@
 | `/revise` | 固めた本文への直しを、基準からの差分だけ色付きで見返す |
 | `/illustrate` | 概念図を作図して PNG にする |
 | `/thumbnail` | 記事のサムネイル（カバー画像）を共通の型で PNG にする |
-| `/publish-article` | 公開してよい成果物を選別して `published/` へ出す |
+| `/promote-to-public` | 公開してよい成果物を選別して `published/` へ昇格させる（記事の公開は Wix で著者が行う） |
 | `/wix-sync` | Wix ブログの下書きを API で作る・取り込む（公開はしない） |
 | `/announce-article` | 公開した記事の X 告知ポストを、著者の過去の告知を見本に文案化する（投稿はしない） |
-| `/fetch-page` | WebFetch で取れないページを実ブラウザで取る |
+| `/fetch-page` | WebFetch で取れないページを実ブラウザで取る（公開 SPA は playwright-cli、要ログインは Claude in Chrome） |
 
 ## 守っていること
 
@@ -47,7 +47,7 @@
 CLAUDE.md          オーケストレーション（目的・原則・起動・公開境界の正本）
 .claude/skills/    工程ごとの Skill。references/ に工程詳細と文体ガイド、scripts/ に専用スクリプト
 .claude/rules/     記事ディレクトリ（output/ と published/）の構成
-scripts/           lint・プレビュー・差分。使い方は各スクリプト冒頭のコメント
+scripts/           lint・プレビュー・差分・公開層への昇格。使い方は各スクリプト冒頭のコメント
 published/         公開層
 ```
 
@@ -96,7 +96,7 @@ WIX_SITE_ID=<ダッシュボードの URL で /dashboard/ の直後にある ID>
 
 ## 公開境界
 
-このリポジトリは Public です。記事の作業層 `output/` は gitignore で、生素材は commit されません。`published/` には `/publish-article` が選別・点検し、著者が承認した成果物だけを置きます。思考の過程ごと共有しつつ、推敲前の生素材は出さないための構造です。
+このリポジトリは Public です。記事の作業層 `output/` は gitignore で、生素材は commit されません。`published/` には `/promote-to-public` が選別・点検し、著者が承認した成果物だけを置きます。思考の過程ごと共有しつつ、推敲前の生素材は出さないための構造です。
 
 ## ライセンス
 

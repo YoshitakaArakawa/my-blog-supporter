@@ -9,7 +9,7 @@ allowed-tools: Bash(playwright-cli:*) Bash(bash:*) Bash(rm:*) Bash(mkdir:*) Read
 
 記事の「言葉では説明しにくい関係」を図にし、SVG（ソース）と PNG（成果物）で保存するスキル。raster 画像生成モデルは使わない。コード（SVG / HTML+CSS）を手で組み、Chromium（playwright-cli）でレンダリングし、**描いて自分で見て直す**ループで凡庸さを排除する。
 
-既定は**単一案モード**（1 枚を作る）。著者が「複数案」「N 案」「いくつか方針を変えて」等と求めた時だけ [references/variants-mode.md](references/variants-mode.md) を読み、並列生成に切り替える。
+既定は**単一案モード**（1 枚を作る）。著者が「複数案」「N 案」「いくつか方針を変えて」等と求めた時だけ [references/variants.md](references/variants.md) を読み、並列生成に切り替える。
 
 ## 入力の確定
 
@@ -23,25 +23,25 @@ allowed-tools: Bash(playwright-cli:*) Bash(bash:*) Bash(rm:*) Bash(mkdir:*) Read
 
 ## 品質の原則
 
-[references/design-philosophies.md](references/design-philosophies.md) の「純コード描画で質を上げる技法」に従う。要点：
+画像生成モデルを使わず、純コード描画で質を上げるための実務レバー。
 
-- **philosophy-first**：描く前に美学を 1 段落で言語化する。
-- **medium を選ぶ**：図・幾何は SVG、gradient/影/リッチなタイポが要るなら HTML/CSS（同じ描画パイプで撮れる）。
+- **philosophy-first**：描く前に「この絵の美学」を言語化する（名前・原則・なぜこの概念に合うか）。レイアウトでなく美学を先に決める。単一案は 1 段落、複数案は各案 3〜5 段落。
+- **medium を選ぶ**：図・幾何・正確な座標は SVG。リッチなタイポグラフィや複雑なレイアウト（グリッド・テキストの回り込み等）が要る時は HTML/CSS（入力の拡張子で判定され、同じ描画スクリプトで撮れる）。
 - **実フォント**：同梱の Zen Kaku Gothic New（`references/fonts/`）を使う。レンダリングスクリプトが base64 で `@font-face` にインラインする。Web からの `@import` は使わない（ネットワーク依存・無言フォールバック・file:// での CORS 失敗）。
-- **構図・余白・抑制**：整列、十分な余白、2〜3色＋ニュートラル、最小テキスト。
-- **可読性の下限**：本文幅（約 720px）に縮小されても読める文字サイズ・コントラスト・縦横比を [references/readability-floor.md](references/readability-floor.md) で守る。淡色化・縮小はこの下限の範囲内で行う。
-- **ブログ共通の見た目**：配色・文字階層・キャンバス・繰り返し出る要素の描き方は [references/style-guide.md](references/style-guide.md) に従う。記事ごと・図ごとに色を選び直さない。
-- **second-pass**：自己レビュー後にバグ修正でなく「もう一段良くする」推敲を 1 回入れる。
+- **構図と余白**：グリッドで整列し、余白を惜しまない。焦点の階層（主役を大きく・濃く）を明確にする。
+- **抑制**：テキストは最小にし、装飾枠を足さない。減らすのは要素数であって文字サイズではない。
+- **ブログ共通の見た目と可読性の下限**：配色・文字階層・キャンバス・線と形・繰り返し出る要素の描き方と、本文幅（約 720px）に縮小されても読める文字サイズ・コントラスト・縦横比は [references/style.md](references/style.md) に従う。記事ごと・図ごとに色を選び直さない。脇役の淡色化・縮小はその下限の範囲内で行う。
+- **second-pass**：自己レビュー後、バグ修正だけで終わらせず「もう一段良くする」推敲を 1 回入れる（間延び・凡庸さの除去）。
 
 ## 手順（単一案モード）
 
 進捗:
 
-- [ ] **philosophy を 1 段落で書く**（design-philosophies.md 参照）。
-- [ ] **視覚形を選ぶ**：[references/visual-rhetoric.md](references/visual-rhetoric.md)。ボックス＆矢印はプロセス/依存以外では採らない。
+- [ ] **philosophy を 1 段落で書く**（「品質の原則」の philosophy-first）。
+- [ ] **視覚形を選ぶ**：[references/craft.md](references/craft.md) の「作図前：構図を選ぶ」。ボックス＆矢印はプロセス/依存以外では採らない。
 - [ ] **作図する**：`output/{記事}/images/src/{図名}.svg`（SVG）または `{図名}.html`（HTML medium）に保存。HTML は**フラグメント**で書く——ルート要素に `id="fig"`、`font-family:"Zen Kaku Gothic New"`、レイアウト用 `<style>` 同梱。
 - [ ] **PNG にレンダリングする**：下記スクリプトを実行する。
-- [ ] **自己レビュー＋second-pass**：PNG を Read し [references/anti-bland-rubric.md](references/anti-bland-rubric.md) で採点。❌ があれば作図に戻る（最大 3 周）。合格後に磨きの一手を入れる。
+- [ ] **自己レビュー＋second-pass**：PNG を Read し [references/craft.md](references/craft.md) の「描画後：Anti-Bland Rubric で採点する」で採点。❌ があれば作図に戻る（最大 3 周）。合格後に磨きの一手を入れる。
 - [ ] **後始末**：`rm -rf .playwright-cli/` で作業ファイルを掃除する（gitignore 済みだが残さない）。
 
 ## レンダリング（自由度：低）

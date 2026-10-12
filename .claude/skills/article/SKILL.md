@@ -27,7 +27,7 @@ argument-hint: "[テーマ] [core|deepen|outline|write|map](任意)"
 
 ## 起動と現在地
 
-起動したら、まず `$OUTPUT_DIR/core.md`・`$OUTPUT_DIR/thinking.md` の「スコープ」節と「未決」節・`$OUTPUT_DIR/map.html` の有無を読む（無ければ「無い」と分かればよい）。そのうえで **現在地を3行（核: core.md の問い／進捗: 掘った論点数・構成・ドラフトの有無／未決: 未決から1件）で報告し、必要な問いを返す（無ければ返さない）**。引き継ぎ文書（handoff.md 等）は作らない。状態はファイルが持つ。draft.md があれば冒頭 ℹ️ メモの「書く工程の進捗」と「著者判断」も読み、進捗行に現在の手順を含める。長い要約を返さない。
+起動したら、まず `$OUTPUT_DIR/core.md`・`$OUTPUT_DIR/thinking.md` の「スコープ」節と「未決」節・`$OUTPUT_DIR/map.html` の有無を読む（無ければ「無い」と分かればよい）。そのうえで **現在地を3行（核: core.md の問い／進捗: 掘った論点数・構成・ドラフトの有無・公開状態（Wix は `published.md` の有無、リポの公開層は `published/{記事}/` の有無）／未決: 未決から1件）で報告し、必要な問いを返す（無ければ返さない）**。引き継ぎ文書（handoff.md 等）は作らない。状態はファイルが持つ。draft.md があれば冒頭 ℹ️ メモの「書く工程の進捗」と「著者判断」も読み、進捗行に現在の手順を含める。長い要約を返さない。
 
 工程は2つ目の引数があればそれにする。無ければ次で決める。
 
@@ -55,12 +55,12 @@ argument-hint: "[テーマ] [core|deepen|outline|write|map](任意)"
 |---|---|
 | 「Wix に流し込んで」「Wix から取り込んで」「Wix の最新に揃えて」 | `/wix-sync`（push は著者の承認後。pull は `draft_user.md` を上書き） |
 | 「下書きを見て」 | `review` の `author`（Wix で書いているなら、先に `/wix-sync` で `draft_user.md` を取り込む） |
-| 「公開記事を取ってきて」 | `/wix-sync` の `pull --published`（`published.md` を取る。API が使えない時は `/fetch-page` の yarakawa.com 手順） |
+| 「公開記事を取ってきて」 | `/wix-sync` の `pull --published`（`published.md` を取る） |
 | 「固まった」「ここから細かく直したい」「公開後に一節足したい」「差分で見せて」 | `/revise`（固めた時点からの差分だけを色付きで見返しながら直す。`$OUTPUT_DIR/revision/baseline.md` があれば、書く工程ではなくこちらを案内する） |
 | 「図を入れたい」 | `/illustrate` |
 | 「サムネイル（カバー画像）を作って」 | `/thumbnail` |
 | Web 取得が要る（SPA・要ログイン） | `/fetch-page`（不変条件4の承認を得てから） |
-| 「公開する」 | `/publish-article`（commit は著者承認後） |
+| 「過程を共有して」「GitHub に上げて」「公開層に反映して」、または現在地で「Wix ○／リポ ×」が出た時 | `/promote-to-public`（commit は著者承認後。Wix での公開は著者が画面で行う） |
 
 ## 工程1: 核
 

@@ -20,7 +20,7 @@ yarakawa.com の考察・内省型ブログ記事を、著者がAIと対話し�
 
 記事の話題が出たら、コマンドを待たず `Skill` ツールで `article` を起動する。新規テーマ・前の記事の続き・掘りたい・構成・本文・地図のどれでも同じ。工程の判定と他スキルへの受け渡しは `article` が持つ。
 
-公開も同じで、著者が「公開する」と決めたら `publish-article` を起動してよい。Public リポへの commit だけは、スキル内の著者承認を経てから行う。
+記事の公開そのものは著者が Wix の画面で行う。公開後に作業層の成果物をリポの公開層へ出すのは `promote-to-public` で、`wix-sync` の `pull --published` や `revise` が「公開層に反映しますか」と提案し、著者が頷いたら起動する。Public リポへの commit だけは、スキル内の著者承認を経てから行う。
 
 Wix との行き来は `wix-sync` が担う。著者が「Wix に流し込んで」「Wix から取り込んで」と言ったら起動する。Wix へ書く（push）のは著者の承認後だけで、公開は API でせず著者が Wix の画面で行う。
 
@@ -44,10 +44,10 @@ Wix との行き来は `wix-sync` が担う。著者が「Wix に流し込んで
 このリポジトリは Public であり、commit したものは公開される前提で扱う。記事制作の生素材と公開物を層で分ける:
 
 - `output/`（gitignore・非公開の作業層）: すべての記事はまずここで作る。生素材・中間生成物は commit しない。バックアップはローカルのみ。
-- `published/`（track・公開層）: 公開を決めた記事の、選別済み成果物だけを置く。新規の公開は `/publish-article` のゲート（ホワイトリスト選別 → 公開適性の点検 → 著者承認）を通す。公開済み記事の推敲反映は published/ の直接編集で可。
+- `published/`（track・公開層）: 公開を決めた記事の、選別済み成果物だけを置く。新規の追加は `/promote-to-public` のゲート（ホワイトリスト選別 → 公開適性の点検 → 著者承認）を通す。公開済み記事の推敲反映は published/ の直接編集で可。
 - 機械ガード: pre-commit hook（`.githooks/`）が output/ 配下のステージを拒否する。第三者素材（`published/*/references/`）と Wix スナップショット（`*.mhtml`）は published/ 側でも gitignore で除外する。
 
 ## Web 取得
 
 - 取得は pull。AI から自発的に走らせず、裏付けが要る時に著者の承認を得てから実行する。
-- WebFetch で取れないページ（SPA・要ログインの X 等）は `fetch-page` スキルを使う。
+- WebFetch で取れないページ（SPA・要ログインの X 等）は `fetch-page` スキルを使う。自分の Wix ブログの取り込みは `wix-sync` だけで行い、予備の経路は持たない。

@@ -1,10 +1,10 @@
-# Playwright session cache (X login cookies etc.)
+# playwright-cli の作業ファイル（スナップショット・一時 HTML）
 .playwright-cli/
 # Playwright MCP browser working dir (snapshots / screenshots)
 .playwright-mcp/
 
 # Private working area for articles (raw notes / intermediate artifacts).
-# All article work happens here; publishing goes through /publish-article into published/.
+# All article work happens here; promotion to published/ goes through /promote-to-public.
 output/
 
 # Guards for the public layer: third-party raw materials (copyright) and

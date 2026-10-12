@@ -54,7 +54,7 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 公開した記事を取ってきて（→ /wix-sync の pull --published）
 - 本文は固まったので、ここから細かく直したい（→ /revise）
 - 公開した記事に一節足したい。差分で見せて（→ /revise）
-- この記事を公開層に反映して（→ /publish-article）
+- この記事を公開層に反映して（→ /promote-to-public）
 - X のポストの中身を取ってきて（→ /fetch-page）
 - この記事の計画、どこが弱いか指摘して（地図は判定しない。叩くのは /review の critique）
 - リポジトリの skill 構成を棚卸ししたい（記事づくりではない）

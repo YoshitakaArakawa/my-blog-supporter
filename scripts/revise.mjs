@@ -108,7 +108,7 @@ if (!fs.existsSync(baseline)) {
   console.error(`基準がありません。先に固めてください: node scripts/revise.mjs freeze ${rel(draft)}`);
   process.exit(1);
 }
-// Wix から取った本文（fetch-page）では画像が <!-- 画像: キャプション --> のプレースホルダーになり、
+// Wix から取った本文（wix-sync の pull）では画像が <!-- 画像: キャプション --> のプレースホルダーになり、
 // 直後にキャプションの行が続く。基準に同じキャプション（title または alt）の図があればその行に戻し、
 // リンクのプレビュー（直後が同じ文言のリンク行）はプレースホルダーを落とす。差分に図の消失が出ないようにする
 function restoreImages(text, base) {
