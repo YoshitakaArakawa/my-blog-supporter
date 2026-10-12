@@ -18,7 +18,8 @@
  *   - pull は、前回の同期以降にローカルのファイルが直されていたら止まる（--force で退避して上書き）
  *   - pull → push の往復で著者の Wix の下書きを変えない。Markdown にできないノード（HTML 埋め込み等）は
  *     wix.json に控えて元の位置へ戻し、空段落の数は既定と違う箇所だけ印を付けて保つ。
- *     リンク等の装飾を持つコードブロックも控え、中身が同じなら控えで戻し、変わっていたら止まる
+ *     コードブロックの中のリンクは [テキスト](http(s) の URL) で読み書きする。それ以外の装飾（太字等）を
+ *     持つコードブロックは控え、中身が同じなら控えで戻し、変わっていたら止まる
  *   - pull と push --update は、取得した・上書きする直前の下書きを wix-snapshots/ に JSON のまま残す
  *
  * 状態は記事ディレクトリの wix.json（下書き ID・画像の対応・同期時点）。output/ 配下なので commit されない。
@@ -118,6 +119,13 @@ const GAP_TOKEN = (n) => `WIXGAPTOKEN${n}`;
 const NODE_MARK = /<!--\s*Wixのノード[:：]\s*(\S+)\s+#(\d+)\s*-->/;
 const GAP_MARK = /<!--\s*空段落[:：]\s*(\d+)\s*-->/;
 const LEGACY_MARK = /<!--\s*未対応のノード[:：]/;
+// コードブロックの中のリンクの書き方。URL は http(s) に限り、コードとしての [x](y) は字面のまま残す
+const CODE_LINK = /\[([^[\]\n]+)\]\((https?:\/\/[^\s()]+)\)/;
+// Wix の編集画面がコードブロックの中のリンクに付ける装飾。push で同じ形にする
+const codeLinkDecos = (url) => [
+  { type: "LINK", linkData: { link: { url, target: "BLANK", rel: { noreferrer: true } } } },
+  { type: "UNDERLINE" },
+];
 // 3行以上の空行を1行に詰める。コードブロック（```）の中は著者の空行なので詰めない
 function collapseBlank(md) {
   const out = [];
@@ -190,8 +198,10 @@ function prepare(text, wixImages, wixNodes = []) {
         continue;
       }
       if (!fence) { code.lines.push(line); continue; }
-      if (code.lines.join("\n") !== plainText(wixNodes[code.i])) {
-        throw new Error(`Wix のノード #${code.i}（CODE_BLOCK）の中身が pull の時から変わっている。このコードブロックには Wix で付けたリンク等の装飾があり、Markdown から送ると消える。Wix の画面で直すか、装飾を捨ててよければ印の行を消して push する`);
+      // リンクを地の文で書いていた頃の pull の形も、同じ中身とみなす
+      const body = code.lines.join("\n");
+      if (body !== codeMd(wixNodes[code.i]).md && body !== plainText(wixNodes[code.i])) {
+        throw new Error(`Wix のノード #${code.i}（CODE_BLOCK）の中身が pull の時から変わっている。このコードブロックには Markdown で書けない装飾（太字・リンクの無い下線など）があり、Markdown から送ると消える。Wix の画面で直すか、装飾を捨ててよければ印の行を消して push する`);
       }
       code = null;
       continue;
@@ -310,7 +320,9 @@ function finish(nodes, images, media, wixNodes = []) {
     if (!k && cur.type === "CODE_BLOCK") {
       const last = cur.nodes?.at(-1);
       if (last?.textData?.text?.endsWith("\n")) last.textData.text = last.textData.text.slice(0, -1);
-    }
+      // 変換 API はコードブロックの中を字面のまま入れる。[テキスト](URL) を Wix のリンクにする
+      const linked = codeNodes(plainText(cur));
+      if (linked) cur.nodes = linked;    }
     for (let i = 0; i < (gap ?? defaultGap(prev, cur)); i++) out.push(emptyPara());
     gap = null;
     out.push(cur);
@@ -319,6 +331,20 @@ function finish(nodes, images, media, wixNodes = []) {
   for (let i = 0; i < (gap ?? 0); i++) out.push(emptyPara());
   const left = JSON.stringify(out).match(/WIX(IMG|NODE|GAP)TOKEN\d+/g);
   if (left) throw new Error(`印の差し替えに失敗した（${left.join(",")}）。印の行の前後に空行があるか確認する`);
+  return out;
+}
+
+// コードブロックの中身を、[テキスト](URL) をリンクの付いた TEXT にして組み直す。リンクが無ければ null
+function codeNodes(s) {
+  const out = [];
+  let i = 0;
+  for (const m of s.matchAll(new RegExp(CODE_LINK.source, "g"))) {
+    if (m.index > i) out.push(textNode(s.slice(i, m.index)));
+    out.push({ ...textNode(m[1]), textData: { text: m[1], decorations: codeLinkDecos(m[2]) } });
+    i = m.index + m[0].length;
+  }
+  if (!out.length) return null;
+  if (i < s.length) out.push(textNode(s.slice(i)));
   return out;
 }
 
@@ -393,7 +419,7 @@ async function push(file, { dryRun, update }) {
   console.log(`本文 ${markdown.length} 字 / 画像 ${images.length} 枚`);
   const media = await resolveMedia(images, dir, state, dryRun);
   const missing = state.wixNodes.map((_, i) => i).filter((i) => !nodeRefs.includes(i));
-  if (missing.length) console.log(`  注意: Wix のノード ${missing.map((i) => `#${i}（${state.wixNodes[i].type}）`).join("・")} の印が本文に無い。push するとそのノード（CODE_BLOCK ならその中のリンク等の装飾）は消える`);
+  if (missing.length) console.log(`  注意: Wix のノード ${missing.map((i) => `#${i}（${state.wixNodes[i].type}）`).join("・")} の印が本文に無い。push するとそのノード（CODE_BLOCK ならその中の装飾）は消える`);
   const nodes = finish(await toRicos(markdown), images, media, state.wixNodes);
   console.log(`構造: ${summarize(nodes)}`);
 
@@ -429,8 +455,8 @@ async function push(file, { dryRun, update }) {
 
 // ---------- Ricos → Markdown ----------
 
-function inlineMd(nodes) {
-  // 装飾が同じ TEXT が隣り合っていたら先に連結する（「[A](u)[B](u)」に割れないため）
+// 装飾が同じ TEXT が隣り合っていたら先に連結する（「[A](u)[B](u)」に割れないため）
+function mergeText(nodes) {
   const merged = [];
   for (const n of nodes ?? []) {
     const prev = merged.at(-1);
@@ -439,8 +465,12 @@ function inlineMd(nodes) {
       merged[merged.length - 1] = { ...prev, textData: { ...prev.textData, text: prev.textData.text + n.textData.text } };
     } else merged.push(n);
   }
+  return merged;
+}
+
+function inlineMd(nodes) {
   let s = "";
-  for (const n of merged) {
+  for (const n of mergeText(nodes)) {
     if (n.type !== "TEXT") { s += inlineMd(n.nodes); continue; }
     const decos = n.textData.decorations ?? [];
     const has = (type) => decos.some((d) => d.type === type);
@@ -461,6 +491,27 @@ function inlineMd(nodes) {
 }
 
 const plainText = (n) => (n.nodes ?? []).map((x) => x.textData?.text ?? plainText(x)).join("");
+const sameDecos = (a, b) => {
+  const key = (ds) => JSON.stringify([...ds].sort((x, y) => x.type.localeCompare(y.type)));
+  return key(a) === key(b);
+};
+
+// コードブロックの中身を Markdown にする。リンクは [テキスト](URL) で書く。
+// exact は、push がこの Markdown から同じノードを組み直せるか（リンク以外の装飾や、地の文の [x](http…) があると false）
+function codeMd(n) {
+  const orig = mergeText(n.nodes).filter((x) => x.textData?.text !== "");
+  let md = "";
+  for (const x of orig) {
+    const t = x.textData?.text ?? plainText(x);
+    const url = x.textData?.decorations?.find((d) => d.type === "LINK")?.linkData?.link?.url;
+    const link = url ? `[${t}](${url})` : null;
+    md += link && new RegExp(`^${CODE_LINK.source}$`).test(link) ? link : t;
+  }
+  const back = (codeNodes(md) ?? [textNode(md)]).filter((x) => x.textData.text !== "");
+  const exact = back.length === orig.length && back.every((b, i) =>
+    b.textData.text === orig[i].textData?.text && sameDecos(b.textData.decorations, orig[i].textData.decorations ?? []));
+  return { md, exact };
+}
 
 function toMarkdown(nodes, imageMap, wixImages, wixNodes = []) {
   const out = [];
@@ -509,13 +560,14 @@ function toMarkdown(nodes, imageMap, wixImages, wixNodes = []) {
       }
       case "DIVIDER": block("---"); break;
       case "CODE_BLOCK": {
-        // コードブロックの中のリンク等の装飾は Markdown のコードブロックに書けない。
-        // 装飾があればノードを wix.json に控えて印を付け、push で中身が同じならそのまま戻す
-        if (n.nodes.some((x) => x.textData?.decorations?.length)) {
+        // リンクは [テキスト](URL) で書き、push で組み直す。それで戻せない装飾（太字など）があれば
+        // ノードを wix.json に控えて印を付け、push で中身が同じならそのまま戻す
+        const { md, exact } = codeMd(n);
+        if (!exact) {
           wixNodes.push(n);
           block(`<!-- Wixのノード: CODE_BLOCK #${wixNodes.length - 1} -->`);
         }
-        block(`\`\`\`\n${plainText(n)}\n\`\`\``);
+        block(`\`\`\`\n${md}\n\`\`\``);
         break;
       }
       case "IMAGE": {
