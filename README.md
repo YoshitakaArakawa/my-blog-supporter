@@ -25,6 +25,7 @@
 | `/review` | 隔離コンテキストで叩く・点検する（critique / drift / readers / author） |
 | `/revise` | 固めた本文への直しを、基準からの差分だけ色付きで見返す |
 | `/illustrate` | 概念図を作図して PNG にする |
+| `/thumbnail` | 記事のサムネイル（カバー画像）を共通の型で PNG にする |
 | `/publish-article` | 公開してよい成果物を選別して `published/` へ出す |
 | `/wix-sync` | Wix ブログの下書きを API で作る・取り込む（公開はしない） |
 | `/fetch-page` | WebFetch で取れないページを実ブラウザで取る |

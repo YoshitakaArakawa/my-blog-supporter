@@ -58,6 +58,7 @@ argument-hint: "[テーマ] [core|deepen|outline|write|map](任意)"
 | 「公開記事を取ってきて」 | `/wix-sync` の `pull --published`（`published.md` を取る。API が使えない時は `/fetch-page` の yarakawa.com 手順） |
 | 「固まった」「ここから細かく直したい」「公開後に一節足したい」「差分で見せて」 | `/revise`（固めた時点からの差分だけを色付きで見返しながら直す。`$OUTPUT_DIR/revision/baseline.md` があれば、書く工程ではなくこちらを案内する） |
 | 「図を入れたい」 | `/illustrate` |
+| 「サムネイル（カバー画像）を作って」 | `/thumbnail` |
 | Web 取得が要る（SPA・要ログイン） | `/fetch-page`（不変条件4の承認を得てから） |
 | 「公開する」 | `/publish-article`（commit は著者承認後） |
 
