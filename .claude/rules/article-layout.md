@@ -17,6 +17,7 @@ output/{yyyymmdd}_{テーマ}/           記事ごとの作業ディレクトリ
   map.html                           計画の見取り図（節目ごとに上書き。正本は Markdown 側）
   draft.md                           記事本文（AI版）
   preview/index.html                 draft.md の HTML プレビュー（scripts/render-preview.mjs の生成物。手で編集しない）
+  experiments/                       構成の議論用に全文を組み直した案（{案名}.md と、render-preview.mjs --out で出した {案名}.html）。差分ではなく全文で見比べる。採用分は draft.md へ反映し、残す義務はない
   images/                            /illustrate の成果物 PNG だけ（ブログへ載せるもの。改訂は上書き）
     src/                             図のソース（{図名}.svg / .html）
     _archive/                        著者が見比べを求めた時だけ旧版を移す（任意）
