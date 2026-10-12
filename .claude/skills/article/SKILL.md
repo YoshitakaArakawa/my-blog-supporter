@@ -82,13 +82,13 @@ thinking.md の主張と参考資料から、見出し構成・展開順序・�
 
 **何を・どの順で語るかの最終判断は著者が握る**。著者は掘る対話の全量を覚えていないため、AI が thinking.md から構成の叩き台を先に出し（各章に根拠の観点を添える）、著者の並べ替え・削除を受けて固める。確定後に地図を更新し、隔離レビューの `drift outline` を提案する。点検が済んだら、新しいセッションで書く工程に進むかを提案する（「セッションの区切り」）。
 
-この工程は飛ばしてよい。飛ばす場合は書く工程で thinking.md を直接の設計図にする。
+この工程は飛ばしてよい。飛ばす場合も、書く工程の冒頭で章の設計（層と章の表）を著者に承認してもらってから本文に入る（phase-write.md 手順0）。
 
 ## 工程4: 書く
 
 `$OUTPUT_DIR/draft.md` を書き、機械 lint・点検を通してから著者と磨きこむ。詳細な執筆規範・採否基準・完了時の案内は [references/phase-write.md](references/phase-write.md) を読む。文体の正本は [references/voice-style.md](references/voice-style.md)、緩急の規範は [references/cognitive-rhythm.md](references/cognitive-rhythm.md)。
 
-**内部の呼び出し順**（著者はこの順序を意識しなくてよい）: draft.md の生成（core.md 必須。無ければ工程1へ戻す）→ 機械 lint（`node scripts/lint-draft.mjs $OUTPUT_DIR/draft.md`。NG がゼロになるまで最大3周）→ プレビュー生成（`node scripts/render-preview.mjs $OUTPUT_DIR/draft.md`。hook があれば draft.md を書くたびに自動）→ 自己レビュー → 読者シミュレーション（`readers`）→ 段階間ドリフト点検（`drift draft`）→ 指摘を反映して著者と磨きこむ → 空の `$OUTPUT_DIR/draft_user.md` を作る。
+**内部の呼び出し順**（著者はこの順序を意識しなくてよい）: 層と章の設計の承認（outline.md を省いた時も必ず。thinking.md の深掘りリストの順を章順にしない）→ draft.md の生成（core.md 必須。無ければ工程1へ戻す）→ 機械 lint（`node scripts/lint-draft.mjs $OUTPUT_DIR/draft.md`。NG がゼロになるまで最大3周）→ プレビュー生成（`node scripts/render-preview.mjs $OUTPUT_DIR/draft.md`。hook があれば draft.md を書くたびに自動）→ 自己レビュー → 読者シミュレーション（`readers`）→ 段階間ドリフト点検（`drift draft`）→ 指摘を反映して著者と磨きこむ → 空の `$OUTPUT_DIR/draft_user.md` を作る。
 
 著者に返すのは、本文とプレビュー（`$OUTPUT_DIR/preview/index.html`）へのパスと3行の要約（全体の流れ／lint の残件と直さなかった理由／フィードバックがほしい箇所）と図の一覧。全文を会話に貼らない。
 

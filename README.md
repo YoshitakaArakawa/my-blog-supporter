@@ -28,6 +28,7 @@
 | `/thumbnail` | 記事のサムネイル（カバー画像）を共通の型で PNG にする |
 | `/publish-article` | 公開してよい成果物を選別して `published/` へ出す |
 | `/wix-sync` | Wix ブログの下書きを API で作る・取り込む（公開はしない） |
+| `/announce-article` | 公開した記事の X 告知ポストを、著者の過去の告知を見本に文案化する（投稿はしない） |
 | `/fetch-page` | WebFetch で取れないページを実ブラウザで取る |
 
 ## 守っていること

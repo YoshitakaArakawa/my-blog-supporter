@@ -17,6 +17,7 @@ output/{yyyymmdd}_{テーマ}/           記事ごとの作業ディレクトリ
   map.html                           計画の見取り図（節目ごとに上書き。正本は Markdown 側）
   draft.md                           記事本文（AI版）
   preview/index.html                 draft.md の HTML プレビュー（scripts/render-preview.mjs の生成物。手で編集しない）
+  experiments/                       構成の議論用に全文を組み直した案（{案名}.md と、render-preview.mjs --out で出した {案名}.html）。差分ではなく全文で見比べる。採用分は draft.md へ反映し、残す義務はない
   images/                            /illustrate の成果物 PNG だけ（ブログへ載せるもの。改訂は上書き）
     src/                             図のソース（{図名}.svg / .html）
     _archive/                        著者が見比べを求めた時だけ旧版を移す（任意）
@@ -30,6 +31,7 @@ output/{yyyymmdd}_{テーマ}/           記事ごとの作業ディレクトリ
     index.html                       変更箇所だけ色付きの HTML（scripts/render-revision.mjs の生成物。手で編集しない）
   review/                            /review の出力。lens ごとに独立した連番で時系列に蓄積
     critique_01.md / drift_01.md / readers_01.md / author_01.md   lens ごとの指摘
+  x-posts.md                         X 告知ポストの文案（/announce-article の出力。採否と投稿は著者が行う）
   published.md                       公開 Web 記事の取得スナップショット（/wix-sync の pull --published。予備は /fetch-page の yarakawa.com 手順。改訂の基準と slug 重複確認に使う。2026年6月以前の記事は comparison/published.md）
 
 ```

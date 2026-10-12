@@ -1,6 +1,7 @@
 {
   "_comment": "lint-draft.mjs の閾値と禁止句。数値は yarakawa.com 公開記事10本（2024〜2026）の計測レンジから決めた。詳細は .claude/skills/article/references/voice-style.md の「0. 数値仕様」。bodyCharsMax / bodyCharsMin は参考表示のみで NG 判定に使わない（字数を目標に削らせないため）",
-  "_commentHeading": "headingPatterns は ## / ### の見出し行だけに当てる（voice-style ルール17）。headingLabelPrefixes の語で始まる見出しは、その語（後ろの番号も含む）とコロンを外した残りを判定する（公開記事の「最後に：」「余談：」は著者の型）。どの型も単独では AI 的とは言えないため警告どまり。2句を「と」や読点で結ぶ型は誤検出が多いので入れない",
+  "_commentHeading": "headingPatterns は ## / ### の見出し行だけに当てる（voice-style ルール17）。headingLabelPrefixes の語で始まる見出しは、その語（後ろの番号も含む）とコロンを外した残りを判定する（公開記事の「最後に：」「余談：」は著者の型）。禁止は節の内容を要約・対比した見出しであって形ではないので、警告は『要約・対句になっていないか見よ』の合図に留める。著者の見出しは原文のまま。2句を「と」や読点で結ぶ型は誤検出が多いので入れない。h2MaxTwoPart は、## 見出しのどれかに twoPartMarkers の語が含まれる二部構成の長文で h2Max の代わりに使う上限",
+  "_commentPrimaryRecord": "primaryRecordPatterns は一次記録（作業ログ・セッションの記録）由来の識別子（voice-style ルール21）。NG 判定には数えず、件数と行を警告として出すだけ。読者が辿れない番号・内部コマンド名・モデル名が本文に漏れていないかを見る合図で、固有名詞一般（製品名・人名・セッション名）は対象にしない",
   "_commentExtra": "coreLinesMax / coreLineCharsMax は core.md の5行仕様（見出し行・承認:・改訂: の行は対象外）に対応する閾値。thinking.md は中間成果物のため字数を判定しない（分量は深掘りリストの点数で守る）。paragraphCharsAvgMin は、公開記事4本の段落あたり字数（この lint の数え方で 67〜80 字、20260913 計測）と、1文ずつ改行して並べた AI ドラフト（61 字）の間に置いた下限。shortParagraphCharsMax は参考表示用で、40字未満の段落の割合は公開記事でも 17〜26% とばらつき、判定には使わない。",
   "thresholds": {
     "bodyCharsMax": 7000,
@@ -11,6 +12,7 @@
     "paragraphsOverLimitRatioMax": 0.2,
     "kagiKakkoMax": 25,
     "h2Max": 5,
+    "h2MaxTwoPart": 10,
     "h3Max": 1,
     "boldMax": 0,
     "keyphraseRepeatMax": 5,
@@ -29,6 +31,42 @@
   "skipBlockquoteMarkers": [
     "ℹ️",
     "✍️"
+  ],
+  "twoPartMarkers": [
+    "前半",
+    "後半"
+  ],
+  "primaryRecordPatterns": [
+    {
+      "pattern": "セッション[0-9０-９]+",
+      "group": "一次記録",
+      "hint": "セッション番号で書かない。何が起きた回かで言う"
+    },
+    {
+      "pattern": "(?<![A-Za-z0-9])M[0-9]{1,2}(?![A-Za-z0-9])",
+      "group": "一次記録",
+      "hint": "作業の通し番号（M1・M2）で書かない。何をした段階かで言う"
+    },
+    {
+      "pattern": "[0-9０-９]+つ目の失敗",
+      "group": "一次記録",
+      "hint": "失敗を番号で呼ばない。何が起きたかで呼ぶ"
+    },
+    {
+      "pattern": "[1１]コマンド",
+      "group": "一次記録",
+      "hint": "道具の名前より何が変わったかで書く（「要望を伝えるだけで直る」）"
+    },
+    {
+      "pattern": "Computer Use",
+      "group": "一次記録",
+      "hint": "読者の行動を変えない機能名は出さない"
+    },
+    {
+      "pattern": "\\b(Opus|Fable)\\b",
+      "group": "一次記録",
+      "hint": "モデル名は出さない。主体の呼び方は core.md の「語の取り決め」に従う"
+    }
   ],
   "bannedPhrases": [
     {
@@ -185,7 +223,7 @@
     {
       "pattern": "：",
       "group": "コロン",
-      "hint": "「主題：要約」に分けない。対象を短い名詞句か問いで言い、要約は直下の1文目へ"
+      "hint": "コロンの後ろが節の要約になっていないか見る。起きたことを口語で言う見出し（著者の型）は可。要約なら直下の1文目へ移す"
     },
     {
       "pattern": "^[^、]+は[^、]+、[^、]+は[^、]+$",

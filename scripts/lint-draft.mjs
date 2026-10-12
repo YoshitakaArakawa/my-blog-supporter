@@ -6,6 +6,7 @@
  * 併せて textlint（.textlintrc.json）を走らせて、1つの Markdown レポートにまとめる。
  * LLM の自己申告チェックリストでは縮まなかった指標（分量・段落文数・「」個数・禁止句）を
  * 決定的に検出するのが役割。判定は「警告」であり、ブロックはしない。
+ * 一次記録由来の識別子（config.primaryRecordPatterns）は NG にも数えず、件数と行を示すだけ。
  *
  * 使い方:
  *   node scripts/lint-draft.mjs <file.md> [--json] [--no-textlint]   レポートを stdout に出す
@@ -175,8 +176,11 @@ function metrics(text) {
 
   const authorSignals = Object.fromEntries(CONFIG.authorSignals.map((p) => [p.replace(/\\/g, ""), (bodyText.match(new RegExp(p, "g")) || []).length]));
 
+  // 二部構成の長文（## 見出しに「前半」「後半」の印がある）は ## の上限を h2MaxTwoPart に切り替える
+  const twoPart = headings.some((h) => /^##\s/.test(h.text) && CONFIG.twoPartMarkers.some((w) => h.text.includes(w)));
+
   return {
-    chars, paragraphs: paras.length, sentences: sentences.length,
+    chars, paragraphs: paras.length, sentences: sentences.length, twoPart,
     avgSentenceLen: sentences.length ? +(sentences.reduce((a, s) => a + s.length, 0) / sentences.length).toFixed(1) : 0,
     sentPerPara: paraSent.length ? +(paraSent.reduce((a, p) => a + p.count, 0) / paraSent.length).toFixed(2) : 0,
     parasOver: paraSent.filter((p) => p.count > T.sentencesPerParagraphMax),
@@ -201,6 +205,22 @@ function bannedHits(m) {
       if (!l.text || isHeading(l.text)) continue;
       const src = plain(l.text);
       for (const mt of src.matchAll(re)) hits.push({ n: l.n, group: rule.group, text: mt[0].replace(/^[。]/, ""), hint: rule.hint });
+    }
+  }
+  return hits;
+}
+
+// ---------- 一次記録由来の識別子 ----------
+
+/** 作業ログ・セッションの記録の粒度が本文に漏れた印（セッション番号・通し番号・内部コマンド名・モデル名）。見出しも見る。警告のみで NG に数えない */
+function primaryRecordHits(m) {
+  const hits = [];
+  for (const rule of CONFIG.primaryRecordPatterns) {
+    const re = new RegExp(rule.pattern, "g");
+    for (const l of m.lines) {
+      if (!l.text) continue;
+      const src = plain(l.text);
+      for (const mt of src.matchAll(re)) hits.push({ n: l.n, group: rule.group, text: mt[0], hint: rule.hint });
     }
   }
   return hits;
@@ -237,7 +257,7 @@ async function runTextlint(file) {
 
 // ---------- 判定とレポート ----------
 
-function evaluate(m, banned, tl, heads = []) {
+function evaluate(m, banned, tl, heads = [], primary = []) {
   const rows = [];
   const add = (label, value, limit, ok, note = "") => rows.push({ label, value, limit, ok, note });
   // 字数は判定しない（参考値）。長さは主張の数で決まり、字数を目標に削ると著者が残したい段落まで痩せる。レンジ外は注記だけ出す
@@ -247,7 +267,8 @@ function evaluate(m, banned, tl, heads = []) {
   add("段落あたり文数（平均）", m.sentPerPara, `≤${T.sentencesPerParagraphMax}`, m.sentPerPara <= T.sentencesPerParagraphMax + 0.3);
   add(`${T.sentencesPerParagraphMax + 1}文以上の段落`, `${m.parasOver.length}/${m.paragraphs}`, `≤${Math.round(T.paragraphsOverLimitRatioMax * 100)}%`, overRatio <= T.paragraphsOverLimitRatioMax);
   add("段落あたり字数（平均）", m.paraCharsAvg, `≥${T.paragraphCharsAvgMin}`, m.paraCharsAvg >= T.paragraphCharsAvgMin, m.paraCharsAvg < T.paragraphCharsAvgMin ? "1文ずつ改行して並べている。同じ論点の段落をまとめ、背景・理由・例を1段落で運ぶ" : "");  add("「」の個数", m.kagi, `≤${T.kagiKakkoMax}`, m.kagi <= T.kagiKakkoMax);
-  add("## の本数", m.h2, `≤${T.h2Max}`, m.h2 <= T.h2Max);
+  const h2Max = m.twoPart ? T.h2MaxTwoPart : T.h2Max;
+  add("## の本数", m.h2, `≤${h2Max}`, m.h2 <= h2Max, m.twoPart ? "二部構成（見出しに前半／後半）として上限を切り替え" : "");
   add("### の本数（余談を除く）", m.h3, `≤${T.h3Max}`, m.h3 <= T.h3Max);
   add("太字", m.bold, `${T.boldMax}`, m.bold <= T.boldMax);
   add("ダッシュ（—―）", m.dashes, "0", m.dashes === 0);
@@ -257,6 +278,8 @@ function evaluate(m, banned, tl, heads = []) {
   add("「」語の反復", m.repeated.length ? m.repeated.map(([k, c]) => `「${k}」×${c}`).join(" ") : 0, `各≤${T.keyphraseRepeatMax}`, m.repeated.length === 0);
   add("見出しの型（コロン・対句）", heads.length, "0", heads.length === 0);
   add("見出しに使った「」語", m.inHeading.length ? m.inHeading.map((k) => `「${k}」`).join(" ") : 0, "0", m.inHeading.length === 0);
+  // 一次記録由来の識別子は警告だけ。NG に数えると著者が意図して残した語まで直させるため
+  add("一次記録由来の識別子（警告）", primary.length, "0", true, primary.length ? "読者が辿れない番号・道具名・モデル名。意味に言い換える（voice-style ルール21）" : "");
   add("冒頭", m.introKind, "宣言 or 体験", m.introKind !== "不明");
   add("冒頭の参考資料ブロック／固定ヘッダ", `${m.introHasRefBlock ? "参考資料あり" : "なし"}${m.introHasFixedHeader ? "・Tableau NOTEあり" : ""}`, "なし", !m.introHasRefBlock && !m.introHasFixedHeader);
   if (m.closingFound) {
@@ -273,7 +296,7 @@ function evaluate(m, banned, tl, heads = []) {
   return rows;
 }
 
-function report(file, m, banned, tl, rows, heads = []) {
+function report(file, m, banned, tl, rows, heads = [], primary = []) {
   const ng = rows.filter((r) => !r.ok);
   const out = [];
   out.push(`# draft lint: ${path.relative(ROOT, file).replace(/\\/g, "/")}`);
@@ -304,6 +327,11 @@ function report(file, m, banned, tl, rows, heads = []) {
     out.push("");
     out.push(`## 見出しの型（${heads.length} 件。警告。単独では AI 的の証拠にならない）`);
     for (const h of heads) out.push(`- L${h.n} [${h.group}] 「${h.text}」 → ${h.hint}`);
+  }
+  if (primary.length) {
+    out.push("");
+    out.push(`## 一次記録由来の識別子（${primary.length} 件。警告。NG に数えない）`);
+    for (const p of primary) out.push(`- L${p.n} 「${p.text}」 → ${p.hint}`);
   }
   if (tl.error) {
     out.push("");
@@ -366,9 +394,10 @@ function issueSet(r) {
   // 件数と出現行を持つ。行番号は Edit で動くので同一視の鍵にはせず、増えた時にどこかを示す用途だけに使う
   const count = (list, keyOf, lineOf) => { const m = {}; for (const it of list) { const k = keyOf(it); (m[k] ||= { n: 0, lines: [] }); m[k].n += 1; m[k].lines.push(lineOf(it)); } return m; };
   const banned = count(r.banned, (b) => `[${b.group}] 「${b.text}」 → ${b.hint}`, (b) => b.n);
+  const primary = count(r.primary || [], (p) => `「${p.text}」 → ${p.hint}`, (p) => p.n);
   const sev = { 2: "error", 1: "warning", 0: "info" };
   const tl = count((r.tl.messages || []).filter((x) => x.severity >= 1), (x) => `${sev[x.severity]}:${x.ruleId} ${x.message.replace(/\n/g, " ").slice(0, 80)}`, (x) => x.line);
-  return { rows, banned, tl };
+  return { rows, banned, primary, tl };
 }
 
 /** 前回状態との差分レポート。変化が無ければ1行で返す */
@@ -399,6 +428,7 @@ function diffReport(file, prev, cur, r) {
     }
   };
   diffCount("禁止句", prev.banned, cur.banned);
+  diffCount("一次記録由来の識別子", prev.primary || {}, cur.primary || {});
   diffCount("textlint", prev.tl, cur.tl);
   if (!lines.length) return `${head}\n変化なし。全文は \`node scripts/lint-draft.mjs ${rel}\``;
   return `${head}\n前回からの差分:\n${lines.join("\n")}`;
@@ -475,8 +505,9 @@ async function lintOne(file, opts) {
   const banned = bannedHits(m);
   const tl = opts.noTextlint ? { messages: [] } : await runTextlint(file);
   const heads = headingHits(m);
-  const rows = evaluate(m, banned, tl, heads);
-  return { m, banned, heads, tl, rows, text: report(file, m, banned, tl, rows, heads) };
+  const primary = primaryRecordHits(m);
+  const rows = evaluate(m, banned, tl, heads, primary);
+  return { m, banned, heads, primary, tl, rows, text: report(file, m, banned, tl, rows, heads, primary) };
 }
 
 async function main() {
@@ -517,7 +548,7 @@ async function main() {
   const r = await lintOne(file, { noTextlint: flag("--no-textlint") });
   if (flag("--json")) {
     const { lines, ...m } = r.m;
-    console.log(JSON.stringify({ file, metrics: m, banned: r.banned, headings: r.heads, textlint: r.tl.messages || [], rows: r.rows }, null, 1));
+    console.log(JSON.stringify({ file, metrics: m, banned: r.banned, headings: r.heads, primaryRecord: r.primary, textlint: r.tl.messages || [], rows: r.rows }, null, 1));
   } else {
     console.log(r.text);
   }
