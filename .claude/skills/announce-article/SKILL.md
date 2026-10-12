@@ -31,7 +31,7 @@ argument-hint: "[テーマ]"
 
 - `$OUTPUT_DIR/core.md` を読む。無ければその旨を伝えて終了する。
 - 本文は `published.md` を優先し、無ければ `draft_user.md`、それも無ければ `draft.md` を読む。
-- 記事の URL を確かめる。`published.md` 冒頭の取得元、または `/publish-article` で決めた slug（`https://www.yarakawa.com/single-post/{slug}`）を使う。未公開で URL が無い時は `{記事URL}` と空欄にする。
+- 記事の URL を確かめる。`published.md` 冒頭の取得元、または `/wix-sync` の push で決めた slug（`https://www.yarakawa.com/single-post/{slug}`）を使う。未公開で URL が無い時は `{記事URL}` と空欄にする。
 
 ### 2. 見本の取得（著者の承認後）
 
@@ -40,8 +40,7 @@ argument-hint: "[テーマ]"
 - 対象: 著者の X アカウントの、ブログ記事の告知ポスト（yarakawa.com のリンクを含むもの）を新しい順に5〜8件。告知に続くセルフリプライと、「書きます（宣言）」のポストがあれば併せて読む。
 - 探し方: X の検索で `from:{著者のhandle} yarakawa.com` を「最新」タブで開く。handle が分からなければ著者に聞く。
 - 既定の手段は Claude in Chrome（著者が普段の Chrome で X にログイン済み）。使う前に `anthropic-skills:chrome-browser` スキルを読む。新しいタブで開き、ページの文字を読むだけにする。
-- Chrome に繋がらない時は `/fetch-page` の X 手順で取る。
-- どちらも使えない時は、著者に最近の告知ポストを2〜3件貼ってもらう。それも無理なら references の型だけで書き、その旨を提示時に明記する。
+- Chrome に繋がらない時は、著者に最近の告知ポストを2〜3件貼ってもらう。それも無理なら references の型だけで書き、その旨を提示時に明記する。
 
 見本の本文は会話の中だけで使う。リポジトリで追跡されるファイルへ写さない（このリポは Public）。
 

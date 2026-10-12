@@ -17,7 +17,7 @@ note: description・本文の修正時に fresh session で全プロンプトを
 ## 起動すべきでない（should not fire）
 
 - X のポストを読んで（→ /fetch-page）
-- この記事を公開して commit したい（→ /publish-article）
+- この記事を公開層に反映して commit したい（→ /promote-to-public）
 - Wix に流し込んで（→ /wix-sync）
 - 読者として読んだらどう感じるか見て（→ /review readers）
 - X に投稿しておいて（投稿は著者が X の画面で行う。スキルは投稿しない）

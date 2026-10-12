@@ -24,3 +24,4 @@ allowed-tools: Bash(node:*) Bash(git:*) Read Grep
 4. **著者の承認**: 点検結果（指摘ゼロならその旨）とコピーした一覧を提示し、判断を待つ。指摘への対処（削除・言い換え・そのまま公開）は著者が決め、実施は `$PUB_DIR` 側にだけ行う。`$OUTPUT_DIR` の原本は変えない。
 5. **コミット**: 承認後に `$PUB_DIR` を git add し、`published: {テーマ} の記事成果物を公開` の形でコミットする。承認前にコミットしない。push は著者の指示があった時だけ。
 6. **公開版を基準として固める**: `node ${CLAUDE_PROJECT_DIR}/scripts/revise.mjs freeze $OUTPUT_DIR/draft_user.md` を実行し、公開時点の本文を `$OUTPUT_DIR/revision/baseline.md` に保存する。公開後の追記や修正は `/revise` がこの基準からの差分で示す。
+7. **告知**: X での告知文案が要るかを著者に聞き、要るなら `/announce-article` に渡す。
