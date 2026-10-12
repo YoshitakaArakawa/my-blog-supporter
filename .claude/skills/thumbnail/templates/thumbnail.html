@@ -1,0 +1,12 @@
+<!-- サムネイル（カバー画像）のテンプレート。値の正本は SKILL.md「スタイル」。
+     二重波括弧の LINES（行）と FONT_SIZE（px）は scripts/make-thumbnail.mjs が埋める。
+     末尾の不可視 span は同梱フォント（Zen Kaku Gothic New 400 / 700）を読み込ませるためのもの。
+     render-figure.sh は同梱フォントが全面 loaded でないと撮影を止めるので、消さない。 -->
+<style>
+#fig{position:relative;width:1122px;height:1063px;background:#fff;
+  display:flex;align-items:center;justify-content:center;text-align:center;white-space:nowrap;
+  font-family:"Meiryo","Zen Kaku Gothic New",sans-serif;font-weight:700;
+  color:#595959;font-size:{{FONT_SIZE}}px;line-height:1.25}
+#fig .preload{position:absolute;opacity:0;font-size:1px;font-family:"Zen Kaku Gothic New"}
+</style>
+<div id="fig"><div>{{LINES}}</div><span class="preload"><span style="font-weight:400">.</span><span style="font-weight:700">.</span></span></div>
