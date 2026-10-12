@@ -5,7 +5,7 @@ paths: ["output/**", "published/**"]
 # 記事ディレクトリの構成
 
 ```
-published/{yyyymmdd}_{テーマ}/        公開層。/promote-to-public が選別・点検した成果物のみ（構成は下記のサブセット）
+published/{yyyymmdd}_{テーマ}/        公開層。/promote-to-public が選別・点検した成果物のみ（20260912 以降の記事は下記のサブセット。それ以前の記事は旧構成（brief.md・critique/・comparison/ 等）のままで、core.md が無い）
 
 output/{yyyymmdd}_{テーマ}/           記事ごとの作業ディレクトリ（非公開・gitignore）
   core.md                            著者の核（問い／読者／読後／動機／現在地の5行）。全工程の不変条件。承認後はAIが書き換えない
