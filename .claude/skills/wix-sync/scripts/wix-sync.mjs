@@ -17,7 +17,8 @@
  *   - push --update は、前回の同期以降に Wix 側で編集されていたら止まる（著者の直しを消さないため）
  *   - pull は、前回の同期以降にローカルのファイルが直されていたら止まる（--force で退避して上書き）
  *   - pull → push の往復で著者の Wix の下書きを変えない。Markdown にできないノード（HTML 埋め込み等）は
- *     wix.json に控えて元の位置へ戻し、空段落の数は既定と違う箇所だけ印を付けて保つ
+ *     wix.json に控えて元の位置へ戻し、空段落の数は既定と違う箇所だけ印を付けて保つ。
+ *     リンク等の装飾を持つコードブロックも控え、中身が同じなら控えで戻し、変わっていたら止まる
  *   - pull と push --update は、取得した・上書きする直前の下書きを wix-snapshots/ に JSON のまま残す
  *
  * 状態は記事ディレクトリの wix.json（下書き ID・画像の対応・同期時点）。output/ 配下なので commit されない。
@@ -148,6 +149,7 @@ function prepare(text, wixImages, wixNodes = []) {
     quote = null;
   };
   const nodeRefs = [];
+  let code = null;   // 控えたコードブロックの印の直後。続くコードブロックの中身を集めて控えと比べる
   const onComment = (c) => {
     if (LEGACY_MARK.test(c)) {
       throw new Error("「未対応のノード」の印がある。古い pull はノードの中身を控えていないので、push するとそのノードが消える。pull し直してから直す");
@@ -158,6 +160,7 @@ function prepare(text, wixImages, wixNodes = []) {
       if (wixNodes[i]?.type !== nm[1]) throw new Error(`Wix のノード #${i}（${nm[1]}）が wix.json に無い。pull し直す`);
       nodeRefs.push(i);
       out.push("", NODE_TOKEN(i), "");
+      if (nm[1] === "CODE_BLOCK") code = { i, lines: null };
       return;
     }
     const gm = c.match(GAP_MARK);
@@ -177,6 +180,22 @@ function prepare(text, wixImages, wixNodes = []) {
     }
   };
   for (const line of lines) {
+    if (code) {
+      // 印の直後のコードブロックは控えのノードで置き換える。中身が変わっていたら、装飾を黙って落とさず止める
+      const fence = /^\s*```/.test(line);
+      if (code.lines === null) {
+        if (!line.trim()) continue;
+        if (!fence) throw new Error(`Wix のノード #${code.i}（CODE_BLOCK）の印の直後にコードブロックが無い。印とコードブロックを一緒に動かす`);
+        code.lines = [];
+        continue;
+      }
+      if (!fence) { code.lines.push(line); continue; }
+      if (code.lines.join("\n") !== plainText(wixNodes[code.i])) {
+        throw new Error(`Wix のノード #${code.i}（CODE_BLOCK）の中身が pull の時から変わっている。このコードブロックには Wix で付けたリンク等の装飾があり、Markdown から送ると消える。Wix の画面で直すか、装飾を捨ててよければ印の行を消して push する`);
+      }
+      code = null;
+      continue;
+    }
     if (comment) {
       comment.push(line);
       if (line.includes("-->")) { onComment(comment.join("\n")); comment = null; }
@@ -206,6 +225,7 @@ function prepare(text, wixImages, wixNodes = []) {
     }
     out.push(line);
   }
+  if (code) throw new Error(`Wix のノード #${code.i}（CODE_BLOCK）の印の後のコードブロックが閉じていない`);
   flushQuote();
   return { title, markdown: collapseBlank(out.join("\n")), images, nodeRefs };
 }
@@ -373,7 +393,7 @@ async function push(file, { dryRun, update }) {
   console.log(`本文 ${markdown.length} 字 / 画像 ${images.length} 枚`);
   const media = await resolveMedia(images, dir, state, dryRun);
   const missing = state.wixNodes.map((_, i) => i).filter((i) => !nodeRefs.includes(i));
-  if (missing.length) console.log(`  注意: Wix のノード ${missing.map((i) => `#${i}（${state.wixNodes[i].type}）`).join("・")} の印が本文に無い。push するとそのノードは消える`);
+  if (missing.length) console.log(`  注意: Wix のノード ${missing.map((i) => `#${i}（${state.wixNodes[i].type}）`).join("・")} の印が本文に無い。push するとそのノード（CODE_BLOCK ならその中のリンク等の装飾）は消える`);
   const nodes = finish(await toRicos(markdown), images, media, state.wixNodes);
   console.log(`構造: ${summarize(nodes)}`);
 
@@ -488,7 +508,16 @@ function toMarkdown(nodes, imageMap, wixImages, wixNodes = []) {
         break;
       }
       case "DIVIDER": block("---"); break;
-      case "CODE_BLOCK": block(`\`\`\`\n${n.nodes.map((x) => x.textData?.text ?? "").join("")}\n\`\`\``); break;
+      case "CODE_BLOCK": {
+        // コードブロックの中のリンク等の装飾は Markdown のコードブロックに書けない。
+        // 装飾があればノードを wix.json に控えて印を付け、push で中身が同じならそのまま戻す
+        if (n.nodes.some((x) => x.textData?.decorations?.length)) {
+          wixNodes.push(n);
+          block(`<!-- Wixのノード: CODE_BLOCK #${wixNodes.length - 1} -->`);
+        }
+        block(`\`\`\`\n${plainText(n)}\n\`\`\``);
+        break;
+      }
       case "IMAGE": {
         const img = n.imageData?.image ?? {};
         const id = img.src?.id;
