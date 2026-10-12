@@ -39,7 +39,6 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 公開前に下書きの完成度を点検して
 - Wix の下書きを取り込んでレビューして（取り込みは wix-sync の pull を先に済ませてから点検）
 - /review ai-bi-platform author
-- /review ai-bi-platform author Posts_Wix.mhtml
 
 ## lens 未指定の扱い
 

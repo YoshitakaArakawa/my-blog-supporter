@@ -2,7 +2,7 @@
 name: illustrate
 description: ブログ記事の概念やアイデアを、構造を保ったまま視覚的に主張する図を作図し PNG として書き出す。記事に挿絵・概念図を入れたいとき、箇条書きやボックス＆矢印では伝わらない関係（対比・プロセス・階層・一対多・トレードオフ・分離・before/after 等）を1枚の図で示したいときに使う。外部画像 API を使わず、SVG または HTML/CSS を導入済み playwright-cli で PNG にレンダリングし、自己レビューで仕上げる。1枚だけでなく、別々のデザイン方針で複数案を並列生成して選ぶ「複数案モード」も持つ。
 argument-hint: [図にしたい主張と見せたい関係／対象記事ディレクトリ／案の数]
-allowed-tools: Bash(playwright-cli:*) Bash(bash:*) Bash(rm:*) Bash(mkdir:*) Read Write Glob Grep Agent Task
+allowed-tools: Bash(playwright-cli:*) Bash(bash:*) Bash(rm:*) Bash(mkdir:*) Read Write Glob Grep Agent
 ---
 
 # illustrate（概念図の作図 → PNG 書き出し）

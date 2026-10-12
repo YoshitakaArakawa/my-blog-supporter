@@ -51,7 +51,7 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 記事のドラフトを読者視点で読んでみて（→ /review の readers）
 - Wix の下書きをレビューして（→ /review の author。取り込みも lens 側）
 - 記事の中に入れる概念図を1枚描いて（→ /illustrate）
-- 公開した記事を取ってきて（→ /fetch-page）
+- 公開した記事を取ってきて（→ /wix-sync の pull --published）
 - 本文は固まったので、ここから細かく直したい（→ /revise）
 - 公開した記事に一節足したい。差分で見せて（→ /revise）
 - この記事を公開層に反映して（→ /publish-article）

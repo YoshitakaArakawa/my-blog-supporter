@@ -61,7 +61,7 @@ node ${CLAUDE_SKILL_DIR}/scripts/wix-html-to-md.mjs .playwright-cli/wix-editor.h
 playwright-cli --s=chrome detach
 ```
 
-`attach` の出力の Page URL が編集画面でなければ、著者にタブを前面にしてもらって取り直す。`.ProseMirror` が取れない時は `[contenteditable="true"]` で試す。取得後、`draft_user.md` の見出しの数と末尾の段落がエディタと一致しているかを 1 度確認する。画像はエディタ内では `<!-- 画像: キャプション -->` のプレースホルダーになり、直後にキャプションの行が続く。`draft_user.md` が既に非空でも上書きしてよい（Wix 側が正のため）。用途は `/revise` で著者の直しを差分にする時と、`/review` の author レンズの入力。編集画面を .mhtml で保存して `review` の抽出スクリプトに渡す経路は、拡張が使えない時の予備。
+`attach` の出力の Page URL が編集画面でなければ、著者にタブを前面にしてもらって取り直す。`.ProseMirror` が取れない時は `[contenteditable="true"]` で試す。取得後、`draft_user.md` の見出しの数と末尾の段落がエディタと一致しているかを 1 度確認する。画像はエディタ内では `<!-- 画像: キャプション -->` のプレースホルダーになり、直後にキャプションの行が続く。`draft_user.md` が既に非空でも上書きしてよい（Wix 側が正のため）。用途は `/revise` で著者の直しを差分にする時と、`/review` の author レンズの入力。
 
 ## X（旧 Twitter）
 

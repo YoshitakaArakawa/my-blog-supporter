@@ -29,8 +29,8 @@ note: illustrate スキルの variants モードが参照する。各変種エ�
 1. **philosophy-first**：描く前に「この絵の美学」を言語化する（名前・原則・なぜこの概念に合うか）。レイアウトでなく美学を先に決める。**単一案は1段落で可。複数案では各変種で命名した美学方針（movement 名）を3〜5段落**書くと、案同士が本当に別物になり完成度も上がる（公式 canvas-design の design philosophy 流儀）。
 2. **medium を選ぶ**：
    - **SVG** … 図・幾何・正確な座標。PNG 書き出しが綺麗。
-   - **HTML/CSS** … gradient・影・blend・リッチなレイアウト・実フォントが要るとき。chromium が高品質に描く。**同じ playwright 描画パイプで撮れる**（SVG をラップする代わりに HTML 全体を data URL で開く）。
-3. **実フォントを使う（同梱フォントを base64 で埋め込む）**：システム既定に頼らない。タイポの質は第一印象を大きく左右する。本スキルは Zen Kaku Gothic New（Regular/Bold, OFL）を `references/fonts/` に同梱し、SKILL.md のレンダリング手順で **base64 を `@font-face` にインライン**して使う（Web からの `@import` はネットワーク依存で無言フォールバックの恐れ。file:// からの `url()` フォントは CORS で失敗する）。撮影前に `playwright-cli eval "document.fonts.ready.then(()=>Array.from(document.fonts).map(f=>f.status).join(','))"` で全 status=loaded を確認してから screenshot する。別の書体が要るときは `references/fonts/` に .ttf を足す。
+   - **HTML/CSS** … gradient・影・blend・リッチなレイアウト・実フォントが要るとき。chromium が高品質に描く。**同じ描画スクリプト（`scripts/render-figure.sh`）で撮れる**（入力の拡張子で SVG か HTML フラグメントかを判定する）。
+3. **実フォントを使う（同梱フォントを base64 で埋め込む）**：システム既定に頼らない。タイポの質は第一印象を大きく左右する。本スキルは Zen Kaku Gothic New（Regular/Bold, OFL）を `references/fonts/` に同梱し、`scripts/render-figure.sh` が **base64 を `@font-face` にインライン**し、`document.fonts.ready` で全面 loaded を確かめてから撮影する（Web からの `@import` はネットワーク依存で無言フォールバックの恐れ。file:// からの `url()` フォントは CORS で失敗する）。手でフォント確認やレンダリング手順を組まず、スクリプトを呼ぶ。別の書体が要るときは `references/fonts/` に .ttf を足す（手順は `references/fonts/README.md`）。
 4. **構図と余白**：グリッドで整列、余白を惜しまない、焦点の階層（主役を大きく・濃く）を明確に。
 5. **抑制**：パレットは style-guide.md の共通パレットから 2〜3 色＋ニュートラル。テキストは最小。装飾枠を足さない。テキストを減らすのは要素数であって文字サイズではなく、脇役の淡色化・縮小は readability-floor.md の下限の範囲内で行う。
 6. **second-pass で磨く**：自己レビュー後、バグ修正だけで終わらせず「もう一段良くする」推敲を1回入れる（間延び・凡庸さの除去）。

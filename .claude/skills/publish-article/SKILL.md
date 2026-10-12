@@ -26,7 +26,7 @@ argument-hint: "[テーマ]"
 - 常に除外（指定されても公開層に入れない）:
   - `references/`（第三者の raw 素材。gitignore でも二重に防いでいる）
   - `map.html`（計画の見取り図。正本は Markdown 側にあり、gitignore の `*.html` とも整合させる）
-  - `*.mhtml` / 画像 / `pre-discussion/` などの未整理メモ / `draft_pre-*.md` / `draft_v2.md` 等の途中版
+  - `wix.json`（Wix の投稿 ID・画像 ID を含む）/ `wix-dryrun.json` / `wix-snapshots/` / `map.json` / `revision/` / `preview/` / `images/src/` / `*.mhtml` / 画像 / 途中版や未整理メモ
 - コピー予定の一覧を著者に提示してから次へ進む。`$PUB_DIR` に既存ファイルがある場合は上書きになることを明示する。
 
 ### 1b. URL slug の提案
@@ -35,7 +35,7 @@ Wix 側の記事 URL（`https://www.yarakawa.com/single-post/{slug}`）は著者
 
 - 入力: `draft_user.md` のタイトル（先頭行）と core.md の「問い」「読後」行。
 - 候補を3つ提示する。各候補に、タイトルのどの語を採り、何を落としたかを1行で添える。
-- 形式: 小文字英語・ハイフン区切り・2〜5語。日本語のローマ字化は避け、主題を英語で言い直す。同じ主題で以前の記事があるときは、年月の接尾辞（例: `-2026-09`）で区別する。既存の `published/*/published.md`（2026年6月以前の記事は `comparison/published.md`）の取得元 URL を参照して、公開済み slug と衝突しないことを確かめる。
+- 形式: 小文字英語・ハイフン区切り・2〜5語。日本語のローマ字化は避け、主題を英語で言い直す。同じ主題で以前の記事があるときは、年月の接尾辞（例: `-2026-09`）で区別する。既存の `published/*/published.md`（2026年6月以前の一部の記事は `comparison/published.md`。無い記事もある）の取得元 URL を参照して、公開済み slug と衝突しないことを確かめる。
 - 著者が選んだ slug（または著者が別途指定した文字列）を手順4の提示に含める。著者が Wix で設定した後、`/wix-sync` の `pull --published` が出す slug と一致するかを確かめる。
 
 ### 2. コピー
