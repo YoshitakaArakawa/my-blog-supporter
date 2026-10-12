@@ -16,6 +16,9 @@
  *   - 公開・公開予約・公開済み記事の書き換えはしない（その経路をコードに持たない）
  *   - push --update は、前回の同期以降に Wix 側で編集されていたら止まる（著者の直しを消さないため）
  *   - pull は、前回の同期以降にローカルのファイルが直されていたら止まる（--force で退避して上書き）
+ *   - pull → push の往復で著者の Wix の下書きを変えない。Markdown にできないノード（HTML 埋め込み等）は
+ *     wix.json に控えて元の位置へ戻し、空段落の数は既定と違う箇所だけ印を付けて保つ
+ *   - pull と push --update は、取得した・上書きする直前の下書きを wix-snapshots/ に JSON のまま残す
  *
  * 状態は記事ディレクトリの wix.json（下書き ID・画像の対応・同期時点）。output/ 配下なので commit されない。
  * 認証: WIX_API_KEY と WIX_SITE_ID を .env から読む。$CLAUDE_PROJECT_DIR/.env、無ければカレントから上へ探す。
@@ -78,10 +81,18 @@ const statePath = (dir) => path.join(dir, "wix.json");
 function loadState(dir) {
   const p = statePath(dir);
   const s = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : {};
-  return { images: {}, wixImages: [], ...s };
+  return { images: {}, wixImages: [], wixNodes: [], ...s };
 }
 const saveState = (dir, s) => fs.writeFileSync(statePath(dir), `${JSON.stringify(s, null, 2)}\n`);
 const hash = (s) => crypto.createHash("sha256").update(s).digest("hex").slice(0, 16);
+// Wix の下書きを Ricos の JSON のまま残す。API に版の履歴が無いので、戻すときの唯一の手がかりになる
+function snapshot(dir, kind, post) {
+  const d = path.join(dir, "wix-snapshots");
+  fs.mkdirSync(d, { recursive: true });
+  const f = path.join(d, `${kind}_${(post.editedDate ?? "unknown").replace(/[:.]/g, "-")}.json`);
+  fs.writeFileSync(f, `${JSON.stringify({ id: post.id, title: post.title, editedDate: post.editedDate, richContent: post.richContent }, null, 2)}\n`);
+  return f;
+}
 const today = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);   // JST の日付
 
 async function authorMemberId() {
@@ -99,6 +110,24 @@ const CHUNK_MAX = 25000;
 const CONVERT_LIMIT = 30000;
 // 画像は変換後に IMAGE ノードへ差し替えるため、変換中はこの印の段落にしておく
 const IMG_TOKEN = (i) => `WIXIMGTOKEN${i}`;
+// Markdown にできないノードと、既定と違う空段落の数も、変換中は印の段落にしておく
+const NODE_TOKEN = (i) => `WIXNODETOKEN${i}`;
+const GAP_TOKEN = (n) => `WIXGAPTOKEN${n}`;
+// pull が書く印。著者が Wix で入れた要素と空段落を、push で同じ位置に戻すためのもの
+const NODE_MARK = /<!--\s*Wixのノード[:：]\s*(\S+)\s+#(\d+)\s*-->/;
+const GAP_MARK = /<!--\s*空段落[:：]\s*(\d+)\s*-->/;
+const LEGACY_MARK = /<!--\s*未対応のノード[:：]/;
+// 3行以上の空行を1行に詰める。コードブロック（```）の中は著者の空行なので詰めない
+function collapseBlank(md) {
+  const out = [];
+  let fence = false;
+  for (const line of md.split("\n")) {
+    if (/^\s*```/.test(line)) fence = !fence;
+    if (!fence && !line.trim() && !out.at(-1)?.trim()) continue;
+    out.push(line);
+  }
+  return out.join("\n").trim();
+}
 // draft.md（AI 版）を流し込んだ下書きの目印。著者が自分の言葉で書き直したらタイトルから外す
 const AI_TITLE_PREFIX = "[AI下書き] ";
 
@@ -106,7 +135,7 @@ const AI_TITLE_PREFIX = "[AI下書き] ";
 // 画像は次の2種をトークンに置き換える:
 //   ![alt](images/x.png "キャプション")   ローカルの画像（アップロードする）
 //   <!-- 画像: キャプション -->            pull で取った Wix 上の画像（wix.json の wixImages に同じキャプションがあれば戻す）
-function prepare(text, wixImages) {
+function prepare(text, wixImages, wixNodes = []) {
   const lines = text.replace(/\r\n?/g, "\n").split("\n");
   const out = [];
   const images = [];
@@ -118,7 +147,21 @@ function prepare(text, wixImages) {
     if (quote && !quote.some((l) => l.includes("ℹ️"))) out.push(...quote);
     quote = null;
   };
+  const nodeRefs = [];
   const onComment = (c) => {
+    if (LEGACY_MARK.test(c)) {
+      throw new Error("「未対応のノード」の印がある。古い pull はノードの中身を控えていないので、push するとそのノードが消える。pull し直してから直す");
+    }
+    const nm = c.match(NODE_MARK);
+    if (nm) {
+      const i = Number(nm[2]);
+      if (wixNodes[i]?.type !== nm[1]) throw new Error(`Wix のノード #${i}（${nm[1]}）が wix.json に無い。pull し直す`);
+      nodeRefs.push(i);
+      out.push("", NODE_TOKEN(i), "");
+      return;
+    }
+    const gm = c.match(GAP_MARK);
+    if (gm) { out.push("", GAP_TOKEN(Number(gm[1])), ""); return; }
     const m = c.match(/<!--\s*画像[:：]\s*([\s\S]*?)\s*-->/);
     if (!m) return;
     const cap = m[1].replace(/\s+/g, " ").trim();
@@ -164,7 +207,7 @@ function prepare(text, wixImages) {
     out.push(line);
   }
   flushQuote();
-  return { title, markdown: out.join("\n").replace(/\n{3,}/g, "\n\n").trim(), images };
+  return { title, markdown: collapseBlank(out.join("\n")), images, nodeRefs };
 }
 
 function chunks(md) {
@@ -209,26 +252,53 @@ function imageNode(img, media) {
   };
 }
 
-// 著者が Wix で書いた記事に揃える: 外部リンクは新しいタブ、トップレベルのブロックの間に空段落
-function finish(nodes, images, media) {
+// 空段落の既定の数は著者の Wix テンプレート（下書き「Template」と公開記事）に合わせる:
+// 区切り線の前は2つ・直後は0、画像の前後は2つ、それ以外のブロックの間は1つ、先頭と末尾は0
+const defaultGap = (prev, cur) => {
+  if (!prev || !cur || prev.type === "DIVIDER") return 0;
+  return cur.type === "DIVIDER" || cur.type === "IMAGE" || prev.type === "IMAGE" ? 2 : 1;
+};
+const isEmptyPara = (n) => n.type === "PARAGRAPH" && (n.nodes ?? []).every((x) => x.type === "TEXT" && !x.textData?.text?.trim());
+
+// 著者が Wix で書いた記事に揃える: 外部リンクは新しいタブ、ブロックの間の空段落、控えたノードの復元
+function finish(nodes, images, media, wixNodes = []) {
   const walk = (list) => {
     for (const n of list) {
       for (const d of n.textData?.decorations ?? []) {
         if (d.type === "LINK") Object.assign(d.linkData.link, { target: "BLANK", rel: { noreferrer: true } });
+      }
+      // 変換 API は、入れ子のリストを持つ項目の段落の末尾に改行を足す。Wix で書いた形に戻す
+      if (n.type === "LIST_ITEM" && n.nodes?.some((x) => x.type === "BULLETED_LIST" || x.type === "ORDERED_LIST")) {
+        const last = n.nodes.find((x) => x.type === "PARAGRAPH")?.nodes?.at(-1);
+        if (last?.textData?.text?.endsWith("\n")) last.textData.text = last.textData.text.slice(0, -1);
       }
       if (n.nodes) walk(n.nodes);
     }
   };
   walk(nodes);
   const out = [];
+  let prev = null;
+  let gap = null;   // 直前に空段落の印があればその数。無ければ既定の数
   for (const n of nodes) {
     const t = n.type === "PARAGRAPH" && n.nodes?.length === 1 ? n.nodes[0].textData?.text?.trim() : null;
+    const g = t?.match(/^WIXGAPTOKEN(\d+)$/);
+    if (g) { gap = Number(g[1]); continue; }
     const m = t?.match(/^WIXIMGTOKEN(\d+)$/);
-    if (out.length) out.push(emptyPara());
-    out.push(m ? imageNode(images[+m[1]], media[+m[1]]) : n);
+    const k = t?.match(/^WIXNODETOKEN(\d+)$/);
+    const cur = m ? imageNode(images[+m[1]], media[+m[1]]) : k ? structuredClone(wixNodes[+k[1]]) : n;
+    // 変換 API はコードブロックの末尾に改行を1つ足す。往復で増えないように取り除く
+    if (!k && cur.type === "CODE_BLOCK") {
+      const last = cur.nodes?.at(-1);
+      if (last?.textData?.text?.endsWith("\n")) last.textData.text = last.textData.text.slice(0, -1);
+    }
+    for (let i = 0; i < (gap ?? defaultGap(prev, cur)); i++) out.push(emptyPara());
+    gap = null;
+    out.push(cur);
+    prev = cur;
   }
-  const left = JSON.stringify(out).match(/WIXIMGTOKEN\d+/g);
-  if (left) throw new Error(`画像の差し替えに失敗した（${left.join(",")}）。画像行の前後に空行があるか確認する`);
+  for (let i = 0; i < (gap ?? 0); i++) out.push(emptyPara());
+  const left = JSON.stringify(out).match(/WIX(IMG|NODE|GAP)TOKEN\d+/g);
+  if (left) throw new Error(`印の差し替えに失敗した（${left.join(",")}）。印の行の前後に空行があるか確認する`);
   return out;
 }
 
@@ -282,12 +352,13 @@ async function push(file, { dryRun, update }) {
   const dir = path.dirname(src);
   const state = loadState(dir);
   const text = fs.readFileSync(src, "utf8");
-  const { title, markdown, images } = prepare(text, structuredClone(state.wixImages));
+  const { title, markdown, images, nodeRefs } = prepare(text, structuredClone(state.wixImages), state.wixNodes);
   if (!title) throw new Error("先頭に # タイトル行が無い");
 
+  let cur = null;
   if (update) {
     if (!state.draftPostId) throw new Error("この記事に結び付いた下書きが無い。新規なら --update を外す");
-    const cur = (await wixOk("GET", `/blog/v3/draft-posts/${state.draftPostId}`)).draftPost;
+    cur = (await wixOk("GET", `/blog/v3/draft-posts/${state.draftPostId}?fieldsets=RICH_CONTENT`)).draftPost;
     if (cur.status !== "UNPUBLISHED") {
       throw new Error(`下書きの状態が ${cur.status}。公開済み・予約済みの記事は API で書き換えない（Wix の画面で著者が反映する）`);
     }
@@ -301,7 +372,9 @@ async function push(file, { dryRun, update }) {
   console.log(`タイトル: ${title}`);
   console.log(`本文 ${markdown.length} 字 / 画像 ${images.length} 枚`);
   const media = await resolveMedia(images, dir, state, dryRun);
-  const nodes = finish(await toRicos(markdown), images, media);
+  const missing = state.wixNodes.map((_, i) => i).filter((i) => !nodeRefs.includes(i));
+  if (missing.length) console.log(`  注意: Wix のノード ${missing.map((i) => `#${i}（${state.wixNodes[i].type}）`).join("・")} の印が本文に無い。push するとそのノードは消える`);
+  const nodes = finish(await toRicos(markdown), images, media, state.wixNodes);
   console.log(`構造: ${summarize(nodes)}`);
 
   if (dryRun) {
@@ -313,6 +386,7 @@ async function push(file, { dryRun, update }) {
 
   let post;
   if (update) {
+    console.log(`  上書き前の下書きを残した: ${snapshot(dir, "before-push", cur)}`);
     post = (await wixOk("PATCH", `/blog/v3/draft-posts/${state.draftPostId}`, {
       draftPost: { id: state.draftPostId, richContent: { nodes } },
       action: "UPDATE",
@@ -366,9 +440,21 @@ function inlineMd(nodes) {
   return s.trim();
 }
 
-function toMarkdown(nodes, imageMap, wixImages) {
+const plainText = (n) => (n.nodes ?? []).map((x) => x.textData?.text ?? plainText(x)).join("");
+
+function toMarkdown(nodes, imageMap, wixImages, wixNodes = []) {
   const out = [];
   const block = (s) => out.push(s, "");
+  // 空段落は数えておき、次のブロックの前で既定の数と違う時だけ印を書く
+  let prev = null;
+  let empties = 0;
+  const gapMark = (cur) => {
+    const isList = (x) => x?.type === "BULLETED_LIST" || x?.type === "ORDERED_LIST";
+    // 隣り合う2つのリストは、間に印を置かないと Markdown で1つのリストにつながる
+    if (empties !== defaultGap(prev, cur) || (isList(prev) && isList(cur))) block(`<!-- 空段落: ${empties} -->`);
+    empties = 0;
+    prev = cur;
+  };
   const listItems = (list, ordered, depth = 0) => {
     const lines = [];
     list.nodes.forEach((li, i) => {
@@ -382,8 +468,17 @@ function toMarkdown(nodes, imageMap, wixImages) {
     return lines;
   };
   for (const n of nodes) {
+    if (isEmptyPara(n)) { empties++; continue; }
+    gapMark(n);
     switch (n.type) {
-      case "PARAGRAPH": { const t = inlineMd(n.nodes); if (t) block(t); break; }
+      case "PARAGRAPH": {
+        // 段落の中の改行（Shift+Enter）のうち、Markdown では消える・段落が割れるもの（先頭・末尾、2つ以上の連続）は <br> で書く
+        const raw = plainText(n);
+        const br = (k) => "<br>".repeat(k);
+        const t = inlineMd(n.nodes).replace(/\n{2,}/g, (m) => br(m.length));
+        block(`${br(raw.match(/^\n*/)[0].length)}${t}${br(raw.match(/\n*$/)[0].length)}`);
+        break;
+      }
       case "HEADING": block(`${"#".repeat(n.headingData?.level ?? 2)} ${inlineMd(n.nodes)}`); break;
       case "BULLETED_LIST": case "ORDERED_LIST": block(listItems(n, n.type === "ORDERED_LIST").join("\n")); break;
       case "BLOCKQUOTE": {
@@ -410,10 +505,14 @@ function toMarkdown(nodes, imageMap, wixImages) {
         }
         break;
       }
-      default: block(`<!-- 未対応のノード: ${n.type} -->`);
+      default:
+        // Markdown にできないノード（HTML 埋め込み等）は中身を wix.json に控え、印だけを本文に置く
+        wixNodes.push(n);
+        block(`<!-- Wixのノード: ${n.type} #${wixNodes.length - 1} -->`);
     }
   }
-  return `${out.join("\n").replace(/\n{3,}/g, "\n\n").trim()}\n`;
+  if (empties) block(`<!-- 空段落: ${empties} -->`);
+  return `${collapseBlank(out.join("\n"))}\n`;
 }
 
 async function pull(target, { out, force, published }) {
@@ -422,11 +521,12 @@ async function pull(target, { out, force, published }) {
   if (!state.draftPostId) throw new Error("この記事に結び付いた Wix 投稿が無い。list で探して link する");
   const imageMap = Object.fromEntries(Object.entries(state.images).map(([src, m]) => [m.id, src]));
   const wixImages = [];
+  const wixNodes = [];
 
   if (published) {
     const p = (await wixOk("GET", `/blog/v3/posts/${state.draftPostId}?fieldsets=RICH_CONTENT&fieldsets=URL`)).post;
     const url = `${p.url.base}${p.url.path}`;
-    const body = toMarkdown(p.richContent.nodes, imageMap, wixImages);
+    const body = toMarkdown(p.richContent.nodes, imageMap, wixImages, wixNodes);
     const md = `<!-- source: ${url} / fetched: ${today()} / method: wix-sync pull --published (Blog API) -->\n\n# ${p.title}\n\n${body}`;
     const dest = out ? path.resolve(out) : path.join(dir, "published.md");
     fs.writeFileSync(dest, md);
@@ -450,16 +550,18 @@ async function pull(target, { out, force, published }) {
     }
   }
   const p = (await wixOk("GET", `/blog/v3/draft-posts/${state.draftPostId}?fieldsets=RICH_CONTENT`)).draftPost;
+  const snap = snapshot(dir, "pull", p);
   const header = `<!-- source: wix draft-post ${p.id} / fetched: ${today()} / method: wix-sync pull (Blog API) / status: ${p.status} / edited: ${p.editedDate} -->\n<!-- Wix の下書き。Wix 側が正。毎回上書き。 -->\n\n`;
-  const md = `${header}# ${p.title}\n\n${toMarkdown(p.richContent.nodes, imageMap, wixImages)}`;
+  const md = `${header}# ${p.title}\n\n${toMarkdown(p.richContent.nodes, imageMap, wixImages, wixNodes)}`;
   fs.writeFileSync(dest, md);
   Object.assign(state, {
-    wixImages, syncedEditedDate: p.editedDate, syncedFile: path.basename(dest), syncedHash: hash(md),
+    wixImages, wixNodes, syncedEditedDate: p.editedDate, syncedFile: path.basename(dest), syncedHash: hash(md),
   });
   saveState(dir, state);
   const heads = (md.match(/^#{2,6} /gm) ?? []).length;
   const figs = (md.match(/^!\[/gm) ?? []).length;
-  console.log(`下書きを書いた: ${dest}（${md.length} 字 / 見出し ${heads} / 図 ${figs} / Wix の画像 ${wixImages.length}）`);
+  console.log(`下書きを書いた: ${dest}（${md.length} 字 / 見出し ${heads} / 図 ${figs} / Wix の画像 ${wixImages.length} / Wix のノード ${wixNodes.length}）`);
+  console.log(`取得した下書きを残した: ${snap}`);
 }
 
 // ---------- 一覧・結び付け・確認 ----------

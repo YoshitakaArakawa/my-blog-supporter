@@ -23,6 +23,7 @@ output/{yyyymmdd}_{テーマ}/           記事ごとの作業ディレクトリ
   draft_user.md                      記事本文（著者推敲版。書く工程の完了時に空で作成。Wix で書く時は /wix-sync の pull で上書き）
   wix.json                           Wix の投稿との結び付き（投稿 ID・上げた画像の ID・同期時点。/wix-sync が書く。手で編集しない）
   wix-dryrun.json                    /wix-sync push --dry-run の変換結果（確認用。消してよい）
+  wix-snapshots/                     /wix-sync が残す Wix の下書きの JSON（pull_*: 取得時、before-push_*: 上書き直前。版の履歴の代わり）
   revision/                          固めた後の直し・追記の差分（ほぼ完成した時点や公開後に、細かい修正を見返す時に作る）
     baseline.md                      固めた時点の本文のスナップショット（scripts/revise.mjs freeze で保存。切り直すと _archive/ へ退避）
     draft_revision.md                基準からの差分を {+ +} {- -} {? ?} で書いた正本（scripts/revise.mjs show が生成。AI が直接書いてもよい）
