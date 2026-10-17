@@ -254,7 +254,7 @@ function page(text, ctx) {
   figure img { display: block; width: 100%; height: auto; }
   figure img.portrait { width: 50%; margin: 0 auto; }
   p img { max-width: 100%; height: auto; }
-  figcaption { margin-top: .7em; font-size: 14px; line-height: 1.7; color: #6b6b6b; }
+  figcaption { margin-top: .7em; font-size: 14px; line-height: 1.7; color: #6b6b6b; text-align: center; }
   .placeholder {
     margin: 2.4em 0; padding: 40px 20px;
     border: 2px dashed #c8c8c8; border-radius: 2px;
