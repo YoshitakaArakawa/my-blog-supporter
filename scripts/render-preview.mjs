@@ -23,10 +23,14 @@
  * 記事固有の記法:
  *   ℹ️ を含む引用ブロック             著者向けの引き継ぎメモ。プレビューから落とす
  *   ✍️ を含む引用ブロック             著者が一次情報で埋める箇所。目印付きで残す
- *   <!-- 画像: 説明 -->               未作図のプレースホルダー。説明を点線枠で表示する
+ *   <!-- 画像: 説明 -->               未作図のプレースホルダー。説明を点線枠で表示する。
+ *                                     ただし wix.json の wixImages に同じキャプションの画像があれば、wix-sync push と
+ *                                     同じ対応付け（キャプション一致・先頭から未使用のもの）で Wix 上の画像を表示する
  *   ![alt](images/x.png "キャプション")  作図済みの図（1行単独）。figure に変換する。
  *                                     キャプションは title、無ければ alt。パスは draft.md からの相対
  *   その他の HTML コメント             落とす
+ *
+ * 縦長の画像（スマホのスクリーンショット）は本文幅の半分で表示する。横長はそのまま本文幅。
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -40,6 +44,10 @@ const ROOT = path.resolve(SCRIPT_DIR, "..");
 const HOOK_TARGET = /^output\/[^/]+\/draft\.md$/;
 // プレースホルダーに出す説明の上限。長い作図指示が枠を埋め尽くさないため
 const PLACEHOLDER_MAX = 120;
+// Wix 上の画像の配信 URL。wix.json の id（Media Manager のファイル名）を後ろに付ける
+const WIX_MEDIA = "https://static.wixstatic.com/media/";
+// 高さが幅のこの倍を超える画像を縦長とみなし、半分の幅で出す
+const PORTRAIT_RATIO = 1.2;
 // URL・スキーム付き・ルート絶対・アンカーは付け替えない
 const NON_LOCAL = /^([a-z][a-z0-9+.-]*:|\/|#)/i;
 
@@ -77,8 +85,18 @@ function inline(s, ctx) {
 function commentBlock(text, ctx) {
   const m = text.match(/^\s*<!--\s*画像[:：]\s*([\s\S]*?)\s*-->/);
   if (!m) return [];
+  const desc = m[1].replace(/\s+/g, " ").trim();
+  const wixImg = ctx.wixImages.find((w) => w.caption === desc && !w.used);
+  if (wixImg) {
+    wixImg.used = true;
+    ctx.figures += 1;
+    const portrait = wixImg.height > wixImg.width * PORTRAIT_RATIO ? ' class="portrait"' : "";
+    const out = ["<figure>", `<img${portrait} src="${esc(WIX_MEDIA + wixImg.id)}" alt="${esc(wixImg.alt ?? "")}">`];
+    if (wixImg.captionMd) out.push(`<figcaption>${inline(wixImg.captionMd, ctx)}</figcaption>`);
+    out.push("</figure>");
+    return out;
+  }
   ctx.placeholders += 1;
-  const desc = m[1].replace(/\s+/g, " ");
   const shown = desc.length > PLACEHOLDER_MAX ? `${desc.slice(0, PLACEHOLDER_MAX)}…` : desc;
   return [`<div class="placeholder"><span class="ph-label">画像（未作図）</span>${esc(shown)}</div>`];
 }
@@ -234,8 +252,9 @@ function page(text, ctx) {
   pre code { background: none; padding: 0; font-size: 14px; }
   figure { margin: 2.4em 0; }
   figure img { display: block; width: 100%; height: auto; }
+  figure img.portrait { width: 50%; margin: 0 auto; }
   p img { max-width: 100%; height: auto; }
-  figcaption { margin-top: .7em; font-size: 14px; line-height: 1.7; color: #6b6b6b; }
+  figcaption { margin-top: .7em; font-size: 14px; line-height: 1.7; color: #6b6b6b; text-align: center; }
   .placeholder {
     margin: 2.4em 0; padding: 40px 20px;
     border: 2px dashed #c8c8c8; border-radius: 2px;
@@ -248,17 +267,31 @@ function page(text, ctx) {
 <article class="article">
 ${body}
 </article>
+<script>
+  // 縦長の画像（スマホのスクリーンショット）は半分の幅で出す
+  for (const img of document.querySelectorAll("figure img")) {
+    const mark = () => { if (img.naturalHeight > img.naturalWidth * ${PORTRAIT_RATIO}) img.classList.add("portrait"); };
+    if (img.complete) mark(); else img.addEventListener("load", mark);
+  }
+</script>
 </body>
 </html>
 `;
 }
 
 function renderFile(src, out) {
-  const ctx = { srcDir: path.dirname(src), outDir: path.dirname(out), figures: 0, placeholders: 0, missing: [] };
+  const ctx = { srcDir: path.dirname(src), outDir: path.dirname(out), figures: 0, placeholders: 0, missing: [], wixImages: loadWixImages(src) };
   const html = page(fs.readFileSync(src, "utf8"), ctx);
   fs.mkdirSync(ctx.outDir, { recursive: true });
   fs.writeFileSync(out, html, "utf8");
   return ctx;
+}
+
+/** draft.md と同じディレクトリの wix.json から、pull で取った Wix 上の画像の一覧を読む（無ければ空） */
+function loadWixImages(src) {
+  const f = path.join(path.dirname(src), "wix.json");
+  if (!fs.existsSync(f)) return [];
+  try { return (JSON.parse(fs.readFileSync(f, "utf8")).wixImages ?? []).map((w) => ({ ...w })); } catch { return []; }
 }
 
 const defaultOut = (src) => path.join(path.dirname(src), "preview", "index.html");

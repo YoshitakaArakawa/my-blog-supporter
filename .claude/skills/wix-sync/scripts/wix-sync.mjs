@@ -8,12 +8,16 @@
  *   node wix-sync.mjs link <記事> <postId>          既存の Wix 投稿を記事に結び付ける（wix.json に記録）
  *   node wix-sync.mjs push <file.md> [--dry-run]    下書きを新規作成する（画像は Media Manager へ）
  *   node wix-sync.mjs push <file.md> --update       結び付いた下書きの本文を置き換える
+ *     [--allow-published]                           公開済み記事の下書き（未公開の変更）を置き換える。公開はしない。
+ *                                                   置き換える前に、その記事を非公開の下書きとして複製する
+ *   node wix-sync.mjs link <記事> <postId> --relink  別の投稿に結び付け直す（その投稿の現在を同期時点にする）
  *   node wix-sync.mjs pull <記事> [--out <file>] [--force]
  *                                                   下書きの最新を Markdown へ（既定 draft_user.md）
  *   node wix-sync.mjs pull <記事> --published       公開版を published.md へ
  *
  * 安全側の決まり:
- *   - 公開・公開予約・公開済み記事の書き換えはしない（その経路をコードに持たない）
+ *   - 公開・公開予約はしない（その経路をコードに持たない）。公開済み記事は --allow-published の時だけ、
+ *     下書き（未公開の変更）を action: UPDATE で置き換える。公開版は著者が Wix の画面で公開するまで変わらない
  *   - push --update は、前回の同期以降に Wix 側で編集されていたら止まる（著者の直しを消さないため）
  *   - pull は、前回の同期以降にローカルのファイルが直されていたら止まる（--force で退避して上書き）
  *   - pull → push の往復で著者の Wix の下書きを変えない。Markdown にできないノード（HTML 埋め込み等）は
@@ -393,7 +397,7 @@ function summarize(nodes) {
 
 const editUrl = (id) => `https://manage.wix.com/dashboard/${WIX_SITE_ID}/blog/${id}/edit`;
 
-async function push(file, { dryRun, update }) {
+async function push(file, { dryRun, update, allowPublished }) {
   const src = path.resolve(file);
   const dir = path.dirname(src);
   const state = loadState(dir);
@@ -405,8 +409,8 @@ async function push(file, { dryRun, update }) {
   if (update) {
     if (!state.draftPostId) throw new Error("この記事に結び付いた下書きが無い。新規なら --update を外す");
     cur = (await wixOk("GET", `/blog/v3/draft-posts/${state.draftPostId}?fieldsets=RICH_CONTENT`)).draftPost;
-    if (cur.status !== "UNPUBLISHED") {
-      throw new Error(`下書きの状態が ${cur.status}。公開済み・予約済みの記事は API で書き換えない（Wix の画面で著者が反映する）`);
+    if (cur.status !== "UNPUBLISHED" && !(cur.status === "PUBLISHED" && allowPublished)) {
+      throw new Error(`下書きの状態が ${cur.status}。公開済みの記事の下書きを置き換えるなら --allow-published（予約済みは不可）`);
     }
     if (cur.editedDate !== state.syncedEditedDate) {
       throw new Error(`前回の同期（${state.syncedEditedDate ?? "なし"}）以降に Wix 側で編集されている（${cur.editedDate}）。先に pull して差分を確かめる`);
@@ -433,11 +437,18 @@ async function push(file, { dryRun, update }) {
   let post;
   if (update) {
     console.log(`  上書き前の下書きを残した: ${snapshot(dir, "before-push", cur)}`);
+    if (cur.status === "PUBLISHED") {
+      const copy = (await wixOk("POST", "/blog/v3/draft-posts", {
+        draftPost: { title: `[複製 ${new Date().toISOString().slice(0, 10).replace(/-/g, "")}] ${cur.title}`, memberId: cur.memberId, richContent: cur.richContent },
+      })).draftPost;
+      console.log(`  上書き前の記事を非公開の複製として残した: ${copy.id}（${copy.title}）`);
+    }
     post = (await wixOk("PATCH", `/blog/v3/draft-posts/${state.draftPostId}`, {
       draftPost: { id: state.draftPostId, richContent: { nodes } },
       action: "UPDATE",
     })).draftPost;
     console.log(`下書きの本文を置き換えた（タイトルは Wix 側のまま）`);
+    if (cur.status === "PUBLISHED") console.log(`  公開済みの記事: 状態 ${post.status}／未公開の変更あり ${post.hasUnpublishedChanges}。公開版は Wix の画面で公開するまで変わらない`);
   } else {
     const isAiDraft = path.basename(src) === "draft.md";
     post = (await wixOk("POST", "/blog/v3/draft-posts", {
@@ -657,11 +668,17 @@ async function list(limit) {
   for (const p of j.draftPosts ?? []) console.log(`${p.id}  ${p.status.padEnd(11)}  ${p.editedDate ?? ""}  ${p.title}`);
 }
 
-async function link(target, id) {
+async function link(target, id, { relink } = {}) {
   const dir = articleDir(target);
   const p = (await wixOk("GET", `/blog/v3/draft-posts/${id}`)).draftPost;
   const state = loadState(dir);
-  if (state.draftPostId && state.draftPostId !== id) throw new Error(`既に別の投稿（${state.draftPostId}）に結び付いている。wix.json を確かめる`);
+  if (state.draftPostId && state.draftPostId !== id && !relink) throw new Error(`既に別の投稿（${state.draftPostId}）に結び付いている。結び付け直すなら --relink`);
+  if (relink) {
+    console.log(`  結び付け直し: ${state.draftPostId ?? "なし"} → ${id}。同期時点をこの投稿の現在（${p.editedDate}）にする`);
+    state.syncedEditedDate = p.editedDate;
+    delete state.syncedFile;
+    delete state.syncedHash;
+  }
   state.draftPostId = id;
   saveState(dir, state);
   console.log(`結び付けた: ${path.basename(dir)} ↔ ${id}（${p.status}）${p.title}`);
@@ -673,13 +690,13 @@ const [cmd, ...args] = process.argv.slice(2);
 const flag = (f) => args.includes(f);
 const opt = (f) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : undefined; };
 const pos = args.filter((a, i) => !a.startsWith("--") && !(i > 0 && ["--out", "--limit"].includes(args[i - 1])));
-const USAGE = "usage: check | list [--limit N] | link <記事> <postId> | push <file.md> [--dry-run|--update] | pull <記事> [--out <file>] [--force] [--published]";
+const USAGE = "usage: check | list [--limit N] | link <記事> <postId> [--relink] | push <file.md> [--dry-run|--update [--allow-published]] | pull <記事> [--out <file>] [--force] [--published]";
 
 try {
   if (cmd === "check") await check();
   else if (cmd === "list") await list(Number(opt("--limit") ?? 10));
-  else if (cmd === "link" && pos.length === 2) await link(pos[0], pos[1]);
-  else if (cmd === "push" && pos[0]) await push(pos[0], { dryRun: flag("--dry-run"), update: flag("--update") });
+  else if (cmd === "link" && pos.length === 2) await link(pos[0], pos[1], { relink: flag("--relink") });
+  else if (cmd === "push" && pos[0]) await push(pos[0], { dryRun: flag("--dry-run"), update: flag("--update"), allowPublished: flag("--allow-published") });
   else if (cmd === "pull" && pos[0]) await pull(pos[0], { out: opt("--out"), force: flag("--force"), published: flag("--published") });
   else { console.error(USAGE); process.exit(2); }
 } catch (e) {

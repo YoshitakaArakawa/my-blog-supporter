@@ -7,7 +7,7 @@
  *
  *   <記事ディレクトリ>  output/{yyyymmdd}_{テーマ}/
  *   <行>               改行位置で区切ったタイトル。1 引数が 1 行になる
- *   --size N           文字サイズ（px）。既定 96。行が収まらない時だけ下げる
+ *   --size N           文字サイズ（px）。既定 96。行が収まらない時だけ下げ、短い行ばかりで余白が大きい時は 128 まで上げてよい
  *
  * 出力:
  *   <記事>/images/src/thumbnail.html  テンプレートに行を埋めたソース（修正・再描画はここから）
@@ -29,6 +29,8 @@ const RENDER = path.join(SKILL_DIR, "..", "illustrate", "scripts", "render-figur
 const DEFAULT_SIZE = 96;
 // 収まらない行を縮める時でも、本文幅に縮小されたカバーで読める下限
 const MIN_SIZE = 64;
+// 短い行ばかりで余白が大きい時に上げてよい上限（3行で「Plugin & MCP」程度が幅の8割に収まる）
+const MAX_SIZE = 128;
 
 function fail(msg, code = 2) {
   console.error(`error: ${msg}`);
@@ -41,8 +43,8 @@ const sizeAt = args.indexOf("--size");
 if (sizeAt !== -1) {
   size = Number(args[sizeAt + 1]);
   args.splice(sizeAt, 2);
-  if (!Number.isInteger(size) || size < MIN_SIZE || size > DEFAULT_SIZE) {
-    fail(`--size は ${MIN_SIZE}〜${DEFAULT_SIZE} の整数`);
+  if (!Number.isInteger(size) || size < MIN_SIZE || size > MAX_SIZE) {
+    fail(`--size は ${MIN_SIZE}〜${MAX_SIZE} の整数`);
   }
 }
 const [dir, ...lines] = args;
