@@ -17,8 +17,15 @@
  *
  * 対応する Markdown（記事ドラフトで使う範囲に絞った簡易変換）:
  *   見出し / 段落 / 箇条書き・番号付きリスト（1階層＋継続行）/ 引用 / 区切り線 / コードフェンス
- *   インライン: **太字** / `コード` / [リンク](URL) / ![画像](パス)
+ *   インライン: **太字** / *斜体* / `コード` / [リンク](URL) / ![画像](パス) / \ のエスケープ / <br>
  *   表・入れ子リスト・HTML の直書きは対象外（エスケープされた文字列として段落に出る）
+ *
+ * Wix 連携の拡張記法（正本は .claude/skills/wix-sync/references/markdown-extensions.md。解析は scripts/lib/wix-markdown.mjs）:
+ *   [テキスト]{.accent} / {color=#…} / {.u}  文字色・下線
+ *   ![alt](src "キャプション"){width=small}   画像の幅（small は半分の幅、それ以外は本文幅）。src が wix:ID なら Wix 上の画像
+ *   ::x{url=…}                              X のポストの埋め込み（widgets.js で描く）
+ *   ::wix{type=… id=…}                      Markdown にできない Wix のノード。枠だけ出す
+ *   ---{width=medium}                       区切り線
  *
  * 記事固有の記法:
  *   ℹ️ を含む引用ブロック             著者向けの引き継ぎメモ。プレビューから落とす
@@ -35,6 +42,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { DIRECTIVE_LINE, IMAGE_LINE, parseAttrs, parseInline } from "./lib/wix-markdown.mjs";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(SCRIPT_DIR, "..");
@@ -66,18 +74,29 @@ function relink(src, ctx) {
 
 // ---------- インライン ----------
 
+// 装飾付きの区切り1つを HTML にする。内側から コード → 色・下線 → リンク → 斜体 → 太字 の順に包む
+function segmentHtml({ text, decos }) {
+  const has = (t) => decos.some((d) => d.type === t);
+  let h = esc(text).replace(/\n/g, "<br>");
+  if (has("CODE")) h = `<code>${h}</code>`;
+  const color = decos.findLast((d) => d.type === "COLOR")?.color;
+  if (color) h = `<span style="color: ${esc(color)}">${h}</span>`;
+  const url = decos.findLast((d) => d.type === "LINK")?.url;
+  if (has("UNDERLINE") && !url) h = `<u>${h}</u>`;
+  if (url) h = `<a href="${esc(url)}" target="_blank" rel="noopener">${h}</a>`;
+  if (has("ITALIC")) h = `<em>${h}</em>`;
+  if (has("BOLD")) h = `<strong>${h}</strong>`;
+  return h;
+}
+
 function inline(s, ctx) {
-  const tokens = [];
-  const stash = (html) => { tokens.push(html); return `\u0000${tokens.length - 1}\u0000`; };
   s = s.replace(/<!--[\s\S]*?-->/g, "");
-  s = s.replace(/`([^`]+)`/g, (_, c) => stash(`<code>${esc(c)}</code>`));
-  s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_, alt, src) => stash(`<img src="${esc(relink(src, ctx))}" alt="${esc(alt)}">`));
-  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, u) => stash(`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`));
-  s = esc(s);
-  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-  // 退避した部品を戻す。リンク文字列の中に退避したコードがある場合に備えて、残らなくなるまで繰り返す
-  while (/\u0000\d+\u0000/.test(s)) s = s.replace(/\u0000(\d+)\u0000/g, (_, i) => tokens[Number(i)] ?? "");
-  return s;
+  // 行の途中の画像（![alt](src)）は先に切り出し、残りを拡張記法つきのインラインとして解析する
+  return s.split(/(!\[[^\]]*\]\([^)\s]+(?:\s+"[^"]*")?\))/).map((part) => {
+    const im = part.match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)$/);
+    if (im) return `<img src="${esc(relink(im[2], ctx))}" alt="${esc(im[1])}">`;
+    return parseInline(part).map(segmentHtml).join("");
+  }).join("");
 }
 
 // ---------- ブロック ----------
@@ -101,13 +120,29 @@ function commentBlock(text, ctx) {
   return [`<div class="placeholder"><span class="ph-label">画像（未作図）</span>${esc(shown)}</div>`];
 }
 
-function figure(alt, src, title, ctx) {
+// 画像。wix:ID は Wix 上の画像の配信 URL で出す。幅の属性があれば縦横比による自動の判定より優先する
+function figure(alt, src, title, attrsRaw, ctx) {
   ctx.figures += 1;
-  const caption = title ?? alt;
-  const out = ["<figure>", `<img src="${esc(relink(src, ctx))}" alt="${esc(alt)}">`];
+  // キャプションは title、無ければ alt（地の文なので記法の文字を守ってから解析する）
+  const caption = title ?? alt.replace(/[\\`*[\]]/g, "\\$&");
+  const url = src.startsWith("wix:") ? WIX_MEDIA + src.slice(4) : relink(src, ctx);
+  const width = attrsRaw === undefined ? null : parseAttrs(attrsRaw)?.kv.width;
+  const cls = width === "small" ? ' class="portrait" data-fixed="1"' : width ? ' data-fixed="1"' : "";
+  const out = ["<figure>", `<img${cls} src="${esc(url)}" alt="${esc(alt)}">`];
   if (caption) out.push(`<figcaption>${inline(caption, ctx)}</figcaption>`);
   out.push("</figure>");
   return out;
+}
+
+// 埋め込みの行。X のポストは widgets.js で描き、それ以外の Wix のノードは枠だけ出す
+function directiveBlock(name, attrsRaw, ctx) {
+  const kv = (attrsRaw === undefined ? null : parseAttrs(attrsRaw))?.kv ?? {};
+  if (name === "x" && kv.url) {
+    ctx.embeds += 1;
+    return [`<blockquote class="twitter-tweet"><a href="${esc(kv.url)}">${esc(kv.url)}</a></blockquote>`];
+  }
+  ctx.placeholders += 1;
+  return [`<div class="placeholder"><span class="ph-label">Wix のノード（${esc(kv.type ?? name)}）</span>Wix の画面で入れた要素。プレビューでは中身を出さない</div>`];
 }
 
 function toBody(text, ctx) {
@@ -159,7 +194,7 @@ function toBody(text, ctx) {
       if (line.includes("-->")) out.push(...commentBlock(line, ctx)); else comment = [line];
       continue;
     }
-    if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) { flushAll(); out.push("<hr>"); continue; }
+    if (/^\s*(-{3,}|\*{3,}|_{3,})\s*(\{[^}]*\})?\s*$/.test(line)) { flushAll(); out.push("<hr>"); continue; }
 
     const h = line.match(/^(#{1,6})\s+(.*)$/);
     if (h) { flushAll(); out.push(`<h${h[1].length}>${inline(h[2], ctx)}</h${h[1].length}>`); continue; }
@@ -171,8 +206,10 @@ function toBody(text, ctx) {
     }
     flushQuote();
 
-    const img = line.match(/^\s*!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)\s*$/);
-    if (img) { flushAll(); out.push(...figure(img[1], img[2], img[3], ctx)); continue; }
+    const img = line.match(IMAGE_LINE);
+    if (img) { flushAll(); out.push(...figure(img[1].replace(/\\(.)/g, "$1"), img[2], img[3], img[4], ctx)); continue; }
+    const dir = line.match(DIRECTIVE_LINE);
+    if (dir) { flushAll(); out.push(...directiveBlock(dir[1], dir[2], ctx)); continue; }
 
     const li = line.match(/^\s*(?:([-*+])|\d+[.)])\s+(.*)$/);
     if (li) {
@@ -267,9 +304,10 @@ function page(text, ctx) {
 <article class="article">
 ${body}
 </article>
+${ctx.embeds ? '<script async src="https://platform.x.com/widgets.js" charset="utf-8"></script>' : ""}
 <script>
   // 縦長の画像（スマホのスクリーンショット）は半分の幅で出す
-  for (const img of document.querySelectorAll("figure img")) {
+  for (const img of document.querySelectorAll("figure img:not([data-fixed])")) {
     const mark = () => { if (img.naturalHeight > img.naturalWidth * ${PORTRAIT_RATIO}) img.classList.add("portrait"); };
     if (img.complete) mark(); else img.addEventListener("load", mark);
   }
@@ -280,7 +318,7 @@ ${body}
 }
 
 function renderFile(src, out) {
-  const ctx = { srcDir: path.dirname(src), outDir: path.dirname(out), figures: 0, placeholders: 0, missing: [], wixImages: loadWixImages(src) };
+  const ctx = { srcDir: path.dirname(src), outDir: path.dirname(out), figures: 0, placeholders: 0, embeds: 0, missing: [], wixImages: loadWixImages(src) };
   const html = page(fs.readFileSync(src, "utf8"), ctx);
   fs.mkdirSync(ctx.outDir, { recursive: true });
   fs.writeFileSync(out, html, "utf8");

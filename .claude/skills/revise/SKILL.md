@@ -20,6 +20,7 @@ argument-hint: "[テーマ] [freeze|show|apply](任意)"
 - **大きく動く段階では使わない**。draft.md を章ごと書き直している最中なら article の書く工程へ戻す。差分は細かい修正・追記のためのもの。目安は、構成を議論する時は全文のプレビュー HTML（article）、文を直す時は差分（revise）。
 - **裏付けの Web 取得は pull**。著者の承認を得てから行い、references.md に取得状態を1行で控える（article 不変条件4）。
 - **図を足す時は illustrate に渡す**。戻ってきた `![...](images/...)` の1行を `{+ +}` で差分ファイルに入れる。
+- **Wix の記法は字面のまま扱う**。Wix から取った本文の `[テキスト]{.accent}`・`![…](wix:…){width=small}`・`::x{…}` などは wix-sync の拡張記法（`/wix-sync` の references/markdown-extensions.md）。差分には文字と同じく記法の変化も出る。改訂案で記法を足し消しするのは著者が求めた時だけ。
 
 ## 手順
 
@@ -29,5 +30,5 @@ argument-hint: "[テーマ] [freeze|show|apply](任意)"
 - [ ] **経路を決める**: 著者が自分で本文を直す（直した）なら次へ。AI が改訂案を出すなら、`baseline.md` の本文を `revision/draft_revision.md` へ写し、そこにマーカーで書く。「何をどう変えるべきか提案して」と言われた時は、書く前に変更箇所と方針を3〜5点で示して合意を取る。
 - [ ] **差分を出す**: 著者が直した経路は `node ${CLAUDE_PROJECT_DIR}/scripts/revise.mjs show <本文>`。本文の後半が未着手（Wix で仮置きのまま等）なら `--until "<本文側の境界>"` を付け、その行から先を基準のまま継いで比べる（本文の仮置き行と基準の見出しが違えば `--from "<基準側の境界>"` を添える）。AI 経路は `node ${CLAUDE_PROJECT_DIR}/scripts/render-revision.mjs $OUTPUT_DIR/revision/draft_revision.md`。HTML は `.claude/launch.json` の `preview` サーバー経由（`http://localhost:8765/output/{記事}/revision/index.html`）で開くと図も出る。
 - [ ] **著者に返す**: HTML のパス、変更点の要約、`{? ?}` の一覧。著者の採否と `{? ?}` への回答を受けて差分ファイルを直し、再描画する。却下された追加は `{+ +}` ごと消し、却下された削除は `{- -}` を外して元の文に戻す。
-- [ ] **書き戻す**: 著者が確定したら `node ${CLAUDE_PROJECT_DIR}/scripts/revise.mjs apply <本文>`。`{? ?}` が残っていれば止まるので先に解決する。採用した論点は thinking.md の該当節に `[著者:会話 {yyyymmdd}]` で追記する。公開済み記事なら `published/{記事}/draft_user.md` にも同じ内容を反映する（公開層の推敲反映は直接編集でよい）。Wix への反映は、未公開の下書きなら著者の承認後に `/wix-sync` の update で送り、公開済み記事なら著者が Wix の画面で行う。
+- [ ] **書き戻す**: 著者が確定したら `node ${CLAUDE_PROJECT_DIR}/scripts/revise.mjs apply <本文>`。`{? ?}` が残っていれば止まるので先に解決する。採用した論点は thinking.md の該当節に `[著者:会話 {yyyymmdd}]` で追記する。公開済み記事なら `published/{記事}/draft_user.md` にも同じ内容を反映する（公開層の推敲反映は直接編集でよい）。Wix への反映は、著者の承認後に `/wix-sync` で送る（未公開の下書きは update、公開済み記事は「公開済みの記事を更新する」の手順）。公開済み記事の公開版を差し替えるのは、著者が Wix の画面で公開した時。
 - [ ] **次に備える**: 反映後、続けて直すなら `freeze` を切り直すかを著者に確認する。切り直すと差分は今の本文からになる。

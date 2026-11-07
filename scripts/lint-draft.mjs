@@ -24,6 +24,7 @@ import os from "node:os";
 import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { plainInline, STYLES } from "./lib/wix-markdown.mjs";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(SCRIPT_DIR, "..");
@@ -74,19 +75,24 @@ function bodyLines(text) {
 const isHeading = (s) => /^#{1,6}\s/.test(s);
 const isList = (s) => /^\s*([-*+]|\d+\.)\s/.test(s);
 const isQuote = (s) => /^\s*>/.test(s);
-const isHr = (s) => /^\s*-{3,}\s*$/.test(s);
-const isHtml = (s) => /^\s*</.test(s);
+const isHr = (s) => /^\s*-{3,}\s*(\{[^}]*\})?\s*$/.test(s);
+// HTML の直書きと、Wix の埋め込みの行（::x{…}・::wix{…}）
+const isHtml = (s) => /^\s*(<|::)/.test(s);
 // 図だけの行（![alt](path)）。段落に数えると字数 0 の段落になり、段落あたりの指標が下がるため除外する
-const isImage = (s) => /^\s*!\[[^\]]*\]\([^)]*\)\s*$/.test(s);
+const isImage = (s) => /^\s*!\[[^\]]*\]\([^)]*\)(\{[^}]*\})?\s*$/.test(s);
+// 図の記法（属性 {width=…} を含む）
+const IMAGE_INLINE = /!\[[^\]]*\]\([^)]*\)(\{[^}]*\})?/g;
+// 色の強調の記法（[テキスト]{.accent}・[テキスト]{color=#…}）。下線だけの {.u} は数えない
+const ACCENT_SPAN = new RegExp(String.raw`\]\{(?:[^}]*\s)?(?:${Object.keys(STYLES).map((k) => String.raw`\.${k}`).join("|")}|color=)[^}]*\}`, "g");
 
-/** リンク記法と URL を落とした素の文字列 */
+/** 記法（リンク・強調・{.accent} 等の拡張記法・エスケープ）と URL を落とした素の文字列 */
 function plain(s) {
-  return s.replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/https?:\/\/\S+/g, "").replace(/\*\*/g, "");
+  return plainInline(s.replace(IMAGE_INLINE, "")).replace(/https?:\/\/\S+/g, "");
 }
 
 /** リンクを丸ごと落とした素の文字列（英文引用の検出用。リンクタイトルの英語を数えないため） */
 function plainNoLinks(s) {
-  return s.replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/\[[^\]]*\]\([^)]*\)/g, "").replace(/https?:\/\/\S+/g, "").replace(/\*\*/g, "");
+  return plainInline(s.replace(IMAGE_INLINE, "").replace(/\[[^\]]*\]\([^)]*\)/g, "")).replace(/https?:\/\/\S+/g, "");
 }
 
 function splitSentences(s) {
@@ -146,6 +152,7 @@ function metrics(text) {
   const headings = lines.filter((l) => isHeading(l.text)).map((l) => ({ n: l.n, text: l.text }));
   const kagi = (bodyText.match(/「/g) || []).length;
   const bold = (text.match(/\*\*[^*\n]+\*\*/g) || []).length;
+  const accent = nonHeading.reduce((a, l) => a + (l.text.match(ACCENT_SPAN) || []).length, 0);
   const dashes = (bodyText.match(/[—―]|――|——/g) || []).length;
   const nakaguro = (bodyText.match(/[ぁ-んァ-ン一-龥]・[ぁ-んァ-ン一-龥]/g) || []).length;
   const chars = bodyText.replace(/\s/g, "").length;
@@ -188,7 +195,7 @@ function metrics(text) {
     h2: headings.filter((h) => /^##\s/.test(h.text)).length,
     // 余談の ### は構成上の例外として数えない（voice-style ルール8・11）
     h3: headings.filter((h) => /^###\s/.test(h.text) && !/^###\s*余談/.test(h.text)).length,
-    headings, kagi, bold, dashes, nakaguro, longSentences, hedge, english, repeated, inHeading,
+    headings, kagi, bold, accent, dashes, nakaguro, longSentences, hedge, english, repeated, inHeading,
     introKind, introHasRefBlock, introHasFixedHeader,
     closingFound: closingIdx >= 0, closingSentences: closingSentences.length, closingText,
     authorSignals, lines,
@@ -271,6 +278,8 @@ function evaluate(m, banned, tl, heads = [], primary = []) {
   add("## の本数", m.h2, `≤${h2Max}`, m.h2 <= h2Max, m.twoPart ? "二部構成（見出しに前半／後半）として上限を切り替え" : "");
   add("### の本数（余談を除く）", m.h3, `≤${T.h3Max}`, m.h3 <= T.h3Max);
   add("太字", m.bold, `${T.boldMax}`, m.bold <= T.boldMax);
+  // 色の強調は判定しない（参考値）。公開記事での使用数を計測してから閾値を決める
+  add("色の強調（参考）", m.accent, "未計測", true, m.accent ? "太字と同じく強調の多用に当たりうる。著者が置いたものか確かめる" : "");
   add("ダッシュ（—―）", m.dashes, "0", m.dashes === 0);
   add("和文の中黒（・）", m.nakaguro, `≤${T.nakaguroMax}`, m.nakaguro <= T.nakaguroMax);
   add(`${T.sentenceCharsMax}字超の文`, m.longSentences, "0", m.longSentences === 0);

@@ -108,8 +108,8 @@ if (!fs.existsSync(baseline)) {
   console.error(`基準がありません。先に固めてください: node scripts/revise.mjs freeze ${rel(draft)}`);
   process.exit(1);
 }
-// Wix から取った本文（wix-sync の pull）では画像が <!-- 画像: キャプション --> のプレースホルダーになり、
-// 直後にキャプションの行が続く。基準に同じキャプション（title または alt）の図があればその行に戻し、
+// 旧形式の pull（wix-sync が画像を ![…](wix:ID) で書く前）の本文では、画像が <!-- 画像: キャプション --> の
+// プレースホルダーになり、直後にキャプションの行が続く。基準に同じキャプション（title または alt）の図があればその行に戻し、
 // リンクのプレビュー（直後が同じ文言のリンク行）はプレースホルダーを落とす。差分に図の消失が出ないようにする
 function restoreImages(text, base) {
   const byCaption = new Map();
@@ -117,7 +117,7 @@ function restoreImages(text, base) {
   const baseLines = base.split("\n");
   for (let i = 0; i < baseLines.length; i++) {
     const line = baseLines[i];
-    const m = line.match(/^\s*!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)\s*$/);
+    const m = line.match(/^\s*!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)(?:\{[^}]*\})?\s*$/);
     if (!m) continue;
     if (m[3]) byCaption.set(m[3].trim(), line.trim());
     if (m[1]) byCaption.set(m[1].trim(), line.trim());
