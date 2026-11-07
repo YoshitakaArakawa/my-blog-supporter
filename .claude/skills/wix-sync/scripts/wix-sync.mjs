@@ -6,36 +6,44 @@
  *   node wix-sync.mjs check                         認証確認（読み取りのみ）
  *   node wix-sync.mjs list [--limit N]              最近の投稿・下書きの一覧（読み取りのみ）
  *   node wix-sync.mjs link <記事> <postId>          既存の Wix 投稿を記事に結び付ける（wix.json に記録）
+ *   node wix-sync.mjs link <記事> <postId> --relink  別の投稿に結び付け直す（その投稿の現在を同期時点にする）
  *   node wix-sync.mjs push <file.md> [--dry-run]    下書きを新規作成する（画像は Media Manager へ）
  *   node wix-sync.mjs push <file.md> --update       結び付いた下書きの本文を置き換える
  *     [--allow-published]                           公開済み記事の下書き（未公開の変更）を置き換える。公開はしない。
  *                                                   置き換える前に、その記事を非公開の下書きとして複製する
- *   node wix-sync.mjs link <記事> <postId> --relink  別の投稿に結び付け直す（その投稿の現在を同期時点にする）
+ *     [--accept-loss]                               pull で控えた段落を直した・消した時に、その装飾を捨てて送る
  *   node wix-sync.mjs pull <記事> [--out <file>] [--force]
  *                                                   下書きの最新を Markdown へ（既定 draft_user.md）
  *   node wix-sync.mjs pull <記事> --published       公開版を published.md へ
  *   node wix-sync.mjs compare <前.json> <後.json>   2つの Ricos JSON（pull の控え・dry-run の出力）で、減る装飾と
- *                                                   画像の消失・並び・幅の変化を出す（Wix を呼ばない）。
+ *                                                   画像の消失・位置・幅の変化を出す（Wix を呼ばない）。
  *                                                   push --dry-run は直前の pull の控えと自動でこれを行う
+ *   node wix-sync.mjs roundtrip <控え.json>         Wix を呼ばずに pull → push の往復を試し、元と同じになるかを見る
+ *
+ * Markdown ⇔ Ricos の変換と拡張記法（{.accent}・{width=small}・wix:ID・::x 等）は scripts/lib/wix-markdown.mjs。
+ * 記法の説明は ../references/markdown-extensions.md。
  *
  * 安全側の決まり:
  *   - 公開・公開予約はしない（その経路をコードに持たない）。公開済み記事は --allow-published の時だけ、
  *     下書き（未公開の変更）を action: UPDATE で置き換える。公開版は著者が Wix の画面で公開するまで変わらない
  *   - push --update は、前回の同期以降に Wix 側で編集されていたら止まる（著者の直しを消さないため）
  *   - pull は、前回の同期以降にローカルのファイルが直されていたら止まる（--force で退避して上書き）
- *   - pull → push の往復で著者の Wix の下書きを変えない。Markdown にできないノード（HTML 埋め込み等）は
- *     wix.json に控えて元の位置へ戻し、空段落の数は既定と違う箇所だけ印を付けて保つ。
- *     コードブロックの中のリンクは [テキスト](http(s) の URL) で読み書きする。それ以外の装飾（太字等）を
- *     持つコードブロックは控え、中身が同じなら控えで戻し、変わっていたら止まる
+ *   - pull → push の往復で著者の Wix の下書きを変えない。Markdown から同じノードに戻せない段落（文字サイズ・
+ *     文字揃え・画像の切り抜き等）は pull が wix.json の controls に控え、push は同じ段落が来たら控えのまま送る。
+ *     控えた段落が直されて・消されていたら、装飾を黙って落とさず止める（--accept-loss で送る）
  *   - pull と push --update は、取得した・上書きする直前の下書きを wix-snapshots/ に JSON のまま残す
  *
- * 状態は記事ディレクトリの wix.json（下書き ID・画像の対応・同期時点）。output/ 配下なので commit されない。
+ * 状態は記事ディレクトリの wix.json（下書き ID・画像の対応・Wix の画像の大きさ・埋め込み・控え・同期時点）。
+ * output/ 配下なので commit されない。
  * 認証: WIX_API_KEY と WIX_SITE_ID を .env から読む。$CLAUDE_PROJECT_DIR/.env、無ければカレントから上へ探す。
  * 依存: Node 22 以上の標準機能のみ（fetch / process.loadEnvFile）。
  */
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import {
+  canonical, controlReplacer, fromRicos, lostSpans, parseDocument, plainText, toRicos,
+} from "../../../../scripts/lib/wix-markdown.mjs";
 
 // ---------- 認証と HTTP ----------
 
@@ -52,12 +60,10 @@ function loadEnv() {
 
 loadEnv();
 const { WIX_API_KEY, WIX_SITE_ID } = process.env;
-if (!WIX_API_KEY || !WIX_SITE_ID) {
-  console.error("error: WIX_API_KEY / WIX_SITE_ID が見つからない。リポジトリ直下の .env に置く（README「Wix 連携」）");
-  process.exit(1);
-}
 
 async function wix(method, url, body) {
+  // 認証が要るのは Wix を呼ぶ時だけ（compare・roundtrip は .env 無しで動く）
+  if (!WIX_API_KEY || !WIX_SITE_ID) throw new Error("WIX_API_KEY / WIX_SITE_ID が見つからない。リポジトリ直下の .env に置く（README「Wix 連携」）");
   const res = await fetch(`https://www.wixapis.com${url}`, {
     method,
     headers: {
@@ -87,10 +93,13 @@ function articleDir(p) {
 }
 
 const statePath = (dir) => path.join(dir, "wix.json");
+// images: push で上げたローカルの画像（パス → Media）。media: Wix 上の画像の大きさ（ID → 幅・高さ）。
+// embeds: X のポストの埋め込み HTML（URL → HTML）。wixBlocks: Markdown にできないノード（ID → ノード）。
+// controls: Markdown から戻せない段落の控え。wixImages・wixNodes は旧形式の印（<!-- 画像 -->・<!-- Wixのノード -->）の控え
 function loadState(dir) {
   const p = statePath(dir);
   const s = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : {};
-  return { images: {}, wixImages: [], wixNodes: [], ...s };
+  return { images: {}, media: {}, embeds: {}, wixBlocks: {}, controls: [], wixImages: [], wixNodes: [], ...s };
 }
 const saveState = (dir, s) => fs.writeFileSync(statePath(dir), `${JSON.stringify(s, null, 2)}\n`);
 const hash = (s) => crypto.createHash("sha256").update(s).digest("hex").slice(0, 16);
@@ -111,258 +120,9 @@ async function authorMemberId() {
   return j.members[0].id;
 }
 
-// ---------- Markdown → Ricos ----------
+// ---------- 画像 ----------
 
 const MIME = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp" };
-// 変換 API の入力上限は markdown 30,000 字。章（## 見出し）単位でこの長さまで束ねて送る
-const CHUNK_MAX = 25000;
-const CONVERT_LIMIT = 30000;
-// 画像は変換後に IMAGE ノードへ差し替えるため、変換中はこの印の段落にしておく
-const IMG_TOKEN = (i) => `WIXIMGTOKEN${i}`;
-// Markdown にできないノードと、既定と違う空段落の数も、変換中は印の段落にしておく
-const NODE_TOKEN = (i) => `WIXNODETOKEN${i}`;
-const GAP_TOKEN = (n) => `WIXGAPTOKEN${n}`;
-// pull が書く印。著者が Wix で入れた要素と空段落を、push で同じ位置に戻すためのもの
-const NODE_MARK = /<!--\s*Wixのノード[:：]\s*(\S+)\s+#(\d+)\s*-->/;
-const GAP_MARK = /<!--\s*空段落[:：]\s*(\d+)\s*-->/;
-const LEGACY_MARK = /<!--\s*未対応のノード[:：]/;
-// コードブロックの中のリンクの書き方。URL は http(s) に限り、コードとしての [x](y) は字面のまま残す
-const CODE_LINK = /\[([^[\]\n]+)\]\((https?:\/\/[^\s()]+)\)/;
-// Wix の編集画面がコードブロックの中のリンクに付ける装飾。push で同じ形にする
-const codeLinkDecos = (url) => [
-  { type: "LINK", linkData: { link: { url, target: "BLANK", rel: { noreferrer: true } } } },
-  { type: "UNDERLINE" },
-];
-// 3行以上の空行を1行に詰める。コードブロック（```）の中は著者の空行なので詰めない
-function collapseBlank(md) {
-  const out = [];
-  let fence = false;
-  for (const line of md.split("\n")) {
-    if (/^\s*```/.test(line)) fence = !fence;
-    if (!fence && !line.trim() && !out.at(-1)?.trim()) continue;
-    out.push(line);
-  }
-  return out.join("\n").trim();
-}
-// draft.md（AI 版）を流し込んだ下書きの目印。著者が自分の言葉で書き直したらタイトルから外す
-const AI_TITLE_PREFIX = "[AI下書き] ";
-
-// draft.md / draft_user.md を Wix に入れる形にする。ℹ️ メモと HTML コメントを落とし、H1 はタイトルへ。
-// 画像は次の2種をトークンに置き換える:
-//   ![alt](images/x.png "キャプション")   ローカルの画像（アップロードする）
-//   <!-- 画像: キャプション -->            pull で取った Wix 上の画像（wix.json の wixImages に同じキャプションがあれば戻す）
-function prepare(text, wixImages, wixNodes = []) {
-  const lines = text.replace(/\r\n?/g, "\n").split("\n");
-  const out = [];
-  const images = [];
-  let title = null;
-  let quote = null;
-  let comment = null;
-  let skipCaption = null;   // Wix 画像のプレースホルダー直後のキャプション行は画像側に含める
-  const flushQuote = () => {
-    if (quote && !quote.some((l) => l.includes("ℹ️"))) out.push(...quote);
-    quote = null;
-  };
-  const nodeRefs = [];
-  let code = null;   // 控えたコードブロックの印の直後。続くコードブロックの中身を集めて控えと比べる
-  const onComment = (c) => {
-    if (LEGACY_MARK.test(c)) {
-      throw new Error("「未対応のノード」の印がある。古い pull はノードの中身を控えていないので、push するとそのノードが消える。pull し直してから直す");
-    }
-    const nm = c.match(NODE_MARK);
-    if (nm) {
-      const i = Number(nm[2]);
-      if (wixNodes[i]?.type !== nm[1]) throw new Error(`Wix のノード #${i}（${nm[1]}）が wix.json に無い。pull し直す`);
-      nodeRefs.push(i);
-      out.push("", NODE_TOKEN(i), "");
-      if (nm[1] === "CODE_BLOCK") code = { i, lines: null };
-      return;
-    }
-    const gm = c.match(GAP_MARK);
-    if (gm) { out.push("", GAP_TOKEN(Number(gm[1])), ""); return; }
-    const m = c.match(/<!--\s*画像[:：]\s*([\s\S]*?)\s*-->/);
-    if (!m) return;
-    const cap = m[1].replace(/\s+/g, " ").trim();
-    const wixImg = wixImages.find((w) => w.caption === cap && !w.used);
-    if (wixImg) {
-      wixImg.used = true;
-      images.push({ wix: wixImg, alt: wixImg.alt ?? "", caption: cap, captionNodes: wixImg.captionNodes });
-      out.push("", IMG_TOKEN(images.length - 1), "");
-      skipCaption = wixImg.captionMd || null;
-    } else {
-      // 未作図のプレースホルダーは、著者が Wix 上で気づけるよう目印付きの段落で残す
-      out.push("", `［画像（未作図）: ${cap}］`, "");
-    }
-  };
-  for (const line of lines) {
-    if (code) {
-      // 印の直後のコードブロックは控えのノードで置き換える。中身が変わっていたら、装飾を黙って落とさず止める
-      const fence = /^\s*```/.test(line);
-      if (code.lines === null) {
-        if (!line.trim()) continue;
-        if (!fence) throw new Error(`Wix のノード #${code.i}（CODE_BLOCK）の印の直後にコードブロックが無い。印とコードブロックを一緒に動かす`);
-        code.lines = [];
-        continue;
-      }
-      if (!fence) { code.lines.push(line); continue; }
-      // リンクを地の文で書いていた頃の pull の形も、同じ中身とみなす
-      const body = code.lines.join("\n");
-      if (body !== codeMd(wixNodes[code.i]).md && body !== plainText(wixNodes[code.i])) {
-        throw new Error(`Wix のノード #${code.i}（CODE_BLOCK）の中身が pull の時から変わっている。このコードブロックには Markdown で書けない装飾（太字・リンクの無い下線など）があり、Markdown から送ると消える。Wix の画面で直すか、装飾を捨ててよければ印の行を消して push する`);
-      }
-      code = null;
-      continue;
-    }
-    if (comment) {
-      comment.push(line);
-      if (line.includes("-->")) { onComment(comment.join("\n")); comment = null; }
-      continue;
-    }
-    if (skipCaption !== null) {
-      if (!line.trim()) continue;
-      const hit = line.trim() === skipCaption;
-      skipCaption = null;
-      if (hit) continue;
-    }
-    if (/^\s*>/.test(line)) { (quote ??= []).push(line); continue; }
-    flushQuote();
-    if (title === null) {
-      const h1 = line.match(/^#\s+(.*)$/);
-      if (h1) { title = h1[1].trim(); continue; }
-    }
-    if (/^\s*<!--/.test(line)) {
-      if (line.includes("-->")) onComment(line); else comment = [line];
-      continue;
-    }
-    const img = line.match(/^\s*!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)\s*$/);
-    if (img) {
-      images.push({ alt: img[1], src: img[2], caption: img[3] ?? img[1] });
-      out.push("", IMG_TOKEN(images.length - 1), "");
-      continue;
-    }
-    out.push(line);
-  }
-  if (code) throw new Error(`Wix のノード #${code.i}（CODE_BLOCK）の印の後のコードブロックが閉じていない`);
-  flushQuote();
-  return { title, markdown: collapseBlank(out.join("\n")), images, nodeRefs };
-}
-
-function chunks(md) {
-  const out = [];
-  let cur = "";
-  for (const p of md.split(/\n(?=## )/)) {
-    if (cur && cur.length + p.length > CHUNK_MAX) { out.push(cur); cur = ""; }
-    cur = cur ? `${cur}\n${p}` : p;
-  }
-  if (cur) out.push(cur);
-  for (const c of out) if (c.length > CONVERT_LIMIT) throw new Error(`1つの章が ${c.length} 字あり、変換 API の上限 ${CONVERT_LIMIT} 字を超える`);
-  return out;
-}
-
-async function toRicos(md) {
-  const nodes = [];
-  for (const c of chunks(md)) {
-    const j = await wixOk("POST", "/ricos/v1/ricos-document/convert/to-ricos", {
-      markdown: c,
-      options: { plugins: ["HEADING", "LINK", "IMAGE", "DIVIDER", "CODE_BLOCK"] },
-    });
-    nodes.push(...j.document.nodes);
-  }
-  return nodes;
-}
-
-const textNode = (s) => ({ type: "TEXT", id: "", nodes: [], textData: { text: s, decorations: [] } });
-const emptyPara = () => ({ type: "PARAGRAPH", id: "", nodes: [], paragraphData: {} });
-
-// 画像の幅・配置。pull で控えた設定（Wix で著者が変えたもの）があればそれを使い、
-// 無ければ縦長は SMALL、それ以外は CONTENT にする（プレビューが縦長の画像を半分の幅で出すのと揃える）
-function containerFor(img, media) {
-  const kept = img.wix?.container ?? media.container;
-  if (kept) return structuredClone(kept);
-  const tall = media.height > media.width;
-  return { width: { size: tall ? "SMALL" : "CONTENT" }, alignment: "CENTER", textWrap: true };
-}
-
-function imageNode(img, media) {
-  const captionNodes = img.captionNodes ?? (img.caption ? [textNode(img.caption)] : []);
-  return {
-    type: "IMAGE",
-    id: "",
-    nodes: captionNodes.length ? [{ type: "CAPTION", id: "", nodes: captionNodes }] : [],
-    imageData: {
-      containerData: containerFor(img, media),
-      image: { src: { id: media.id }, width: media.width, height: media.height },
-      ...(img.alt ? { altText: img.alt } : {}),
-      ...(img.caption ? { caption: img.caption } : {}),
-    },
-  };
-}
-
-// 空段落の既定の数は著者の Wix テンプレート（下書き「Template」と公開記事）に合わせる:
-// 区切り線の前は2つ・直後は0、画像の前後は2つ、それ以外のブロックの間は1つ、先頭と末尾は0
-const defaultGap = (prev, cur) => {
-  if (!prev || !cur || prev.type === "DIVIDER") return 0;
-  return cur.type === "DIVIDER" || cur.type === "IMAGE" || prev.type === "IMAGE" ? 2 : 1;
-};
-const isEmptyPara = (n) => n.type === "PARAGRAPH" && (n.nodes ?? []).every((x) => x.type === "TEXT" && !x.textData?.text?.trim());
-
-// 著者が Wix で書いた記事に揃える: 外部リンクは新しいタブ、ブロックの間の空段落、控えたノードの復元
-function finish(nodes, images, media, wixNodes = []) {
-  const walk = (list) => {
-    for (const n of list) {
-      for (const d of n.textData?.decorations ?? []) {
-        if (d.type === "LINK") Object.assign(d.linkData.link, { target: "BLANK", rel: { noreferrer: true } });
-      }
-      // 変換 API は、入れ子のリストを持つ項目の段落の末尾に改行を足す。Wix で書いた形に戻す
-      if (n.type === "LIST_ITEM" && n.nodes?.some((x) => x.type === "BULLETED_LIST" || x.type === "ORDERED_LIST")) {
-        const last = n.nodes.find((x) => x.type === "PARAGRAPH")?.nodes?.at(-1);
-        if (last?.textData?.text?.endsWith("\n")) last.textData.text = last.textData.text.slice(0, -1);
-      }
-      if (n.nodes) walk(n.nodes);
-    }
-  };
-  walk(nodes);
-  const out = [];
-  let prev = null;
-  let gap = null;   // 直前に空段落の印があればその数。無ければ既定の数
-  for (const n of nodes) {
-    const t = n.type === "PARAGRAPH" && n.nodes?.length === 1 ? n.nodes[0].textData?.text?.trim() : null;
-    const g = t?.match(/^WIXGAPTOKEN(\d+)$/);
-    if (g) { gap = Number(g[1]); continue; }
-    const m = t?.match(/^WIXIMGTOKEN(\d+)$/);
-    const k = t?.match(/^WIXNODETOKEN(\d+)$/);
-    const cur = m ? imageNode(images[+m[1]], media[+m[1]]) : k ? structuredClone(wixNodes[+k[1]]) : n;
-    // 変換 API はコードブロックの末尾に改行を1つ足す。往復で増えないように取り除く
-    if (!k && cur.type === "CODE_BLOCK") {
-      const last = cur.nodes?.at(-1);
-      if (last?.textData?.text?.endsWith("\n")) last.textData.text = last.textData.text.slice(0, -1);
-      // 変換 API はコードブロックの中を字面のまま入れる。[テキスト](URL) を Wix のリンクにする
-      const linked = codeNodes(plainText(cur));
-      if (linked) cur.nodes = linked;    }
-    for (let i = 0; i < (gap ?? defaultGap(prev, cur)); i++) out.push(emptyPara());
-    gap = null;
-    out.push(cur);
-    prev = cur;
-  }
-  for (let i = 0; i < (gap ?? 0); i++) out.push(emptyPara());
-  const left = JSON.stringify(out).match(/WIX(IMG|NODE|GAP)TOKEN\d+/g);
-  if (left) throw new Error(`印の差し替えに失敗した（${left.join(",")}）。印の行の前後に空行があるか確認する`);
-  return out;
-}
-
-// コードブロックの中身を、[テキスト](URL) をリンクの付いた TEXT にして組み直す。リンクが無ければ null
-function codeNodes(s) {
-  const out = [];
-  let i = 0;
-  for (const m of s.matchAll(new RegExp(CODE_LINK.source, "g"))) {
-    if (m.index > i) out.push(textNode(s.slice(i, m.index)));
-    out.push({ ...textNode(m[1]), textData: { text: m[1], decorations: codeLinkDecos(m[2]) } });
-    i = m.index + m[0].length;
-  }
-  if (!out.length) return null;
-  if (i < s.length) out.push(textNode(s.slice(i)));
-  return out;
-}
 
 async function uploadImage(file, folder) {
   const mimeType = MIME[path.extname(file).toLowerCase()];
@@ -380,22 +140,30 @@ async function uploadImage(file, folder) {
   return { id: j.file.id, width: im.width, height: im.height };
 }
 
+// 画像の行ごとに Media（ID・幅・高さ）を決める。Wix 上の画像（wix:ID）は pull で控えた大きさ、
+// ローカルの画像は上げ済みならその Media、変わっていれば上げ直す
 async function resolveMedia(images, dir, state, dryRun) {
-  const media = [];
-  for (const img of images) {
-    if (img.wix) { media.push(img.wix); continue; }
-    const file = path.resolve(dir, img.src);
-    if (!fs.existsSync(file)) throw new Error(`画像が無い: ${img.src}`);
+  const media = new Map();
+  for (const b of images) {
+    if (b.src.startsWith("wix:")) {
+      const id = b.src.slice(4);
+      const m = state.media[id] ?? Object.values(state.images).find((x) => x.id === id);
+      if (!m) throw new Error(`${b.line} 行目: Wix の画像 ${id} の大きさが wix.json に無い。pull し直す`);
+      media.set(b, { id, width: m.width, height: m.height });
+      continue;
+    }
+    const file = path.resolve(dir, b.src);
+    if (!fs.existsSync(file)) throw new Error(`${b.line} 行目: 画像が無い: ${b.src}`);
     const h = hash(fs.readFileSync(file));
-    const cached = state.images[img.src];
-    if (cached?.hash === h) { media.push(cached); continue; }
-    if (dryRun) { media.push({ id: `DRYRUN_${path.basename(file)}`, width: 1, height: 1, container: cached?.container }); continue; }
+    const cached = state.images[b.src];
+    if (cached?.hash === h) { media.set(b, cached); continue; }
+    if (dryRun) { media.set(b, { id: `DRYRUN_${path.basename(file)}`, width: 1, height: 1, container: cached?.container }); continue; }
     const m = await uploadImage(file, `/blog-supporter/${path.basename(dir)}`);
-    // 差し替えた画像も、同じパスなら Wix で設定した幅を引き継ぐ
-    state.images[img.src] = { ...m, hash: h, ...(cached?.container ? { container: cached.container } : {}) };
+    // 旧形式の幅の控え（container）は、同じパスの画像を差し替えても引き継ぐ
+    state.images[b.src] = { ...m, hash: h, ...(cached?.container ? { container: cached.container } : {}) };
     saveState(dir, state);
-    console.log(`  画像を上げた: ${img.src} (${m.width}x${m.height})`);
-    media.push(m);
+    console.log(`  画像を上げた: ${b.src} (${m.width}x${m.height})`);
+    media.set(b, state.images[b.src]);
   }
   return media;
 }
@@ -404,53 +172,15 @@ function summarize(nodes) {
   const c = {};
   const walk = (n) => { for (const x of n) { c[x.type] = (c[x.type] ?? 0) + 1; if (x.nodes) walk(x.nodes); } };
   walk(nodes);
-  return ["HEADING", "PARAGRAPH", "IMAGE", "BULLETED_LIST", "ORDERED_LIST", "BLOCKQUOTE", "DIVIDER", "CODE_BLOCK"]
+  return ["HEADING", "PARAGRAPH", "IMAGE", "BULLETED_LIST", "ORDERED_LIST", "BLOCKQUOTE", "DIVIDER", "CODE_BLOCK", "HTML"]
     .filter((k) => c[k]).map((k) => `${k}=${c[k]}`).join(" ");
 }
 
 const editUrl = (id) => `https://manage.wix.com/dashboard/${WIX_SITE_ID}/blog/${id}/edit`;
 
 // ---------- 落ちる装飾と画像の点検 ----------
-// 直前の pull の控えと、これから送るノードを比べ、減る装飾・消える画像・並びや幅の変わる画像を出す。
-// Markdown に書けない装飾（文字色・下線など）は push で落ちるので、送る前に著者が気づけるようにする。
+// 直前の pull の控えと、これから送るノードを比べ、減る装飾・消える画像・位置や幅の変わる画像を出す。
 // 止めはしない。送るか、送った後に装飾を足し直すかは著者が決める
-
-// 比べる装飾の名前。値（色・URL・サイズ）まで含めて同じものを同じとみなす
-function decoLabel(d) {
-  switch (d.type) {
-    case "COLOR": return [d.colorData?.foreground && `文字色 ${d.colorData.foreground}`, d.colorData?.background && `背景色 ${d.colorData.background}`].filter(Boolean).join("・") || null;
-    case "UNDERLINE": return "下線";
-    case "BOLD": return (d.fontWeightValue ?? 700) >= 600 ? "太字" : null;
-    case "ITALIC": return "斜体";
-    case "FONT_SIZE": return `文字サイズ ${d.fontSizeData?.value ?? ""}${d.fontSizeData?.unit ?? ""}`;
-    case "LINK": return d.linkData?.link?.url ? `リンク ${d.linkData.link.url}` : null;
-    default: return null;
-  }
-}
-
-// 装飾ごとに、その装飾が続く範囲の文字列を集める。TEXT の割れ方（他の装飾の有無）に左右されないようにする
-function decoSpans(nodes) {
-  const spans = [];
-  const walk = (list) => {
-    const open = new Map();   // 装飾の名前 → 続いている文字列
-    const close = (keep) => {
-      for (const [k, t] of open) {
-        if (keep.has(k)) continue;
-        if (t.trim()) spans.push({ label: k, text: t.trim() });
-        open.delete(k);
-      }
-    };
-    for (const n of list ?? []) {
-      if (n.type !== "TEXT") { close(new Set()); walk(n.nodes); continue; }
-      const labels = new Set((n.textData?.decorations ?? []).map(decoLabel).filter(Boolean));
-      close(labels);
-      for (const k of labels) open.set(k, (open.get(k) ?? "") + n.textData.text);
-    }
-    close(new Set());
-  };
-  walk(nodes);
-  return spans;
-}
 
 // 本文の最上位の画像を、Media の ID・幅・直前の文と一緒に並べる。直前の文は、ずれた時にどこの画像かを示すため
 function imageList(nodes) {
@@ -472,19 +202,12 @@ const clip = (s, n = 30) => (s.length > n ? `${s.slice(0, n)}…` : s);
 
 function lossReport(beforeNodes, afterNodes) {
   const lines = [];
-  // 装飾: 控えにあって送る内容に無いもの（同じ装飾・同じ文字列の数で突き合わせる）
-  const remain = new Map();
-  for (const s of decoSpans(afterNodes)) remain.set(`${s.label}\u0000${s.text}`, (remain.get(`${s.label}\u0000${s.text}`) ?? 0) + 1);
-  const lost = [];
-  for (const s of decoSpans(beforeNodes)) {
-    const k = `${s.label}\u0000${s.text}`;
-    if (remain.get(k)) remain.set(k, remain.get(k) - 1); else lost.push(s);
-  }
+  const lost = lostSpans(beforeNodes, afterNodes);
   if (lost.length) {
     lines.push(`減る装飾 ${lost.length}:`);
     for (const s of lost) lines.push(`  ${s.label}「${clip(s.text)}」`);
   }
-  // 画像: 消える・新しく入る・並びが変わる・幅が変わる
+  // 画像: 消える・新しく入る・位置が変わる・幅が変わる
   const before = imageList(beforeNodes);
   const after = imageList(afterNodes);
   const count = (l) => l.reduce((m, x) => m.set(x.id, (m.get(x.id) ?? 0) + 1), new Map());
@@ -501,9 +224,8 @@ function lossReport(beforeNodes, afterNodes) {
     for (const x of added) lines.push(`  ${clip(x.id.replace(/^DRYRUN_/, ""), 40)}（直前の文「${clip(x.before)}」）`);
   }
   // 両方にある画像の並びを最長共通部分列で突き合わせる。そこから外れた画像が、別の位置へ動いた画像
-  const keep = (l, out) => l.filter((x) => !out.includes(x));
-  const bKeep = keep(before, gone);
-  const aKeep = keep(after, added);
+  const bKeep = before.filter((x) => !gone.includes(x));
+  const aKeep = after.filter((x) => !added.includes(x));
   const L = Array.from({ length: bKeep.length + 1 }, () => new Array(aKeep.length + 1).fill(0));
   for (let i = bKeep.length - 1; i >= 0; i--) {
     for (let j = aKeep.length - 1; j >= 0; j--) {
@@ -511,15 +233,15 @@ function lossReport(beforeNodes, afterNodes) {
     }
   }
   const pairs = [];
-  const movedB = [];
+  const moved = [];
   for (let i = 0, j = 0; i < bKeep.length || j < aKeep.length;) {
     if (i < bKeep.length && j < aKeep.length && bKeep[i].id === aKeep[j].id) { pairs.push([bKeep[i], aKeep[j]]); i++; j++; }
-    else if (j >= aKeep.length || (i < bKeep.length && L[i + 1][j] >= L[i][j + 1])) movedB.push(bKeep[i++]);
+    else if (j >= aKeep.length || (i < bKeep.length && L[i + 1][j] >= L[i][j + 1])) moved.push(bKeep[i++]);
     else j++;
   }
-  if (movedB.length) {
-    lines.push(`位置が変わる画像 ${movedB.length}（キャプションによる割り当てのずれの疑い。送らずに本文を確かめる）:`);
-    for (const x of movedB) {
+  if (moved.length) {
+    lines.push(`位置が変わる画像 ${moved.length}（キャプションによる割り当てのずれの疑い。送らずに本文を確かめる）:`);
+    for (const x of moved) {
       const y = aKeep.find((a) => a.id === x.id);
       lines.push(`  ${clip(x.id, 14)}: 控えでは「${clip(x.before)}」の後 → 送る内容では「${clip(y?.before ?? "")}」の後`);
     }
@@ -548,12 +270,17 @@ function printLossReport(beforeFile, afterNodes) {
   for (const l of lines) console.log(`  ${l}`);
 }
 
-async function push(file, { dryRun, update, allowPublished }) {
+// ---------- push ----------
+
+// draft.md（AI 版）を流し込んだ下書きの目印。著者が自分の言葉で書き直したらタイトルから外す
+const AI_TITLE_PREFIX = "[AI下書き] ";
+
+async function push(file, { dryRun, update, allowPublished, acceptLoss }) {
   const src = path.resolve(file);
   const dir = path.dirname(src);
   const state = loadState(dir);
   const text = fs.readFileSync(src, "utf8");
-  const { title, markdown, images, nodeRefs } = prepare(text, structuredClone(state.wixImages), state.wixNodes);
+  const { title, blocks } = parseDocument(text, { wixImages: state.wixImages, wixNodes: state.wixNodes });
   if (!title) throw new Error("先頭に # タイトル行が無い");
 
   let cur = null;
@@ -570,18 +297,36 @@ async function push(file, { dryRun, update, allowPublished }) {
     throw new Error(`この記事には下書きが既にある（${state.draftPostId}）。置き換えるなら --update`);
   }
 
+  const images = blocks.filter((b) => b.kind === "image");
+  const legacy = blocks.filter((b) => b.kind === "legacyImage" || b.kind === "legacyNode");
   console.log(`タイトル: ${title}`);
-  console.log(`本文 ${markdown.length} 字 / 画像 ${images.length} 枚`);
+  console.log(`本文 ${text.length} 字 / 画像 ${images.length + blocks.filter((b) => b.kind === "legacyImage").length} 枚`);
+  if (legacy.length) console.log(`  旧形式の印 ${legacy.length}（<!-- 画像 -->・<!-- Wixのノード -->）を wix.json の控えで戻す。次の pull で新しい記法に置き換わる`);
   const media = await resolveMedia(images, dir, state, dryRun);
-  const missing = state.wixNodes.map((_, i) => i).filter((i) => !nodeRefs.includes(i));
+  const refs = new Set(blocks.filter((b) => b.kind === "legacyNode").map((b) => b.index));
+  const missing = state.wixNodes.map((_, i) => i).filter((i) => !refs.has(i));
   if (missing.length) console.log(`  注意: Wix のノード ${missing.map((i) => `#${i}（${state.wixNodes[i].type}）`).join("・")} の印が本文に無い。push するとそのノード（CODE_BLOCK ならその中の装飾）は消える`);
-  const nodes = finish(await toRicos(markdown), images, media, state.wixNodes);
+
+  const { pool, replace } = controlReplacer(state.controls);
+  const nodes = toRicos(blocks, { image: (b) => media.get(b), embeds: state.embeds, wixBlocks: state.wixBlocks, wixNodes: state.wixNodes, replace });
   console.log(`構造: ${summarize(nodes)}`);
+  const restored = pool.filter((c) => c.used).length;
+  if (restored) console.log(`  Markdown に書けない装飾のある段落 ${restored} を、pull の時の控えのまま送る`);
+  const placeholders = blocks.filter((b) => b.raw).length;
+  if (placeholders) console.log(`  未作図のプレースホルダー ${placeholders}（［画像（未作図）: …］の段落で送る）`);
+  const unmatched = pool.filter((c) => !c.used);
+  if (unmatched.length) {
+    const msg = `pull で控えた段落のうち ${unmatched.length} が本文に見当たらない（直したか消した）。送るとこれらの装飾は消える:\n` +
+      unmatched.map((c) => `    「${c.text}」（${c.lost.join("・")}）`).join("\n");
+    if (dryRun) console.log(`  注意: ${msg}`);
+    else if (!acceptLoss) throw new Error(`${msg}\n  Wix の画面で直すか、装飾を捨ててよければ --accept-loss を付けて push する`);
+    else console.log(`  ${msg}\n  （--accept-loss で送る）`);
+  }
 
   if (dryRun) {
     const out = path.join(dir, "wix-dryrun.json");
     fs.writeFileSync(out, JSON.stringify({ title, nodes }, null, 2));
-    console.log(`dry-run: ${out}（Wix には書いていない。変換 API だけ呼んだ）`);
+    console.log(`dry-run: ${out}（Wix には書いていない）`);
     const prev = latestPull(dir);
     if (prev) printLossReport(prev, nodes);
     else console.log("点検: pull の控えが無いので、減る装飾・画像は比べていない");
@@ -618,169 +363,37 @@ async function push(file, { dryRun, update, allowPublished }) {
   console.log(`編集画面: ${editUrl(state.draftPostId)}`);
 }
 
-// ---------- Ricos → Markdown ----------
+// ---------- pull ----------
 
-// 装飾が同じ TEXT が隣り合っていたら先に連結する（「[A](u)[B](u)」に割れないため）
-function mergeText(nodes) {
-  const merged = [];
-  for (const n of nodes ?? []) {
-    const prev = merged.at(-1);
-    if (n.type === "TEXT" && prev?.type === "TEXT" &&
-        JSON.stringify(prev.textData.decorations ?? []) === JSON.stringify(n.textData.decorations ?? [])) {
-      merged[merged.length - 1] = { ...prev, textData: { ...prev.textData, text: prev.textData.text + n.textData.text } };
-    } else merged.push(n);
-  }
-  return merged;
-}
+const imageMapOf = (state) => Object.fromEntries(Object.entries(state.images).map(([src, m]) => [m.id, src]));
 
-function inlineMd(nodes) {
-  let s = "";
-  for (const n of mergeText(nodes)) {
-    if (n.type !== "TEXT") { s += inlineMd(n.nodes); continue; }
-    const decos = n.textData.decorations ?? [];
-    const has = (type) => decos.some((d) => d.type === type);
-    // 装飾は前後の空白の外側に付ける（「** 太字**」にしない）
-    const [, lead, core, trail] = n.textData.text.match(/^(\s*)([\s\S]*?)(\s*)$/);
-    let t = core;
-    if (t) {
-      if (has("CODE")) t = `\`${t}\``;
-      if (has("ITALIC")) t = `*${t}*`;
-      // Wix は太字を fontWeightValue で持つ。セミボールド（600）以上を太字とみなす
-      if (decos.some((d) => d.type === "BOLD" && (d.fontWeightValue ?? 700) >= 600)) t = `**${t}**`;
-      const link = decos.find((d) => d.type === "LINK")?.linkData?.link?.url;
-      if (link) t = `[${t}](${link})`;
-    }
-    s += lead + t + trail;
-  }
-  return s.trim();
-}
-
-const plainText = (n) => (n.nodes ?? []).map((x) => x.textData?.text ?? plainText(x)).join("");
-const sameDecos = (a, b) => {
-  const key = (ds) => JSON.stringify([...ds].sort((x, y) => x.type.localeCompare(y.type)));
-  return key(a) === key(b);
-};
-
-// コードブロックの中身を Markdown にする。リンクは [テキスト](URL) で書く。
-// exact は、push がこの Markdown から同じノードを組み直せるか（リンク以外の装飾や、地の文の [x](http…) があると false）
-function codeMd(n) {
-  const orig = mergeText(n.nodes).filter((x) => x.textData?.text !== "");
-  let md = "";
-  for (const x of orig) {
-    const t = x.textData?.text ?? plainText(x);
-    const url = x.textData?.decorations?.find((d) => d.type === "LINK")?.linkData?.link?.url;
-    const link = url ? `[${t}](${url})` : null;
-    md += link && new RegExp(`^${CODE_LINK.source}$`).test(link) ? link : t;
-  }
-  const back = (codeNodes(md) ?? [textNode(md)]).filter((x) => x.textData.text !== "");
-  const exact = back.length === orig.length && back.every((b, i) =>
-    b.textData.text === orig[i].textData?.text && sameDecos(b.textData.decorations, orig[i].textData.decorations ?? []));
-  return { md, exact };
-}
-
-// containers: push で上げた画像のパス → Wix 上の幅・配置（containerData）。pull が wix.json に控える
-function toMarkdown(nodes, imageMap, wixImages, wixNodes = [], containers = {}) {
-  const out = [];
-  const block = (s) => out.push(s, "");
-  // 空段落は数えておき、次のブロックの前で既定の数と違う時だけ印を書く
-  let prev = null;
-  let empties = 0;
-  const gapMark = (cur) => {
-    const isList = (x) => x?.type === "BULLETED_LIST" || x?.type === "ORDERED_LIST";
-    // 隣り合う2つのリストは、間に印を置かないと Markdown で1つのリストにつながる
-    if (empties !== defaultGap(prev, cur) || (isList(prev) && isList(cur))) block(`<!-- 空段落: ${empties} -->`);
-    empties = 0;
-    prev = cur;
-  };
-  const listItems = (list, ordered, depth = 0) => {
-    const lines = [];
-    list.nodes.forEach((li, i) => {
-      const pad = "  ".repeat(depth);
-      const paras = li.nodes.filter((x) => x.type === "PARAGRAPH").map((x) => inlineMd(x.nodes)).filter(Boolean);
-      lines.push(`${pad}${ordered ? `${i + 1}.` : "-"} ${paras.join(" ").replace(/\n/g, `\n${pad}  `)}`);
-      for (const sub of li.nodes.filter((x) => x.type === "BULLETED_LIST" || x.type === "ORDERED_LIST")) {
-        lines.push(...listItems(sub, sub.type === "ORDERED_LIST", depth + 1));
-      }
-    });
-    return lines;
-  };
-  for (const n of nodes) {
-    if (isEmptyPara(n)) { empties++; continue; }
-    gapMark(n);
-    switch (n.type) {
-      case "PARAGRAPH": {
-        // 段落の中の改行（Shift+Enter）のうち、Markdown では消える・段落が割れるもの（先頭・末尾、2つ以上の連続）は <br> で書く
-        const raw = plainText(n);
-        const br = (k) => "<br>".repeat(k);
-        const t = inlineMd(n.nodes).replace(/\n{2,}/g, (m) => br(m.length));
-        block(`${br(raw.match(/^\n*/)[0].length)}${t}${br(raw.match(/\n*$/)[0].length)}`);
-        break;
-      }
-      case "HEADING": block(`${"#".repeat(n.headingData?.level ?? 2)} ${inlineMd(n.nodes)}`); break;
-      case "BULLETED_LIST": case "ORDERED_LIST": block(listItems(n, n.type === "ORDERED_LIST").join("\n")); break;
-      case "BLOCKQUOTE": {
-        // 段落内の改行（Shift+Enter）も引用の中に留める
-        const paras = n.nodes.map((x) => inlineMd(x.nodes)).filter(Boolean);
-        block(paras.map((p) => p.split("\n").map((l) => `> ${l}`).join("\n")).join("\n>\n"));
-        break;
-      }
-      case "DIVIDER": block("---"); break;
-      case "CODE_BLOCK": {
-        // リンクは [テキスト](URL) で書き、push で組み直す。それで戻せない装飾（太字など）があれば
-        // ノードを wix.json に控えて印を付け、push で中身が同じならそのまま戻す
-        const { md, exact } = codeMd(n);
-        if (!exact) {
-          wixNodes.push(n);
-          block(`<!-- Wixのノード: CODE_BLOCK #${wixNodes.length - 1} -->`);
-        }
-        block(`\`\`\`\n${md}\n\`\`\``);
-        break;
-      }
-      case "IMAGE": {
-        const img = n.imageData?.image ?? {};
-        const id = img.src?.id;
-        const plain = n.imageData?.caption ?? "";
-        const captionNodes = n.nodes.filter((x) => x.type === "CAPTION").flatMap((x) => x.nodes);
-        const captionMd = inlineMd(captionNodes);
-        // push で上げた画像はローカルのファイルに戻す。それ以外（著者が Wix で足した画像）は
-        // 「プレースホルダー＋キャプション行」にし、ID は wix.json に控えて push で戻せるようにする
-        const container = n.imageData?.containerData;
-        if (imageMap[id]) {
-          block(`![${plain}](${imageMap[id]})`);
-          if (container) containers[imageMap[id]] = container;
-        } else {
-          block(`<!-- 画像: ${plain} -->`);
-          if (captionMd) block(captionMd);
-          wixImages.push({ caption: plain, captionMd, captionNodes, alt: n.imageData?.altText ?? "", id, width: img.width, height: img.height, container });
-        }
-        break;
-      }
-      default:
-        // Markdown にできないノード（HTML 埋め込み等）は中身を wix.json に控え、印だけを本文に置く
-        wixNodes.push(n);
-        block(`<!-- Wixのノード: ${n.type} #${wixNodes.length - 1} -->`);
-    }
-  }
-  if (empties) block(`<!-- 空段落: ${empties} -->`);
-  return `${collapseBlank(out.join("\n"))}\n`;
+function describeControls(controls) {
+  const c = {};
+  for (const x of controls) for (const l of x.lost) c[l] = (c[l] ?? 0) + 1;
+  return Object.entries(c).map(([k, v]) => `${k} ${v}`).join("・");
 }
 
 async function pull(target, { out, force, published }) {
   const dir = articleDir(target);
   const state = loadState(dir);
   if (!state.draftPostId) throw new Error("この記事に結び付いた Wix 投稿が無い。list で探して link する");
-  const imageMap = Object.fromEntries(Object.entries(state.images).map(([src, m]) => [m.id, src]));
-  const wixImages = [];
-  const wixNodes = [];
+  const opts = { imageMap: imageMapOf(state), localMedia: state.images };
 
   if (published) {
     const p = (await wixOk("GET", `/blog/v3/posts/${state.draftPostId}?fieldsets=RICH_CONTENT&fieldsets=URL`)).post;
     const url = `${p.url.base}${p.url.path}`;
-    const body = toMarkdown(p.richContent.nodes, imageMap, wixImages, wixNodes);
-    const md = `<!-- source: ${url} / fetched: ${today()} / method: wix-sync pull --published (Blog API) -->\n\n# ${p.title}\n\n${body}`;
+    const r = fromRicos(p.richContent.nodes, opts);
+    const md = `<!-- source: ${url} / fetched: ${today()} / method: wix-sync pull --published (Blog API) -->\n\n# ${p.title}\n\n${r.md}`;
     const dest = out ? path.resolve(out) : path.join(dir, "published.md");
     fs.writeFileSync(dest, md);
+    // 公開版の本文を push の元にすることもあるので、Wix の画像・埋め込み・ノードの控えは足しておく。
+    // 同期時点と段落の控え（controls）は下書きの pull だけが持つ
+    Object.assign(state.media, r.media);
+    Object.assign(state.embeds, r.embeds);
+    Object.assign(state.wixBlocks, r.wixBlocks);
+    saveState(dir, state);
     console.log(`公開版を書いた: ${dest}（${md.length} 字、slug: ${p.slug}${p.hasUnpublishedChanges ? "、Wix 側に未公開の変更あり" : ""}）`);
+    if (r.controls.length) console.log(`  Markdown に書けない装飾のある段落 ${r.controls.length}（${describeControls(r.controls)}）。push の元にするなら、先に下書きを pull する`);
     return;
   }
 
@@ -801,19 +414,51 @@ async function pull(target, { out, force, published }) {
   }
   const p = (await wixOk("GET", `/blog/v3/draft-posts/${state.draftPostId}?fieldsets=RICH_CONTENT`)).draftPost;
   const snap = snapshot(dir, "pull", p);
+  const r = fromRicos(p.richContent.nodes, opts);
   const header = `<!-- source: wix draft-post ${p.id} / fetched: ${today()} / method: wix-sync pull (Blog API) / status: ${p.status} / edited: ${p.editedDate} -->\n<!-- Wix の下書き。Wix 側が正。毎回上書き。 -->\n\n`;
-  const containers = {};
-  const md = `${header}# ${p.title}\n\n${toMarkdown(p.richContent.nodes, imageMap, wixImages, wixNodes, containers)}`;
+  const md = `${header}# ${p.title}\n\n${r.md}`;
   fs.writeFileSync(dest, md);
-  for (const [src, c] of Object.entries(containers)) state.images[src].container = c;
+  // 画像の幅は Markdown の {width=…} に書いたので、旧形式の幅の控えは捨てる（残すと属性を消した時に効いてしまう）
+  for (const m of Object.values(state.images)) delete m.container;
   Object.assign(state, {
-    wixImages, wixNodes, syncedEditedDate: p.editedDate, syncedFile: path.basename(dest), syncedHash: hash(md),
+    wixImages: [], wixNodes: [], media: r.media, embeds: r.embeds, wixBlocks: r.wixBlocks,
+    controls: r.controls.map(({ key, nth, lost, text, node }) => ({ key, nth, lost, text, node })),
+    syncedEditedDate: p.editedDate, syncedFile: path.basename(dest), syncedHash: hash(md),
   });
   saveState(dir, state);
   const heads = (md.match(/^#{2,6} /gm) ?? []).length;
   const figs = (md.match(/^!\[/gm) ?? []).length;
-  console.log(`下書きを書いた: ${dest}（${md.length} 字 / 見出し ${heads} / 図 ${figs} / Wix の画像 ${wixImages.length} / Wix のノード ${wixNodes.length}）`);
+  console.log(`下書きを書いた: ${dest}（${md.length} 字 / 見出し ${heads} / 図 ${figs}（うち Wix の画像 ${Object.keys(r.media).length}）/ X の埋め込み ${Object.keys(r.embeds).length} / Wix のノード ${Object.keys(r.wixBlocks).length}）`);
+  if (r.controls.length) console.log(`  Markdown に書けない装飾のある段落 ${r.controls.length}（${describeControls(r.controls)}）。直さなければ push で控えのまま戻る`);
   console.log(`取得した下書きを残した: ${snap}`);
+}
+
+// ---------- 往復の検算（Wix を呼ばない） ----------
+
+function roundtrip(file) {
+  const nodes = nodesOf(file);
+  if (!nodes.length) { console.log(`${path.basename(file)}: Ricos の本文が無い（飛ばす）`); return true; }
+  const dir = path.dirname(path.dirname(path.resolve(file)));
+  const state = loadState(dir);
+  const r = fromRicos(nodes, { imageMap: imageMapOf(state), localMedia: state.images });
+  const { blocks } = parseDocument(`# t\n\n${r.md}`);
+  const { pool, replace } = controlReplacer(r.controls);
+  const back = toRicos(blocks, {
+    image: (b) => (b.src.startsWith("wix:") ? { id: b.src.slice(4), ...r.media[b.src.slice(4)] } : { ...state.images[b.src], container: undefined }),
+    embeds: r.embeds, wixBlocks: r.wixBlocks, replace,
+  });
+  const same = canonical(back) === canonical(nodes);
+  const content = nodes.filter((n) => !(n.type === "PARAGRAPH" && !plainText(n).trim())).length;
+  console.log(`${path.basename(file)}: ブロック ${content} / 控え ${r.controls.length}${r.controls.length ? `（${describeControls(r.controls)}）` : ""} / ::wix ${Object.keys(r.wixBlocks).length} / 未使用の控え ${pool.filter((c) => !c.used).length} / 往復 ${same ? "一致" : "不一致"}`);
+  if (!same) {
+    const a = JSON.parse(canonical(nodes));
+    const b = JSON.parse(canonical(back));
+    const i = a.findIndex((x, k) => JSON.stringify(x) !== JSON.stringify(b[k]));
+    console.log(`  最初の違い: ${i} 番目（元 ${a.length} / 往復 ${b.length}）`);
+    console.log(`    元:   ${JSON.stringify(a[i]).slice(0, 300)}`);
+    console.log(`    往復: ${JSON.stringify(b[i]).slice(0, 300)}`);
+  }
+  return same;
 }
 
 // ---------- 一覧・結び付け・確認 ----------
@@ -850,15 +495,16 @@ const [cmd, ...args] = process.argv.slice(2);
 const flag = (f) => args.includes(f);
 const opt = (f) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : undefined; };
 const pos = args.filter((a, i) => !a.startsWith("--") && !(i > 0 && ["--out", "--limit"].includes(args[i - 1])));
-const USAGE = "usage: check | list [--limit N] | link <記事> <postId> [--relink] | push <file.md> [--dry-run|--update [--allow-published]] | pull <記事> [--out <file>] [--force] [--published] | compare <前.json> <後.json>";
+const USAGE = "usage: check | list [--limit N] | link <記事> <postId> [--relink] | push <file.md> [--dry-run|--update [--allow-published] [--accept-loss]] | pull <記事> [--out <file>] [--force] [--published] | compare <前.json> <後.json> | roundtrip <控え.json>...";
 
 try {
   if (cmd === "check") await check();
   else if (cmd === "list") await list(Number(opt("--limit") ?? 10));
   else if (cmd === "link" && pos.length === 2) await link(pos[0], pos[1], { relink: flag("--relink") });
-  else if (cmd === "push" && pos[0]) await push(pos[0], { dryRun: flag("--dry-run"), update: flag("--update"), allowPublished: flag("--allow-published") });
+  else if (cmd === "push" && pos[0]) await push(pos[0], { dryRun: flag("--dry-run"), update: flag("--update"), allowPublished: flag("--allow-published"), acceptLoss: flag("--accept-loss") });
   else if (cmd === "compare" && pos.length === 2) printLossReport(pos[0], nodesOf(pos[1]));
-  else if (cmd === "pull" && pos[0])await pull(pos[0], { out: opt("--out"), force: flag("--force"), published: flag("--published") });
+  else if (cmd === "roundtrip" && pos.length) { const ok = pos.map(roundtrip).every(Boolean); if (!ok) process.exitCode = 1; }
+  else if (cmd === "pull" && pos[0]) await pull(pos[0], { out: opt("--out"), force: flag("--force"), published: flag("--published") });
   else { console.error(USAGE); process.exit(2); }
 } catch (e) {
   console.error(`error: ${e.message}`);

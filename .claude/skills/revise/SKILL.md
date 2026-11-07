@@ -20,6 +20,7 @@ argument-hint: "[テーマ] [freeze|show|apply](任意)"
 - **大きく動く段階では使わない**。draft.md を章ごと書き直している最中なら article の書く工程へ戻す。差分は細かい修正・追記のためのもの。目安は、構成を議論する時は全文のプレビュー HTML（article）、文を直す時は差分（revise）。
 - **裏付けの Web 取得は pull**。著者の承認を得てから行い、references.md に取得状態を1行で控える（article 不変条件4）。
 - **図を足す時は illustrate に渡す**。戻ってきた `![...](images/...)` の1行を `{+ +}` で差分ファイルに入れる。
+- **Wix の記法は字面のまま扱う**。Wix から取った本文の `[テキスト]{.accent}`・`![…](wix:…){width=small}`・`::x{…}` などは wix-sync の拡張記法（`/wix-sync` の references/markdown-extensions.md）。差分には文字と同じく記法の変化も出る。改訂案で記法を足し消しするのは著者が求めた時だけ。
 
 ## 手順
 
