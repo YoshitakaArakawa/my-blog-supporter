@@ -14,6 +14,9 @@
  *   node wix-sync.mjs pull <記事> [--out <file>] [--force]
  *                                                   下書きの最新を Markdown へ（既定 draft_user.md）
  *   node wix-sync.mjs pull <記事> --published       公開版を published.md へ
+ *   node wix-sync.mjs compare <前.json> <後.json>   2つの Ricos JSON（pull の控え・dry-run の出力）で、減る装飾と
+ *                                                   画像の消失・並び・幅の変化を出す（Wix を呼ばない）。
+ *                                                   push --dry-run は直前の pull の控えと自動でこれを行う
  *
  * 安全側の決まり:
  *   - 公開・公開予約はしない（その経路をコードに持たない）。公開済み記事は --allow-published の時だけ、
@@ -407,6 +410,144 @@ function summarize(nodes) {
 
 const editUrl = (id) => `https://manage.wix.com/dashboard/${WIX_SITE_ID}/blog/${id}/edit`;
 
+// ---------- 落ちる装飾と画像の点検 ----------
+// 直前の pull の控えと、これから送るノードを比べ、減る装飾・消える画像・並びや幅の変わる画像を出す。
+// Markdown に書けない装飾（文字色・下線など）は push で落ちるので、送る前に著者が気づけるようにする。
+// 止めはしない。送るか、送った後に装飾を足し直すかは著者が決める
+
+// 比べる装飾の名前。値（色・URL・サイズ）まで含めて同じものを同じとみなす
+function decoLabel(d) {
+  switch (d.type) {
+    case "COLOR": return [d.colorData?.foreground && `文字色 ${d.colorData.foreground}`, d.colorData?.background && `背景色 ${d.colorData.background}`].filter(Boolean).join("・") || null;
+    case "UNDERLINE": return "下線";
+    case "BOLD": return (d.fontWeightValue ?? 700) >= 600 ? "太字" : null;
+    case "ITALIC": return "斜体";
+    case "FONT_SIZE": return `文字サイズ ${d.fontSizeData?.value ?? ""}${d.fontSizeData?.unit ?? ""}`;
+    case "LINK": return d.linkData?.link?.url ? `リンク ${d.linkData.link.url}` : null;
+    default: return null;
+  }
+}
+
+// 装飾ごとに、その装飾が続く範囲の文字列を集める。TEXT の割れ方（他の装飾の有無）に左右されないようにする
+function decoSpans(nodes) {
+  const spans = [];
+  const walk = (list) => {
+    const open = new Map();   // 装飾の名前 → 続いている文字列
+    const close = (keep) => {
+      for (const [k, t] of open) {
+        if (keep.has(k)) continue;
+        if (t.trim()) spans.push({ label: k, text: t.trim() });
+        open.delete(k);
+      }
+    };
+    for (const n of list ?? []) {
+      if (n.type !== "TEXT") { close(new Set()); walk(n.nodes); continue; }
+      const labels = new Set((n.textData?.decorations ?? []).map(decoLabel).filter(Boolean));
+      close(labels);
+      for (const k of labels) open.set(k, (open.get(k) ?? "") + n.textData.text);
+    }
+    close(new Set());
+  };
+  walk(nodes);
+  return spans;
+}
+
+// 本文の最上位の画像を、Media の ID・幅・直前の文と一緒に並べる。直前の文は、ずれた時にどこの画像かを示すため
+function imageList(nodes) {
+  const list = [];
+  let before = "";
+  for (const n of nodes) {
+    if (n.type === "IMAGE") {
+      const w = n.imageData?.containerData?.width ?? {};
+      list.push({ id: n.imageData?.image?.src?.id ?? "", width: w.size ?? (w.custom ? `${w.custom}px` : "既定"), before });
+    } else {
+      const t = plainText(n).replace(/\s+/g, " ").trim();
+      if (t) before = t;
+    }
+  }
+  return list;
+}
+
+const clip = (s, n = 30) => (s.length > n ? `${s.slice(0, n)}…` : s);
+
+function lossReport(beforeNodes, afterNodes) {
+  const lines = [];
+  // 装飾: 控えにあって送る内容に無いもの（同じ装飾・同じ文字列の数で突き合わせる）
+  const remain = new Map();
+  for (const s of decoSpans(afterNodes)) remain.set(`${s.label}\u0000${s.text}`, (remain.get(`${s.label}\u0000${s.text}`) ?? 0) + 1);
+  const lost = [];
+  for (const s of decoSpans(beforeNodes)) {
+    const k = `${s.label}\u0000${s.text}`;
+    if (remain.get(k)) remain.set(k, remain.get(k) - 1); else lost.push(s);
+  }
+  if (lost.length) {
+    lines.push(`減る装飾 ${lost.length}:`);
+    for (const s of lost) lines.push(`  ${s.label}「${clip(s.text)}」`);
+  }
+  // 画像: 消える・新しく入る・並びが変わる・幅が変わる
+  const before = imageList(beforeNodes);
+  const after = imageList(afterNodes);
+  const count = (l) => l.reduce((m, x) => m.set(x.id, (m.get(x.id) ?? 0) + 1), new Map());
+  const aCount = count(after);
+  const bCount = count(before);
+  const gone = before.filter((x) => { const c = aCount.get(x.id); if (c) { aCount.set(x.id, c - 1); return false; } return true; });
+  const added = after.filter((x) => { const c = bCount.get(x.id); if (c) { bCount.set(x.id, c - 1); return false; } return true; });
+  if (gone.length) {
+    lines.push(`消える画像 ${gone.length}:`);
+    for (const x of gone) lines.push(`  ${clip(x.id, 14)}（直前の文「${clip(x.before)}」）`);
+  }
+  if (added.length) {
+    lines.push(`新しく入る画像 ${added.length}:`);
+    for (const x of added) lines.push(`  ${clip(x.id.replace(/^DRYRUN_/, ""), 40)}（直前の文「${clip(x.before)}」）`);
+  }
+  // 両方にある画像の並びを最長共通部分列で突き合わせる。そこから外れた画像が、別の位置へ動いた画像
+  const keep = (l, out) => l.filter((x) => !out.includes(x));
+  const bKeep = keep(before, gone);
+  const aKeep = keep(after, added);
+  const L = Array.from({ length: bKeep.length + 1 }, () => new Array(aKeep.length + 1).fill(0));
+  for (let i = bKeep.length - 1; i >= 0; i--) {
+    for (let j = aKeep.length - 1; j >= 0; j--) {
+      L[i][j] = bKeep[i].id === aKeep[j].id ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    }
+  }
+  const pairs = [];
+  const movedB = [];
+  for (let i = 0, j = 0; i < bKeep.length || j < aKeep.length;) {
+    if (i < bKeep.length && j < aKeep.length && bKeep[i].id === aKeep[j].id) { pairs.push([bKeep[i], aKeep[j]]); i++; j++; }
+    else if (j >= aKeep.length || (i < bKeep.length && L[i + 1][j] >= L[i][j + 1])) movedB.push(bKeep[i++]);
+    else j++;
+  }
+  if (movedB.length) {
+    lines.push(`位置が変わる画像 ${movedB.length}（キャプションによる割り当てのずれの疑い。送らずに本文を確かめる）:`);
+    for (const x of movedB) {
+      const y = aKeep.find((a) => a.id === x.id);
+      lines.push(`  ${clip(x.id, 14)}: 控えでは「${clip(x.before)}」の後 → 送る内容では「${clip(y?.before ?? "")}」の後`);
+    }
+  }
+  const resized = pairs.filter(([x, y]) => x.width !== y.width);
+  if (resized.length) {
+    lines.push(`幅が変わる画像 ${resized.length}:`);
+    for (const [x, y] of resized) lines.push(`  ${clip(x.id, 14)} ${x.width} → ${y.width}（直前の文「${clip(x.before)}」）`);
+  }
+  return lines;
+}
+
+// 記事の直前の pull の控え。名前は pull_{編集日時}.json なので、名前の順が新しさの順になる
+function latestPull(dir) {
+  const d = path.join(dir, "wix-snapshots");
+  if (!fs.existsSync(d)) return null;
+  const f = fs.readdirSync(d).filter((x) => /^pull_\d.*\.json$/.test(x)).sort().at(-1);
+  return f ? path.join(d, f) : null;
+}
+
+const nodesOf = (file) => { const j = JSON.parse(fs.readFileSync(file, "utf8")); return j.richContent?.nodes ?? j.nodes ?? []; };
+
+function printLossReport(beforeFile, afterNodes) {
+  const lines = lossReport(nodesOf(beforeFile), afterNodes);
+  console.log(`点検（${path.basename(beforeFile)} と比べる）: ${lines.length ? "" : "減る装飾・画像のずれは無い"}`);
+  for (const l of lines) console.log(`  ${l}`);
+}
+
 async function push(file, { dryRun, update, allowPublished }) {
   const src = path.resolve(file);
   const dir = path.dirname(src);
@@ -441,6 +582,9 @@ async function push(file, { dryRun, update, allowPublished }) {
     const out = path.join(dir, "wix-dryrun.json");
     fs.writeFileSync(out, JSON.stringify({ title, nodes }, null, 2));
     console.log(`dry-run: ${out}（Wix には書いていない。変換 API だけ呼んだ）`);
+    const prev = latestPull(dir);
+    if (prev) printLossReport(prev, nodes);
+    else console.log("点検: pull の控えが無いので、減る装飾・画像は比べていない");
     return;
   }
 
@@ -706,14 +850,15 @@ const [cmd, ...args] = process.argv.slice(2);
 const flag = (f) => args.includes(f);
 const opt = (f) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1] : undefined; };
 const pos = args.filter((a, i) => !a.startsWith("--") && !(i > 0 && ["--out", "--limit"].includes(args[i - 1])));
-const USAGE = "usage: check | list [--limit N] | link <記事> <postId> [--relink] | push <file.md> [--dry-run|--update [--allow-published]] | pull <記事> [--out <file>] [--force] [--published]";
+const USAGE = "usage: check | list [--limit N] | link <記事> <postId> [--relink] | push <file.md> [--dry-run|--update [--allow-published]] | pull <記事> [--out <file>] [--force] [--published] | compare <前.json> <後.json>";
 
 try {
   if (cmd === "check") await check();
   else if (cmd === "list") await list(Number(opt("--limit") ?? 10));
   else if (cmd === "link" && pos.length === 2) await link(pos[0], pos[1], { relink: flag("--relink") });
   else if (cmd === "push" && pos[0]) await push(pos[0], { dryRun: flag("--dry-run"), update: flag("--update"), allowPublished: flag("--allow-published") });
-  else if (cmd === "pull" && pos[0]) await pull(pos[0], { out: opt("--out"), force: flag("--force"), published: flag("--published") });
+  else if (cmd === "compare" && pos.length === 2) printLossReport(pos[0], nodesOf(pos[1]));
+  else if (cmd === "pull" && pos[0])await pull(pos[0], { out: opt("--out"), force: flag("--force"), published: flag("--published") });
   else { console.error(USAGE); process.exit(2); }
 } catch (e) {
   console.error(`error: ${e.message}`);
