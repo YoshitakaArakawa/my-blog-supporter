@@ -44,6 +44,7 @@ note: 実装の正本は scripts/lib/wix-markdown.mjs、名前付きの色の正
 - 画像の行は1行単独で書く。キャプションは title（`"…"`）で、中のリンク・太字も効く。title が無ければ alt がキャプションになる。title 中の `"` は `\"`
 - `wix:<Media の ID>` は著者が Wix で入れた画像。大きさは pull が `wix.json` に控える
 - `{width=small|content|full|original|<数値>}`・`{align=left|center|right}`。省略時は、縦長なら small、それ以外は content・中央
+- `align=left`・`right` は、後ろの段落が画像の横に回り込む（Wix の既定）。回り込ませたくない時は中央のまま使う
 - pull は、幅が省略時と違う時だけ `{width=…}` を書く
 
 ## 区切り線
@@ -57,7 +58,7 @@ note: 実装の正本は scripts/lib/wix-markdown.mjs、名前付きの色の正
 ::wix{type=HTML id=abcd1234567}
 ```
 
-- `::x` は X のポスト。`width`・`height` は Wix の枠の大きさで、省略時は 500・700。新しく書いた `::x` の枠の高さは仮の値なので、Wix の画面でポストの長さに合わせて調整し、pull で取り込む
+- `::x` は X のポスト。`width`・`height` は Wix の枠の大きさで、省略時は 500・700。新しく書いた `::x` の枠の高さは仮の値。編集画面で開くと Wix がポストの長さに合わせて高さを自動で直すので、その後に pull すると実際の高さが入る
 - pull で取った `::x` は、ポストの本文入りの HTML を `wix.json` に控えてあり、push で同じ HTML に戻る
 - `::wix` は Markdown にできない Wix のノード（X 以外の HTML 埋め込み・動画など）。中身は `wix.json` に控えてある。行を消せばそのノードは消える。中身は Wix の画面で直す
 
