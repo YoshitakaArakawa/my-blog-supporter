@@ -271,6 +271,15 @@ async function toRicos(md) {
 const textNode = (s) => ({ type: "TEXT", id: "", nodes: [], textData: { text: s, decorations: [] } });
 const emptyPara = () => ({ type: "PARAGRAPH", id: "", nodes: [], paragraphData: {} });
 
+// 画像の幅・配置。pull で控えた設定（Wix で著者が変えたもの）があればそれを使い、
+// 無ければ縦長は SMALL、それ以外は CONTENT にする（プレビューが縦長の画像を半分の幅で出すのと揃える）
+function containerFor(img, media) {
+  const kept = img.wix?.container ?? media.container;
+  if (kept) return structuredClone(kept);
+  const tall = media.height > media.width;
+  return { width: { size: tall ? "SMALL" : "CONTENT" }, alignment: "CENTER", textWrap: true };
+}
+
 function imageNode(img, media) {
   const captionNodes = img.captionNodes ?? (img.caption ? [textNode(img.caption)] : []);
   return {
@@ -278,7 +287,7 @@ function imageNode(img, media) {
     id: "",
     nodes: captionNodes.length ? [{ type: "CAPTION", id: "", nodes: captionNodes }] : [],
     imageData: {
-      containerData: { width: { size: "CONTENT" }, alignment: "CENTER", textWrap: true },
+      containerData: containerFor(img, media),
       image: { src: { id: media.id }, width: media.width, height: media.height },
       ...(img.alt ? { altText: img.alt } : {}),
       ...(img.caption ? { caption: img.caption } : {}),
@@ -374,12 +383,13 @@ async function resolveMedia(images, dir, state, dryRun) {
     if (img.wix) { media.push(img.wix); continue; }
     const file = path.resolve(dir, img.src);
     if (!fs.existsSync(file)) throw new Error(`画像が無い: ${img.src}`);
-    if (dryRun) { media.push({ id: `DRYRUN_${path.basename(file)}`, width: 1, height: 1 }); continue; }
     const h = hash(fs.readFileSync(file));
     const cached = state.images[img.src];
     if (cached?.hash === h) { media.push(cached); continue; }
+    if (dryRun) { media.push({ id: `DRYRUN_${path.basename(file)}`, width: 1, height: 1, container: cached?.container }); continue; }
     const m = await uploadImage(file, `/blog-supporter/${path.basename(dir)}`);
-    state.images[img.src] = { ...m, hash: h };
+    // 差し替えた画像も、同じパスなら Wix で設定した幅を引き継ぐ
+    state.images[img.src] = { ...m, hash: h, ...(cached?.container ? { container: cached.container } : {}) };
     saveState(dir, state);
     console.log(`  画像を上げた: ${img.src} (${m.width}x${m.height})`);
     media.push(m);
@@ -524,7 +534,8 @@ function codeMd(n) {
   return { md, exact };
 }
 
-function toMarkdown(nodes, imageMap, wixImages, wixNodes = []) {
+// containers: push で上げた画像のパス → Wix 上の幅・配置（containerData）。pull が wix.json に控える
+function toMarkdown(nodes, imageMap, wixImages, wixNodes = [], containers = {}) {
   const out = [];
   const block = (s) => out.push(s, "");
   // 空段落は数えておき、次のブロックの前で既定の数と違う時だけ印を書く
@@ -589,11 +600,14 @@ function toMarkdown(nodes, imageMap, wixImages, wixNodes = []) {
         const captionMd = inlineMd(captionNodes);
         // push で上げた画像はローカルのファイルに戻す。それ以外（著者が Wix で足した画像）は
         // 「プレースホルダー＋キャプション行」にし、ID は wix.json に控えて push で戻せるようにする
-        if (imageMap[id]) block(`![${plain}](${imageMap[id]})`);
-        else {
+        const container = n.imageData?.containerData;
+        if (imageMap[id]) {
+          block(`![${plain}](${imageMap[id]})`);
+          if (container) containers[imageMap[id]] = container;
+        } else {
           block(`<!-- 画像: ${plain} -->`);
           if (captionMd) block(captionMd);
-          wixImages.push({ caption: plain, captionMd, captionNodes, alt: n.imageData?.altText ?? "", id, width: img.width, height: img.height });
+          wixImages.push({ caption: plain, captionMd, captionNodes, alt: n.imageData?.altText ?? "", id, width: img.width, height: img.height, container });
         }
         break;
       }
@@ -644,8 +658,10 @@ async function pull(target, { out, force, published }) {
   const p = (await wixOk("GET", `/blog/v3/draft-posts/${state.draftPostId}?fieldsets=RICH_CONTENT`)).draftPost;
   const snap = snapshot(dir, "pull", p);
   const header = `<!-- source: wix draft-post ${p.id} / fetched: ${today()} / method: wix-sync pull (Blog API) / status: ${p.status} / edited: ${p.editedDate} -->\n<!-- Wix の下書き。Wix 側が正。毎回上書き。 -->\n\n`;
-  const md = `${header}# ${p.title}\n\n${toMarkdown(p.richContent.nodes, imageMap, wixImages, wixNodes)}`;
+  const containers = {};
+  const md = `${header}# ${p.title}\n\n${toMarkdown(p.richContent.nodes, imageMap, wixImages, wixNodes, containers)}`;
   fs.writeFileSync(dest, md);
+  for (const [src, c] of Object.entries(containers)) state.images[src].container = c;
   Object.assign(state, {
     wixImages, wixNodes, syncedEditedDate: p.editedDate, syncedFile: path.basename(dest), syncedHash: hash(md),
   });
