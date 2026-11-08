@@ -129,6 +129,10 @@ export function resolveLayout(tpl, slide) {
  */
 export function slideModel(tpl, slide) {
   const issues = [];
+  // 役割が無い（骨組みの deck.md など）か語彙に無い時、resolveLayout は「主張」のレイアウトに落とす
+  const role = slide.fields["役割"];
+  if (!role) issues.push("役割: が無いので「主張」のレイアウトにした。骨組みの deck.md なら、役割・秒・核を足してから組む");
+  else if (!tpl.roles[role]) issues.push(`役割「${role}」がテンプレートの対応に無いので「主張」のレイアウトにした`);
   const layoutName = resolveLayout(tpl, slide);
   const layout = tpl.layouts[layoutName];
   if (!layout) throw new Error(`テンプレート ${tpl.id} にレイアウト「${layoutName}」がありません`);
