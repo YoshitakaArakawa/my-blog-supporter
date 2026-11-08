@@ -20,8 +20,12 @@ export const AUTO_PLACEHOLDERS = new Set(["SLIDE_NUMBER", "FOOTER", "DATE_AND_TI
 // deck.md の解析器（リポジトリの共通部品）を読み込む
 export const deckLib = await import(pathToFileURL(path.join(REPO_ROOT, "scripts", "lib", "deck.mjs")).href);
 
-// `見せる:` の値から画像のパスを拾う（render-deck.mjs と同じ規則）
-const IMAGE_PATH = /([^\s（(、,]+\.(?:png|jpe?g|gif))/i;
+// `見せる:` の値から画像のパスを拾う（render-deck.mjs と同じく webp・svg も画像とみなす）
+const IMAGE_PATH = /([^\s（(、,]+\.(?:png|jpe?g|gif|webp|svg))/i;
+// Google スライドの画像の差し込みが受け付ける形式
+const SLIDES_IMAGE = /\.(?:png|jpe?g|gif)$/i;
+// event.md に最小文字が無い時に使う値（スライドの本文の目安）
+export const DEFAULT_MIN_PT = 18;
 
 /** スクリプトが直接実行された時だけ true（import された時は false） */
 export function isMain(metaUrl) {
@@ -88,15 +92,23 @@ export function minFontPt(event) {
   return m ? Number(m[1]) : null;
 }
 
+/** 点検に使う最小文字。event.md に無ければ既定の値を使い、そのことを note に書く */
+export function minFont(event) {
+  const pt = minFontPt(event);
+  return pt ? { pt, note: `${pt}pt（event.md）` } : { pt: DEFAULT_MIN_PT, note: `${DEFAULT_MIN_PT}pt（event.md に無いので既定）` };
+}
+
 /** 画面に出す文字から AI の印を外す */
 export const clean = (s) => String(s ?? "").replaceAll(PROVISIONAL, "").trim();
 
-/** `見せる:` を、画像（パスあり）か、著者が後で入れる物の説明（パスなし）に分ける */
+/** `見せる:` を、画像（パスあり）か、著者が後で入れる物の説明（パスなし）に分ける。Slides に入らない形式は仮置きの枠にする */
 export function visualOf(slide) {
   const v = slide.fields["見せる"];
   if (!v) return null;
   const m = v.match(IMAGE_PATH);
-  return m ? { kind: "image", path: m[1], note: v } : { kind: "todo", text: v };
+  if (!m) return { kind: "todo", text: v };
+  if (!SLIDES_IMAGE.test(m[1])) return { kind: "todo", text: `PNG にして差し替える: ${m[1]}`, unsupported: m[1] };
+  return { kind: "image", path: m[1], note: v };
 }
 
 /** 役割と中身（本文・見せる の有無）から、使うレイアウトの名前を決める */
@@ -128,11 +140,17 @@ export function slideModel(tpl, slide) {
     body: slide.body.map(clean).filter(Boolean),
     source: source ? [source] : [],
   };
+  // 見出しの枠が無いレイアウト（大きな一文など）では、本文が空なら画面の見出しを本文の枠に出す
+  if (!layout.boxes.title && layout.boxes.body && texts.title.length && !texts.body.length) {
+    texts.body = texts.title;
+    texts.title = [];
+  }
   for (const [slot, paras] of Object.entries(texts)) {
     if (paras.length && !layout.boxes[slot]) issues.push(`${slotLabel(slot)}を置く枠がレイアウト「${layoutName}」にありません`);
   }
   const slots = Object.entries(layout.boxes).map(([slot, box]) => ({ slot, box, key: keys[slot], paras: texts[slot] ?? [] }));
   const visual = visualOf(slide);
+  if (visual?.unsupported) issues.push(`見せる: の ${visual.unsupported} は Google スライドに入らない形式。PNG にする`);
   let frame = null;
   if (visual) {
     frame = !texts.source.length && layout.frameNoSource ? layout.frameNoSource : layout.frame;
@@ -162,7 +180,23 @@ export function deckModels(tpl, deckPath) {
   return { title: deck.title, event: deckLib.readEvent(deckPath), models: deck.slides.map((s) => slideModel(tpl, s)) };
 }
 
-/** 台詞をスピーカーノートの文字にする（印は残す。メモ: と 反応: は入れない） */
-export function notesText(lines) {
-  return lines.map((l) => (l.mark === "著者" ? "（著者）" : l.mark === "仮" ? "（仮）" : "") + l.text).join("\n");
+/** 定義の中で、文字の箱と画像の枠が重なる所（同じレイアウトで両方を使うと、組んだスライドで重なる） */
+export function layoutOverlaps(tpl) {
+  const out = [];
+  const hit = (a, b) => Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 0.01 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 0.01;
+  for (const [name, L] of Object.entries(tpl.layouts)) {
+    const boxes = Object.entries(L.boxes).map(([k, b]) => [slotLabel(k), b]);
+    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+      if (hit(boxes[i][1], boxes[j][1])) out.push(`「${name}」の${boxes[i][0]}と${boxes[j][0]}が重なる`);
+    }
+    // 出典が無い時の広い枠（frameNoSource）は出典の箱と重なってよい
+    for (const [key, label] of [["frame", "画像の枠"], ["frameNoSource", "出典が無い時の画像の枠"]]) {
+      if (!L[key]) continue;
+      for (const [slot, b] of Object.entries(L.boxes)) {
+        if (key === "frameNoSource" && slot === "source") continue;
+        if (hit(L[key], b)) out.push(`「${name}」の${label}と${slotLabel(slot)}が重なる`);
+      }
+    }
+  }
+  return out;
 }

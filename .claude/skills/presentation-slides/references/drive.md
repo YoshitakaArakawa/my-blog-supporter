@@ -1,11 +1,11 @@
 ---
-purpose: presentation-slides が Google ドライブに置くもの（テンプレートのデッキ・組んだデッキ・画像）と、ローカルの図を Slides に差し込む経路、connector が使えない時の扱い
+purpose: presentation-slides が Google ドライブに置くもの（テンプレートのデッキ・組んだデッキ・図の複製）と、承認で示す中身、ローカルの図を Slides に差し込む経路、connector が使えない時の扱い
 sources:
   - https://developers.google.com/workspace/slides/api/reference/rest/v1/presentations/request#createimagerequest
   - https://developers.google.com/workspace/slides/release-notes
   - https://developers.google.com/workspace/guides/configure-mcp-servers
 fetched_at: 2026-11-08
-note: Drive の実 ID は gitignore の drive.local.json にだけ書く。手順は Drive・Slides の connector（copy_file・update_file・share_file・read_presentation・update_presentation）で行う
+note: Drive の実 ID は gitignore の drive.local.json にだけ書く。手順は Drive・Slides の connector（copy_file・update_file・share_file・search_files・read_presentation・update_presentation）で行う
 ---
 
 # Drive と画像
@@ -13,9 +13,9 @@ note: Drive の実 ID は gitignore の drive.local.json にだけ書く。手�
 ## 目次
 
 - 置き場と登録のファイル
+- 承認で示す中身
 - テンプレートのデッキを置く
 - ローカルの図を差し込む（一時公開）
-- 図を Drive に置く
 - connector が使えない時
 
 ## 置き場と登録のファイル
@@ -26,33 +26,43 @@ note: Drive の実 ID は gitignore の drive.local.json にだけ書く。手�
 |---|---|---|
 | `templates` | テンプレートの名前 → テンプレートのデッキの ID | 著者だけ |
 | `deckFolderId` | 組んだデッキを置くフォルダ | 著者だけ |
-| `imageFolderId` | 差し込む図の複製を置くフォルダ | 著者だけ |
+| `imageFolderId` | 図と、その複製を置くフォルダ | 著者だけ |
 | `publicFolderId` | 一時公開のフォルダ（スキル専用。ふだんは空） | リンクを知っている全員（閲覧者） |
 
-無いキーは、初めて要る時に著者に聞いて作る。フォルダを作るのは承認なしでよい。`publicFolderId` のフォルダを「リンクを知っている全員」にする時だけ、著者の承認を取る（スキル専用で、ふだん空であることを添える）。
+無いキーは、初めて要る時に著者に聞いて作る。フォルダを作るのは承認なしでよい。`publicFolderId` のフォルダを「リンクを知っている全員」にする時は、スキル専用でふだん空であることを添えて承認を取る。
+
+## 承認で示す中身
+
+| 操作 | 示すもの |
+|---|---|
+| 組上 | 作るデッキの名前（`{yyyymmdd} {デッキのタイトル}`）・枚数・使うテンプレート・一時公開する図の一覧。一時公開のフォルダを初めて共有する時は、そのことも |
+| テンプレートのデッキの同期 | `sync-template.mjs` の要求の件数と中身（どのレイアウトの何を変えるか） |
+| 全体デッキへの取り込み | 取り込む枚数・位置・`preserveTheme` |
+| ゴミ箱への移動 | ファイルの一覧 |
 
 ## テンプレートのデッキを置く
 
 レイアウトとプレースホルダは API では作れず、.pptx の変換でしか作れない。
 
 1. `make-pptx.mjs template --template {名前} --out {scratchpad}/テンプレート_{名前}.pptx` で .pptx を作る
-2. 著者がブラウザで Drive に上げ、開いて「ファイル > Google スライドとして保存」する（1回だけ）。AI の `create_file` は base64 を AI が書き出すので、約 6KB（base64 で約 8 千字）を超えると写し間違いで失敗する
-3. 変換されたデッキを読み出し（マスクなし）、`sync-template.mjs --read <読み出し> --samples` を実行する。要求が 0 件なら定義どおり。あれば送る
+2. 著者がブラウザで Drive に上げ、開いて「ファイル > Google スライドとして保存」する（1回だけ）。AI の `create_file` は base64 を AI が書き出すので、数 KB でも写し間違いで落ちることがある。テンプレートと図の上げには使わない
+3. 変換されたデッキを読み出し、`sync-template.mjs --read <読み出し> --samples` を実行する。要求が 0 件なら定義どおり。あれば件数と中身を示して承認を得てから送る
 4. デッキの ID を `drive.local.json` の `templates` に書く
 
-定義の書式（位置・書体・色・背景）だけを変えた時は、手順 3 だけで同期する。レイアウトを足す・消す時は 1 からやり直す。
+定義の書式（位置・書体・色・背景）や見本の文だけを変えた時は、手順 3 だけで同期する。レイアウトを足す・消す時は 1 からやり直す。
 
 ## ローカルの図を差し込む（一時公開）
 
-`createImage` は、Google が認証なしで取れる URL からしか画像を取らない。非公開の Drive のファイルは拒否される。差し込んだ画像はデッキの中に複製されるので、差し込んだ後は元を非公開に戻してよい。
+`createImage` は、Google が認証なしで取れる URL からしか画像を取らない。差し込んだ画像はデッキの中に複製されるので、差し込んだ後は元を非公開に戻してよい。
 
-組上の承認を取る時に、一時公開する図の一覧を示す。承認の後:
+組上の承認の後:
 
-1. 図を Drive に置く（下の「図を Drive に置く」）
-2. 図ごとに、`copy_file` で一時公開のフォルダへ複製する（`parentId` は `publicFolderId`）。複製はフォルダの共有を継ぎ、リンクで取れるようになる。著者が上げた元のファイルは動かさない
-3. 対応の JSON（`{"figures/x.png": "https://lh3.googleusercontent.com/d/{複製の ID}"}`）を scratchpad に書き、`build-slides.mjs slides --images` に渡して組上の1回目を送る
-4. 送ったらすぐ、複製を `update_file` で `imageFolderId` へ移す。公開は数十秒で終わる
-5. `build-slides.mjs record --images` で、対応を slides.json に残す。組み直す時は、同じ複製を 2〜4 で使い回す
+1. 著者に、`見せる:` の PNG（`figures/` の外の画像も含む）を `imageFolderId` のフォルダへブラウザで上げてもらう。上がったら `search_files`（`parentId` と `title`）でファイルの ID を引く。Google ドライブ（パソコン版）の同期フォルダに置く手もあるが、まだ試していない
+2. 要求を作る直前に、図ごとに `copy_file` で一時公開のフォルダへ複製する（`parentId` は `publicFolderId`）。複製はフォルダの共有を継ぎ、リンクで取れるようになる。著者が上げた元のファイルは動かさない
+3. 対応の JSON（`{"figures/x.png": "https://lh3.googleusercontent.com/d/{複製の ID}"}`）を scratchpad に書き、組上の要求を作って送る
+4. 送ったらすぐ、複製を `update_file` で `imageFolderId` へ移す。公開は、要求を写す時間を含めて1〜2分で終わる
+5. `search_files`（`parentId = publicFolderId`）で一時公開のフォルダが空になったことを確かめる。残っていたら `imageFolderId` へ移し、著者に伝える。次の組上の前にも確かめる
+6. `build-slides.mjs record --images` で、URL とその時の図の SHA-1 を slides.json に残す。組み直す時は、図の SHA-1 が同じなら、その複製を 2〜4 で使い回す。違えば新しく上げてもらう
 
 公開の性質:
 
@@ -64,25 +74,18 @@ note: Drive の実 ID は gitignore の drive.local.json にだけ書く。手�
 
 公開を避けたい回は、下の「経路 C」で組む。
 
-## 図を Drive に置く
-
-| 手段 | 著者の作業 | 使う時 |
-|---|---|---|
-| Google ドライブ（パソコン版）の同期フォルダ | パソコン版を起動しておく | 起動していれば既定。AI が `figures/` の PNG を同期フォルダに写し、`search_files` で上がったことを確かめる |
-| 著者のアップロード | `figures/` をブラウザで Drive に上げる（組上ごとに1回） | パソコン版が起動していない時 |
-
 ## connector が使えない時
 
 Google は、Workspace の MCP サーバー（Drive・Slides など）への要求のうち、AI エージェント用の指定（Google Auth Platform の「Clients」で「Use this client for an AI-powered agent」）が無い OAuth クライアントからのものを拒否すると告知している（Slides のリリースノート 20261012 の項）。
 
-- Slides か Drive の connector が認可の理由で拒否したら、組上を止めて著者に伝える。黙って別の経路に切り替えない
+- Slides か Drive の connector が認可の理由で拒否したら、組上を止めて著者に伝える
 - connector の一覧から足した connector なら、著者に再接続を案内する
 - 著者が自分の Google Cloud の OAuth クライアントで足したカスタムの connector なら、上の指定を案内する。指定の期限を過ぎた既存のクライアントには後から指定できないので、指定した新しいクライアントを作る
 
 **経路 C**（代わりの経路。著者が選んだ時だけ）:
 
-1. `make-pptx.mjs deck $OUTPUT_DIR/deck.md --out {scratchpad}/{名前}.pptx` で、使うレイアウト・スライド・ノート・図（埋め込み）ごと .pptx を作る
+1. `make-pptx.mjs deck $OUTPUT_DIR/deck.md --out {scratchpad}/{名前}.pptx` で、使うレイアウト・スライド・図（埋め込み）ごと .pptx を作る
 2. 著者が Drive に上げ、開いて「Google スライドとして保存」する
-3. connector が使えるようになったら、読み出して `check-slides.mjs` で点検し、`build-slides.mjs record` で slides.json を作る
+3. connector が使えるようになったら、読み出して `check-slides.mjs` で点検し、`build-slides.mjs record --by-order` で slides.json を作る（変換したデッキのスライドの ID は変換器が振るので、並び順で対応させる）
 
-出来上がりは既定の経路と同じ形（レイアウト・プレースホルダ・ノートが残る）で、画像の公開も要らない。ただし Drive に上げる段に、毎回著者の手が要る。.pptx を `importSlides` の取り込み元にはできない（通らない）。
+出来上がりは既定の経路と同じ形（レイアウト・プレースホルダが残る）で、画像の公開も要らない。ただし Drive に上げる段に、毎回著者の手が要る。経路 C は make-pptx で作るテンプレート向けで、外から与えるテンプレートには使えない。

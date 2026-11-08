@@ -8,24 +8,26 @@
  *
  * 使い方:
  *   node render-slides.mjs <deck.md> [--template navy] [--out <html>]
- *   node render-slides.mjs <deck.md> --measure [--template navy]   一覧を作り、ブラウザで測った結果（JSON）を標準出力に出す
+ *   node render-slides.mjs <deck.md> --measure [--json <file>] [--template navy]   一覧を作り、ブラウザで測った警告を出す（--json に測った結果）
  *   node render-slides.mjs <deck.md> --frames [--template navy]    `見せる:` の枠ごとに、図を描く寸法（px）と最小の文字（px）を出す
  *
  * 既定の出力は deck.md と同じ階層の preview/slides.html。図は `見せる:` のパス（deck.md からの相対）で読む。
  * 見るときは .claude/launch.json の preview サーバー経由で /output/{登壇}/preview/slides.html を開く。
- * --measure は playwright-cli を使う（スクリプトの中で開いて閉じる）。リポジトリのルートで実行し、後で .playwright-cli/ を消す。
+ * --measure は playwright-cli を使う（スクリプトの中で開いて閉じ、作業フォルダ .playwright-cli/ も消す）。リポジトリのルートで実行する。
+ * 最小文字は event.md の `最小文字:`。無ければ 18pt で見て、そのことを出す。
+ * テンプレートを並べて比べる時は、--out を preview/slides_{名前}.html にして上書きを避ける。
  * --frames の寸法は「枠の大きさ（in）× FIGURE_PX_PER_IN」。この縦横比で描けば図は枠いっぱいに置かれ、1px = 72 / FIGURE_PX_PER_IN pt になる。
  */
 import fs from "node:fs";
 import path from "node:path";
-import { loadTemplate, deckModels, minFontPt, isMain, slotLabel, colorHex, todoColor } from "./lib/template.mjs";
+import { loadTemplate, deckModels, minFont, isMain, slotLabel, colorHex, todoColor } from "./lib/template.mjs";
 import { pageHtml, measure } from "./lib/page.mjs";
 
 /** deck.md の1枚の組み立て図を、測る箱の並びにする */
 export function modelPage(tpl, m, ctx) {
   const boxes = m.slots.filter((s) => s.paras.length).map((s) => ({
     kind: "text", id: `s${m.index}_${s.slot}`, label: slotLabel(s.slot), ...pick(s.box), inset: tpl.inset,
-    color: colorHex(tpl, s.box.color), maxLines: s.box.maxLines ?? (s.slot === "title" ? 2 : null), paras: s.paras,
+    lineSpacing: s.box.lineSpacing ?? tpl.lineSpacing, color: colorHex(tpl, s.box.color), maxLines: s.box.maxLines ?? (s.slot === "title" ? 2 : null), paras: s.paras,
   }));
   if (m.visual && m.frame) {
     const f = m.frame;
@@ -55,7 +57,7 @@ export const FIGURE_PX_PER_IN = 192;
 /** `見せる:` の枠ごとに、図の寸法と最小の文字の大きさ（px）を返す */
 export function frameSizes(tpl, deckPath) {
   const { event, models } = deckModels(tpl, deckPath);
-  const minPt = minFontPt(event) ?? 18;
+  const minPt = minFont(event).pt;
   return models.filter((m) => m.visual && m.frame).map((m) => ({
     index: m.index, layout: m.layoutName, visual: m.visual.kind === "image" ? m.visual.path : m.visual.text,
     frameIn: { w: m.frame.w, h: m.frame.h },
@@ -64,26 +66,26 @@ export function frameSizes(tpl, deckPath) {
   }));
 }
 
-const pick = (b) => ({ x: b.x, y: b.y, w: b.w, h: b.h, size: b.size, bold: b.bold, align: b.align, anchor: b.anchor, spaceBelow: b.spaceBelow, font: b.font, lineSpacing: b.lineSpacing });
+const pick = (b) => ({ x: b.x, y: b.y, w: b.w, h: b.h, size: b.size, bold: b.bold, align: b.align, anchor: b.anchor, spaceBelow: b.spaceBelow, font: b.font });
 
 export function renderHtml(tpl, deckPath, outPath) {
   const { title, event, models } = deckModels(tpl, deckPath);
   const ctx = { deckDir: path.dirname(deckPath), outDir: path.dirname(outPath) };
-  const minPt = minFontPt(event);
+  const mf = minFont(event);
   const pages = models.map((m) => modelPage(tpl, m, ctx));
-  const summary = `${models.length}枚 ／ テンプレート ${tpl.label ?? tpl.id} ／ 最小文字 ${minPt ? `${minPt}pt（event.md）` : "event.md に無し"}`;
-  const html = pageHtml({ title: title ?? "スライドの一覧", summary, pages, page: tpl.page, font: tpl.font, minPt })
+  const summary = `${models.length}枚 ／ テンプレート ${tpl.label ?? tpl.id} ／ 最小文字 ${mf.note}`;
+  const html = pageHtml({ title: title ?? "スライドの一覧", summary, pages, page: tpl.page, font: tpl.font, minPt: mf.pt })
     .replace("<head>", `<head>\n<!-- 生成物: deck.md とテンプレートの定義（${path.basename(path.dirname(tpl.file))}）から render-slides.mjs が作る。直しは deck.md か定義に入れ、このファイルは編集しない -->`);
   fs.mkdirSync(ctx.outDir, { recursive: true });
   fs.writeFileSync(outPath, html, "utf8");
-  return { slides: models.length, issues: pages.flatMap((p) => p.warnings.map((w) => [p.index, w])) };
+  return { slides: models.length, minNote: mf.note, issues: pages.flatMap((p) => p.warnings.map((w) => [p.index, w])) };
 }
 
 function main() {
   const args = process.argv.slice(2);
   const opt = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : null; };
   const deckPath = args.find((a) => a.endsWith(".md"));
-  if (!deckPath) { console.error("usage: node render-slides.mjs <deck.md> [--template navy] [--out <html>] [--measure]"); process.exit(1); }
+  if (!deckPath) { console.error("usage: node render-slides.mjs <deck.md> [--template navy] [--out <html>] [--measure [--json <file>]] [--frames]"); process.exit(2); }
   const tpl = loadTemplate(opt("--template") ?? "navy");
   if (args.includes("--frames")) {
     for (const f of frameSizes(tpl, path.resolve(deckPath))) console.log(`s${f.index} ${f.layout}: 枠 ${f.frameIn.w}×${f.frameIn.h}in → 図 ${f.canvasPx.w}×${f.canvasPx.h}px、文字は ${f.minTextPx}px 以上（${f.visual.slice(0, 40)}）`);
@@ -92,8 +94,17 @@ function main() {
   const out = path.resolve(opt("--out") ?? path.join(path.dirname(deckPath), "preview", "slides.html"));
   const r = renderHtml(tpl, path.resolve(deckPath), out);
   console.error(`スライドの一覧を書き出しました: ${out}（${r.slides}枚）`);
-  for (const [i, m] of r.issues) console.error(`! s${i}: ${m}`);
-  if (args.includes("--measure")) process.stdout.write(JSON.stringify(measure(out), null, 1));
+  if (!args.includes("--measure")) {
+    for (const [i, m] of r.issues) console.error(`! s${i}: ${m}`);
+    console.error("溢れ・行数・コントラスト・重なりは測っていない（--measure で測る）");
+    return;
+  }
+  const m = measure(out);
+  if (opt("--json")) fs.writeFileSync(opt("--json"), JSON.stringify(m, null, 1));
+  let total = 0;
+  for (const s of m.slides) { total += s.warnings.length; for (const w of s.warnings) console.log(`s${s.index}: ${w}`); }
+  console.log(`警告 ${total}件 ／ 最小文字 ${r.minNote}${m.fontReady ? "" : ` ／ ! 書体「${tpl.font}」を読めず、代わりの書体で測った`}`);
+  process.exitCode = total ? 1 : 0;
 }
 
 if (isMain(import.meta.url)) main();

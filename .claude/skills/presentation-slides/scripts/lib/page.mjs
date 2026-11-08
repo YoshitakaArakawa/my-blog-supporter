@@ -158,6 +158,9 @@ ${body}
     for (const t of slide.querySelectorAll(".todo:not(.missing)")) {
       const size = Number(t.dataset.size);
       if (minPt && size < minPt) warn("仮置きの枠の文字 " + size + "pt が最小 " + minPt + "pt を下回る");
+      const over = t.scrollHeight - t.clientHeight;
+      if (over > 1) warn("仮置きの枠の文字が枠から " + (over / 96 * 72).toFixed(0) + "pt 溢れる");
+      items.push({ id: t.dataset.id, label: "仮置きの枠", size, lines: [], overflowPt: Math.max(0, Math.round(over / 96 * 72 * 10) / 10), contrast: null, need: null });
     }
     const parts = [...slide.querySelectorAll(".tb, .img, .todo")].map((e) => ({ id: e.dataset.id, r: e.getBoundingClientRect(), label: e.dataset.label || (e.classList.contains("img") ? "画像" : "仮置きの枠") }));
     const overlaps = [];
@@ -169,7 +172,9 @@ ${body}
     out.push({ index: Number(slide.dataset.index), items, overlaps, warnings: [...ul.querySelectorAll("li")].map((li) => li.textContent) });
   }
   document.getElementById("warn-count").textContent = total;
-  window.__measure = { fontReady: document.fonts.check("16px '${font}'"), slides: out };
+  // document.fonts.check は該当する書体が無くても true を返すので、読み込んだ書体の一覧で確かめる
+  const fontReady = [...document.fonts].some((f) => f.family.replace(/["']/g, "") === ${JSON.stringify(font)} && f.status === "loaded");
+  window.__measure = { fontReady, slides: out };
 })();
 </script>
 </body>
@@ -203,5 +208,7 @@ export function measure(htmlPath, session = "slides") {
   } finally {
     run("close");
     fs.rmSync(tmp, { force: true });
+    // playwright-cli がカレントに作る作業フォルダ（スナップショット）を片付ける
+    fs.rmSync(path.join(process.cwd(), ".playwright-cli"), { recursive: true, force: true });
   }
 }

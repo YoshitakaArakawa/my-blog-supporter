@@ -17,7 +17,20 @@ const ANCHOR = { TOP: "t", MIDDLE: "ctr", BOTTOM: "b" };
 
 export const emu = (inch) => Math.round(inch * EMU_PER_IN);
 export const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const hex = (tpl, c) => (tpl.colors[c] ?? c).replace("#", "").toUpperCase();
+const hex = (tpl, c) => {
+  const v = tpl.colors[c] ?? c;
+  if (!/^#?[0-9a-f]{6}$/i.test(v)) throw new Error(`色「${c}」が定義の colors にありません`);
+  return v.replace("#", "").toUpperCase();
+};
+// テーマの配色に使う定義の色（定義の theme で上書きできる）
+const THEME = { dk1: "ink", dk2: "navy", lt2: "paper", accent1: "navy", accent2: "muted" };
+/** マスターの書式を取るレイアウト（見出しと本文の箱を持つ物）。定義の master で選ぶ */
+function masterLayout(tpl) {
+  const name = tpl.master ?? "見出しと本文";
+  const L = tpl.layouts[name];
+  if (!L?.boxes?.title || !L?.boxes?.body) throw new Error(`定義の master「${name}」が、見出しと本文の箱を持つレイアウトではありません`);
+  return L;
+}
 const solid = (v) => `<a:solidFill><a:srgbClr val="${v}"/></a:solidFill>`;
 const font = (tpl) => `<a:latin typeface="${esc(tpl.font)}"/><a:ea typeface="${esc(tpl.font)}"/>`;
 
@@ -87,13 +100,13 @@ export function layoutXml(tpl, name, styled = true) {
 }
 
 export function masterXml(tpl, layoutCount, styled = true) {
-  const base = tpl.layouts["見出しと本文"];
+  const base = masterLayout(tpl);
   const keys = placeholderKeys(base);
   const shapes = layoutPh(tpl, 2, base.boxes.title, keys.title, styled) + layoutPh(tpl, 3, base.boxes.body, keys.body, styled);
   const ids = Array.from({ length: layoutCount }, (_, k) => `<p:sldLayoutId id="${2147483649 + k}" r:id="rId${k + 1}"/>`).join("");
   const deeper = [2, 3, 4, 5].map((n) => `<a:lvl${n}pPr marL="${n * 285750}" indent="-285750"><a:buFont typeface="Arial"/><a:buChar char="•"/><a:defRPr sz="${Math.max(18, Math.round(base.boxes.body.size * 5 / 6)) * 100}">${solid(hex(tpl, base.boxes.body.color))}${font(tpl)}</a:defRPr></a:lvl${n}pPr>`).join("");
   const styles = styled
-    ? `<p:txStyles><p:titleStyle>${lvl1(tpl, base.boxes.title)}</p:titleStyle><p:bodyStyle>${lvl1(tpl, base.boxes.body)}${deeper}</p:bodyStyle><p:otherStyle><a:lvl1pPr><a:defRPr sz="1800">${solid(hex(tpl, "ink"))}${font(tpl)}</a:defRPr></a:lvl1pPr></p:otherStyle></p:txStyles>`
+    ? `<p:txStyles><p:titleStyle>${lvl1(tpl, base.boxes.title)}</p:titleStyle><p:bodyStyle>${lvl1(tpl, base.boxes.body)}${deeper}</p:bodyStyle><p:otherStyle><a:lvl1pPr><a:defRPr sz="1800">${solid(hex(tpl, base.boxes.body.color))}${font(tpl)}</a:defRPr></a:lvl1pPr></p:otherStyle></p:txStyles>`
     : "<p:txStyles><p:titleStyle/><p:bodyStyle/><p:otherStyle/></p:txStyles>";
   return XML + `<p:sldMaster ${NS}><p:cSld>${bg(tpl, base.background)}<p:spTree>${GRP}${shapes}</p:spTree></p:cSld>` +
     `<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>` +
@@ -102,13 +115,14 @@ export function masterXml(tpl, layoutCount, styled = true) {
 
 export function themeXml(tpl) {
   const c = (v) => `<a:srgbClr val="${v}"/>`;
-  const H = (k) => hex(tpl, k);
+  const T = { ...THEME, ...tpl.theme };
+  const H = (k) => hex(tpl, T[k] ?? k);
   const f = `${font(tpl)}<a:cs typeface=""/>`;
   const fill = `<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>`;
   return XML + `<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="${esc(tpl.id)}"><a:themeElements>` +
-    `<a:clrScheme name="${esc(tpl.id)}"><a:dk1>${c(H("ink"))}</a:dk1><a:lt1>${c("FFFFFF")}</a:lt1><a:dk2>${c(H("navy"))}</a:dk2><a:lt2>${c(H("paper"))}</a:lt2>` +
-    `<a:accent1>${c(H("navy"))}</a:accent1><a:accent2>${c(H("muted"))}</a:accent2><a:accent3>${c("8A94A6")}</a:accent3><a:accent4>${c("B8C1D1")}</a:accent4>` +
-    `<a:accent5>${c("3B5998")}</a:accent5><a:accent6>${c("6B7A99")}</a:accent6><a:hlink>${c(H("navy"))}</a:hlink><a:folHlink>${c(H("muted"))}</a:folHlink></a:clrScheme>` +
+    `<a:clrScheme name="${esc(tpl.id)}"><a:dk1>${c(H("dk1"))}</a:dk1><a:lt1>${c("FFFFFF")}</a:lt1><a:dk2>${c(H("dk2"))}</a:dk2><a:lt2>${c(H("lt2"))}</a:lt2>` +
+    `<a:accent1>${c(H("accent1"))}</a:accent1><a:accent2>${c(H("accent2"))}</a:accent2><a:accent3>${c("8A94A6")}</a:accent3><a:accent4>${c("B8C1D1")}</a:accent4>` +
+    `<a:accent5>${c("3B5998")}</a:accent5><a:accent6>${c("6B7A99")}</a:accent6><a:hlink>${c(H("accent1"))}</a:hlink><a:folHlink>${c(H("accent2"))}</a:folHlink></a:clrScheme>` +
     `<a:fontScheme name="${esc(tpl.id)}"><a:majorFont>${f}</a:majorFont><a:minorFont>${f}</a:minorFont></a:fontScheme>` +
     `<a:fmtScheme name="${esc(tpl.id)}"><a:fillStyleLst>${fill}${fill}${fill}</a:fillStyleLst>` +
     `<a:lnStyleLst>${[1, 2, 3].map(() => `<a:ln w="9525">${fill}</a:ln>`).join("")}</a:lnStyleLst>` +
@@ -200,10 +214,21 @@ export function buildPackage(tpl, { layouts, slides, styled = true }) {
   return zip(files);
 }
 
-/** PNG の幅と高さ（IHDR） */
-export function pngSize(buf) {
-  if (buf.readUInt32BE(0) !== 0x89504e47) return null;
-  return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+/** 画像の幅と高さ（PNG の IHDR・GIF の論理画面・JPEG の SOF）。読めなければ null */
+export function imageSize(buf) {
+  if (buf.length > 24 && buf.readUInt32BE(0) === 0x89504e47) return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+  if (buf.length > 10 && buf.toString("ascii", 0, 3) === "GIF") return { w: buf.readUInt16LE(6), h: buf.readUInt16LE(8) };
+  if (buf.length > 4 && buf[0] === 0xff && buf[1] === 0xd8) {
+    let i = 2;
+    while (i + 9 < buf.length) {
+      if (buf[i] !== 0xff) { i++; continue; }
+      const marker = buf[i + 1];
+      // SOF0〜SOF15（DHT・JPG・DAC の C4・C8・CC を除く）に幅と高さがある
+      if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) return { w: buf.readUInt16BE(i + 7), h: buf.readUInt16BE(i + 5) };
+      i += 2 + buf.readUInt16BE(i + 2);
+    }
+  }
+  return null;
 }
 
 /** 枠の中に縦横比を保って収め、中央に置く（Slides の createImage と同じ置き方） */

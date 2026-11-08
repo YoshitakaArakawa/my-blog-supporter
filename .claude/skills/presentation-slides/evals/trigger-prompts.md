@@ -14,7 +14,6 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - Slides で直したので、deck に取り込んで
 - LT のスライドを共同登壇の全体デッキに入れたい
 - 主催から渡されたテンプレートで組みたい
-- 図をスライドに貼る寸法を教えて
 
 ## 起動すべきでない（should not fire）
 

@@ -15,31 +15,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { readJson, isMain, SKILL_DIR, EMU_PER_IN } from "./lib/template.mjs";
+import { resolver } from "./lib/read.mjs";
 
 const TEXT_TYPES = new Set(["TITLE", "CENTERED_TITLE", "SUBTITLE", "BODY"]);
 // 画像の枠を見出しの下に置く時の、見出しとの間とページ下端の余白（inch）
 const FRAME_GAP = 0.1;
 const FRAME_BOTTOM = 0.35;
 const round = (v) => Math.round(v * 100) / 100;
-
-/** 継承をたどって書式を解く道具。プレースホルダ → 親（レイアウト・マスター）の順に、最初に見つかる値を使う */
-function resolver(read) {
-  const byId = new Map();
-  for (const p of [...(read.masters ?? []), ...(read.layouts ?? [])]) for (const e of p.pageElements ?? []) byId.set(e.objectId, e);
-  const themes = new Map();
-  for (const m of read.masters ?? []) for (const c of m.pageProperties?.colorScheme?.colors ?? []) themes.set(`${m.objectId}:${c.type}`, c.color);
-  const chain = (el) => { const out = []; let cur = el; while (cur) { out.push(cur); const pid = cur.shape?.placeholder?.parentObjectId; cur = pid ? byId.get(pid) : null; } return out; };
-  const run = (e) => ({ ...(e.shape?.text?.lists?.bodyPlaceholderListEntity?.nestingLevel?.["0"]?.bulletStyle ?? {}), ...((e.shape?.text?.textElements ?? []).find((x) => x.textRun)?.textRun?.style ?? {}) });
-  const para = (e) => (e.shape?.text?.textElements ?? []).find((x) => x.paragraphMarker)?.paragraphMarker?.style ?? {};
-  const first = (els, get) => { for (const e of els) { const v = get(e); if (v !== undefined && v !== null) return v; } return undefined; };
-  const hex = (c, masterId) => {
-    const v = c?.rgbColor ?? (c?.themeColor ? themes.get(`${masterId}:${c.themeColor}`) : null);
-    if (!v) return null;
-    const h = (x) => Math.round((x ?? 0) * 255).toString(16).padStart(2, "0").toUpperCase();
-    return `#${h(v.red)}${h(v.green)}${h(v.blue)}`;
-  };
-  return { chain, run, para, first, hex };
-}
 
 function geom(el) {
   const t = el.transform ?? {};
@@ -131,6 +113,7 @@ function main() {
   const args = process.argv.slice(2);
   const opt = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : null; };
   const id = opt("--id");
+  if (id === "navy") { console.error("navy は内蔵のテンプレートなので、別の名前にする"); process.exit(2); }
   if (!opt("--read") || !id || !/^[a-z0-9-]+$/.test(id)) {
     console.error("usage: node import-template.mjs --read <read.json> --id <名前（小文字・数字・ハイフン）> [--label <表示名>] [--min 18] [--out <template.json>]");
     process.exit(2);

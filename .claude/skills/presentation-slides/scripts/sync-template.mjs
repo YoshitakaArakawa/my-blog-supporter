@@ -11,19 +11,20 @@
  *
  * --read はマスクなしの read_presentation の結果（app がファイルに保存したもの。{"content": {...}} でも中身だけでもよい）。
  * --samples を付けると、見本スライド（各レイアウト1枚）の文字・ノートの用途・並びも定義に合わせる。
+ * テンプレートのデッキは著者のファイルなので、要求の件数と中身を著者に示し、承認を得てから送る。
+ * 定義の中で文字の箱と画像の枠が重なる所があれば、stderr で知らせる。
  * 出力は update_presentation の requests。writeControl は呼ぶ側が付ける。
  * 食い違い（定義にあってデッキに無いレイアウトなど）は stderr に出す。構造の食い違いは .pptx を作り直して上げ直す。
  */
 import fs from "node:fs";
-import { loadTemplate, placeholderKeys, rgb, readJson, isMain, EMU_PER_IN, EMU_PER_PT } from "./lib/template.mjs";
+import { loadTemplate, placeholderKeys, rgb, readJson, isMain, layoutOverlaps, EMU_PER_IN, EMU_PER_PT } from "./lib/template.mjs";
+import { keyOf, textOf } from "./lib/read.mjs";
 
 // 0.1pt。変換や丸めで生じる位置の差は、同じとみなす
 const EMU_TOL = EMU_PER_PT / 10;
 // 色の成分（0〜1）の丸めの差。8bit の半分の段より小さければ同じ色
 const COLOR_TOL = 0.5 / 255;
 
-const keyOf = (ph) => `${ph.type}#${ph.index ?? 0}`;
-const textOf = (shape) => (shape?.text?.textElements ?? []).map((e) => e.textRun?.content ?? "").join("");
 const firstRun = (el) => (el.shape?.text?.textElements ?? []).find((e) => e.textRun)?.textRun?.style ?? {};
 const firstPara = (el) => (el.shape?.text?.textElements ?? []).find((e) => e.paragraphMarker)?.paragraphMarker?.style ?? {};
 const mag = (v) => v?.magnitude ?? 0;
@@ -112,8 +113,9 @@ export function syncRequests(tpl, read, { samples = false } = {}) {
   for (const name of Object.keys(tpl.layouts)) if (!layoutsByName.has(name)) warnings.push(`定義のレイアウト「${name}」がデッキにありません（構造は .pptx で足す）`);
   for (const l of read.layouts) if (!tpl.layouts[l.layoutProperties.name]) warnings.push(`デッキのレイアウト「${l.layoutProperties.name}」は定義にありません（同期しない）`);
 
-  // マスター: 背景と、見出し・本文の既定（定義の「見出しと本文」に合わせる）
-  const base = tpl.layouts["見出しと本文"];
+  for (const w of layoutOverlaps(tpl)) warnings.push(w);
+  // マスター: 背景と、見出し・本文の既定（定義の master のレイアウトに合わせる）
+  const base = tpl.layouts[tpl.master ?? "見出しと本文"];
   for (const m of read.masters ?? []) {
     requests.push(...bgRequests(tpl, m, base?.background ?? "paper"));
     for (const el of m.pageElements ?? []) {
