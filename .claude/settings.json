@@ -13,6 +13,16 @@
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/scripts/render-preview.mjs\" --hook",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/lint-deck.mjs\" --hook",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/render-deck.mjs\" --hook",
+            "timeout": 30
           }
         ]
       }

@@ -1,7 +1,7 @@
 /**
  * wix-markdown.mjs — 記事の Markdown（拡張記法つき）と Wix の Ricos JSON を相互に変換する
  *
- * 記法の正本: .claude/skills/wix-sync/references/markdown-extensions.md
+ * 記法の正本: .claude/skills/blog-wix-sync/references/markdown-extensions.md
  * 名前付きの装飾（{.accent} など）の正本: scripts/wix-styles.json
  *
  * 使う側:

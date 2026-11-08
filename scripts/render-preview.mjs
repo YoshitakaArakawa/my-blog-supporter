@@ -20,7 +20,7 @@
  *   インライン: **太字** / *斜体* / `コード` / [リンク](URL) / ![画像](パス) / \ のエスケープ / <br>
  *   表・入れ子リスト・HTML の直書きは対象外（エスケープされた文字列として段落に出る）
  *
- * Wix 連携の拡張記法（正本は .claude/skills/wix-sync/references/markdown-extensions.md。解析は scripts/lib/wix-markdown.mjs）:
+ * Wix 連携の拡張記法（正本は .claude/skills/blog-wix-sync/references/markdown-extensions.md。解析は scripts/lib/wix-markdown.mjs）:
  *   [テキスト]{.accent} / {color=#…} / {.u}  文字色・下線
  *   ![alt](src "キャプション"){width=small}   画像の幅（small は半分の幅、それ以外は本文幅）。src が wix:ID なら Wix 上の画像
  *   ::x{url=…}                              X のポストの埋め込み（widgets.js で描く）
@@ -31,7 +31,7 @@
  *   ℹ️ を含む引用ブロック             著者向けの引き継ぎメモ。プレビューから落とす
  *   ✍️ を含む引用ブロック             著者が一次情報で埋める箇所。目印付きで残す
  *   <!-- 画像: 説明 -->               未作図のプレースホルダー。説明を点線枠で表示する。
- *                                     ただし wix.json の wixImages に同じキャプションの画像があれば、wix-sync push と
+ *                                     ただし wix.json の wixImages に同じキャプションの画像があれば、blog-wix-sync push と
  *                                     同じ対応付け（キャプション一致・先頭から未使用のもの）で Wix 上の画像を表示する
  *   ![alt](images/x.png "キャプション")  作図済みの図（1行単独）。figure に変換する。
  *                                     キャプションは title、無ければ alt。パスは draft.md からの相対

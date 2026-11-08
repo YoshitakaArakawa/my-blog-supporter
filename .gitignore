@@ -4,7 +4,7 @@
 .playwright-mcp/
 
 # Private working area for articles (raw notes / intermediate artifacts).
-# All article work happens here; promotion to published/ goes through /promote-to-public.
+# All article work happens here; promotion to published/ goes through /blog-promote.
 output/
 
 # Guards for the public layer: third-party raw materials (copyright) and

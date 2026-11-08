@@ -2,7 +2,7 @@
 /**
  * promote-to-public.mjs — 記事の作業層（output/）から公開層（published/）へ、公開してよい成果物だけを昇格させる
  *
- * /promote-to-public スキルの機械部分。ホワイトリストでコピーし、コピー後のファイルを
+ * /blog-promote スキルの機械部分。ホワイトリストでコピーし、コピー後のファイルを
  * 公開に不向きな記述の典型（職場・進退の語彙、メールアドレス、個人マシンの絶対パス、鍵らしき文字列）で走査する。
  * 走査は見落とし防止の補助であり、5観点の通読（スキル側）の代替ではない。コミットはしない。
  *
@@ -60,6 +60,13 @@ function resolveArticle(name) {
 
 const srcDir = resolveArticle(target);
 const pubDir = path.join(PUB_ROOT, path.basename(srcDir));
+
+// 登壇（core.md の 形式: 登壇）は published/ に出さない（CLAUDE.md の公開境界）
+const coreFile = path.join(srcDir, "core.md");
+if (fs.existsSync(coreFile) && /^形式\s*[:：]\s*登壇/m.test(fs.readFileSync(coreFile, "utf8"))) {
+  console.error(`error: ${rel(srcDir)} は登壇（core.md の 形式: 登壇）なので published/ に出さない`);
+  process.exit(1);
+}
 
 // 対象の列挙
 const files = [];

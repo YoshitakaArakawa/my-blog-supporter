@@ -1,0 +1,34 @@
+---
+name: blog-revise
+description: 固まった本文（ほぼ完成したドラフト、または公開済みの記事）への細かい直し・追記を、固めた時点からの差分だけを色付きにした HTML で見返しながら進める。「固まった」「ここから細かく直したい」「公開後に一節を足したい」「追記したいアイデアが出た」「差分で見せて」と言われた時に使う。基準を保存し（freeze）、著者の直しまたは AI の改訂案を差分 HTML にし（show）、採用分を本文へ書き戻す（apply）。本文を大きく書き換える書く工程の途中では使わない（それは blog-write）
+argument-hint: "[テーマ] [freeze|show|apply](任意)"
+---
+
+# 固めた後の直し
+
+固まった本文に対して、何を足して何を削ったかだけが見える状態で推敲する。基準（`revision/baseline.md`）からの差分を `revision/index.html` に出し、著者の採否を経て本文へ書き戻す。核・問いの規律・真正性は CLAUDE.md の不変条件をそのまま適用する。
+
+引数: `$ARGUMENTS`（1つ目がテーマ、2つ目が `freeze` / `show` / `apply`。どちらも任意）。`$OUTPUT_DIR` は `output/{yyyymmdd}_{テーマ}/`。本文ファイルは `draft_user.md`（無ければ `draft.md`）。
+
+## 規範
+
+- **基準は読むだけ**。`baseline.md` を AI が書き換えない。基準を切り直すのは著者が「固まった」と言った時だけで、`freeze` が前の基準を `_archive/` へ退避する。
+- **改訂案は差分ファイルにだけ書く**。AI の提案は `revision/draft_revision.md` にマーカー（`{+ 追加 +}` `{- 削除 -}` `{? 著者への確認メモ ?}`）で書き、本文ファイルには `apply` 以外で触らない。
+- **著者固有の事実を埋めない**。体験・感情・経緯・誰と何を話したかは、著者の発言や thinking.md に無ければ `{? ?}` で返す。もっともらしい体験談を作って橋にしない（不変条件6）。
+- **提案には核の行を添える**。改訂案の各項目に、core.md のどの行に効くかを付けて返す（不変条件2）。添えられない項目は出さない。
+- **全文を会話に貼らない**。返すのは HTML のパス、変更点の要約（3行まで）、`{? ?}` の一覧。
+- **大きく動く段階では使わない**。draft.md を章ごと書き直している最中なら blog-write の書く工程へ戻す。差分は細かい修正・追記のためのもの。目安は、構成を議論する時は全文のプレビュー HTML（blog-write）、文を直す時は差分（blog-revise）。
+- **裏付けの Web 取得は pull**。著者の承認を得てから行い、references.md に取得状態を1行で控える（不変条件4）。
+- **図を足す時は illustrate に渡す**。戻ってきた `![...](images/...)` の1行を `{+ +}` で差分ファイルに入れる。
+- **Wix の記法は字面のまま扱う**。Wix から取った本文の `[テキスト]{.accent}`・`![…](wix:…){width=small}`・`::x{…}` などは blog-wix-sync の拡張記法（`/blog-wix-sync` の references/markdown-extensions.md）。差分には文字と同じく記法の変化も出る。改訂案で記法を足し消しするのは著者が求めた時だけ。
+
+## 手順
+
+進捗:
+
+- [ ] **現在地**: `node ${CLAUDE_PROJECT_DIR}/scripts/revise.mjs status <本文>` で基準の有無を見る。公開済み記事なら、基準の有無にかかわらず毎回 `/blog-wix-sync` の `pull --published` で `published.md` を取り、本文ファイルをそれに揃えてから `freeze` を打ち直す（Wix 上の直しを取りこぼさないため。公開時に `/blog-promote` が切った基準は上書きされ `_archive/` に残る。`published/{記事}/` が無ければ、公開層に未反映なので `/blog-promote` を提案する）。未公開の本文で基準が無ければ「今の本文を基準にしてよいか」を確認して `freeze` する。著者が Wix の編集画面で直している時は、`/blog-wix-sync` の pull で `draft_user.md` を取り直してから `show` を出す。
+- [ ] **経路を決める**: 著者が自分で本文を直す（直した）なら次へ。AI が改訂案を出すなら、`baseline.md` の本文を `revision/draft_revision.md` へ写し、そこにマーカーで書く。「何をどう変えるべきか提案して」と言われた時は、書く前に変更箇所と方針を3〜5点で示して合意を取る。
+- [ ] **差分を出す**: 著者が直した経路は `node ${CLAUDE_PROJECT_DIR}/scripts/revise.mjs show <本文>`。本文の後半が未着手（Wix で仮置きのまま等）なら `--until "<本文側の境界>"` を付け、その行から先を基準のまま継いで比べる（本文の仮置き行と基準の見出しが違えば `--from "<基準側の境界>"` を添える）。AI 経路は `node ${CLAUDE_PROJECT_DIR}/scripts/render-revision.mjs $OUTPUT_DIR/revision/draft_revision.md`。HTML は `.claude/launch.json` の `preview` サーバー経由（`http://localhost:8765/output/{記事}/revision/index.html`）で開くと図も出る。
+- [ ] **著者に返す**: HTML のパス、変更点の要約、`{? ?}` の一覧。著者の採否と `{? ?}` への回答を受けて差分ファイルを直し、再描画する。却下された追加は `{+ +}` ごと消し、却下された削除は `{- -}` を外して元の文に戻す。
+- [ ] **書き戻す**: 著者が確定したら `node ${CLAUDE_PROJECT_DIR}/scripts/revise.mjs apply <本文>`。`{? ?}` が残っていれば止まるので先に解決する。採用した論点は thinking.md の該当節に `[著者:会話 {yyyymmdd}]` で追記する。公開済み記事なら `published/{記事}/draft_user.md` にも同じ内容を反映する（公開層の推敲反映は直接編集でよい）。Wix への反映は、著者の承認後に `/blog-wix-sync` で送る（未公開の下書きは update、公開済み記事は「公開済みの記事を更新する」の手順）。公開済み記事の公開版を差し替えるのは、著者が Wix の画面で公開した時。
+- [ ] **次に備える**: 反映後、続けて直すなら `freeze` を切り直すかを著者に確認する。切り直すと差分は今の本文からになる。
