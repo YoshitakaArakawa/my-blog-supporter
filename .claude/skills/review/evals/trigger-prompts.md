@@ -37,7 +37,7 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 自分で書いた記事を編集者の目で見て
 - draft_user.md の誤字と表記ゆれを拾って
 - 公開前に下書きの完成度を点検して
-- Wix の下書きを取り込んでレビューして（取り込みは wix-sync の pull を先に済ませてから点検）
+- Wix の下書きを取り込んでレビューして（取り込みは blog-wix-sync の pull を先に済ませてから点検）
 - /review ai-bi-platform author
 
 ## lens 未指定の扱い
@@ -50,12 +50,12 @@ note: description・本文の修正時に fresh session で全プロンプトを
 
 ## 起動すべきでない（should not fire）
 
-- 記事のテーマを一緒に掘りたい（→ /article の掘る工程）
-- 記事の構成を一緒に考えたい（→ /article の組む工程）
-- 本文を書いてみて（→ /article の書く工程）
-- 全体像を1枚で見たい・地図を見せて（→ /article の地図）
-- ドラフトが長いので削って（→ /article の書く工程。レビューではなく編集）
+- 記事のテーマを一緒に掘りたい（→ /core の掘る工程）
+- 記事の構成を一緒に考えたい（→ /blog-write の組む工程）
+- 本文を書いてみて（→ /blog-write の書く工程）
+- 全体像を1枚で見たい・地図を見せて（→ /core の地図）
+- ドラフトが長いので削って（→ /blog-write の書く工程。レビューではなく編集）
 - 記事に入れる概念図を1枚描いて（→ /illustrate）
-- 公開する成果物を選別して commit したい（→ /promote-to-public）
+- 公開する成果物を選別して commit したい（→ /blog-promote）
 - コードの変更をレビューして（記事の成果物が対象ではない）
-- Wix で直したから取り込んで（→ /wix-sync。レビューの依頼ではない）
+- Wix で直したから取り込んで（→ /blog-wix-sync。レビューの依頼ではない）

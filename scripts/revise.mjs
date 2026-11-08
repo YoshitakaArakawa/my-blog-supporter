@@ -108,7 +108,7 @@ if (!fs.existsSync(baseline)) {
   console.error(`基準がありません。先に固めてください: node scripts/revise.mjs freeze ${rel(draft)}`);
   process.exit(1);
 }
-// 旧形式の pull（wix-sync が画像を ![…](wix:ID) で書く前）の本文では、画像が <!-- 画像: キャプション --> の
+// 旧形式の pull（blog-wix-sync が画像を ![…](wix:ID) で書く前）の本文では、画像が <!-- 画像: キャプション --> の
 // プレースホルダーになり、直後にキャプションの行が続く。基準に同じキャプション（title または alt）の図があればその行に戻し、
 // リンクのプレビュー（直後が同じ文言のリンク行）はプレースホルダーを落とす。差分に図の消失が出ないようにする
 function restoreImages(text, base) {

@@ -1,5 +1,5 @@
 {
-  "_comment": "拡張記法 [テキスト]{.名前} の名前と、Wix に送る装飾の対応。ここが正本。color は Ricos の COLOR（文字色）、underline: true は UNDERLINE を足す。.u（下線）は組み込みで、ここには書かない。pull は、文字色がここの color と一致すれば名前で、無ければ {color=#RRGGBB} で書く。記法の説明は .claude/skills/wix-sync/references/markdown-extensions.md",
+  "_comment": "拡張記法 [テキスト]{.名前} の名前と、Wix に送る装飾の対応。ここが正本。color は Ricos の COLOR（文字色）、underline: true は UNDERLINE を足す。.u（下線）は組み込みで、ここには書かない。pull は、文字色がここの color と一致すれば名前で、無ければ {color=#RRGGBB} で書く。記法の説明は .claude/skills/blog-wix-sync/references/markdown-extensions.md",
   "styles": {
     "accent": { "color": "#E65100" }
   }
