@@ -3,7 +3,7 @@
  * pull-slides.mjs — 組んだ後に著者が Slides で直した版を、deck.md と同じ書式の deck_user.md に取り込む
  *
  * Slides の並びのまま、画面の文字（見出し・本文・出典）を読む。スピーカーノートは読まない。
- * 画面に出ない項目（段・役割・見せる・秒・核・反応・メモ）と台詞は、slides.json の対応で deck.md から戻す。
+ * 画面に出ない項目（段・伝える・役割・見せる・秒・核・反応・メモ）と台詞は、slides.json の対応で deck.md から戻す。
  * 対応は、組んだ時の番号と見出しの両方で確かめ、組んだ後に deck.md の並びが変わっていたら見出しで引き直す。引けない時は混ぜない。
  * Slides で変わっていない文字には、deck.md の印（見出しの （仮））を戻す。変わった文字は Slides のとおりに書く。
  * 気づき（並べ替え・追加・削除・レイアウトの変更・仮置きの枠への画像・プレースホルダの外の文字・deck.md との食い違い）は、冒頭の ℹ️ メモに書く。
@@ -79,14 +79,16 @@ function mergeSlide(orig, got, label, notes, diff) {
     if (got.source) fields["出典"] = got.source; else delete fields["出典"];
     notes.push(`${label}: 出典が${diff}`);
   }
-  return { heading, provisional, fields, body, lines: orig.lines };
+  return { heading, provisional, fields, convey: orig.convey ?? [], body, lines: orig.lines };
 }
 
 /** deck.md の書式で1枚を書く */
 function slideMd(s) {
   const out = [`## ${s.heading}${s.provisional ? PROVISIONAL : ""}`];
+  // 箇条書きで書く項目と、parseDeck がその箇条を置く所
+  const lists = { 伝える: s.convey ?? [], 本文: s.body };
   for (const k of deckLib.FIELDS) {
-    if (k === "本文") { if (s.body.length) out.push("本文:", ...s.body.map((b) => `- ${b}`)); continue; }
+    if (lists[k]) { if (lists[k].length) out.push(`${k}:`, ...lists[k].map((b) => `- ${b}`)); continue; }
     if (s.fields[k] !== undefined && s.fields[k] !== "") out.push(`${k}: ${s.fields[k]}`);
   }
   if (s.lines.length) out.push("", ...s.lines.map((l) => `> ${markOf(l)}${l.text}`));
