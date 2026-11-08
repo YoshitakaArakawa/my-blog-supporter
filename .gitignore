@@ -37,3 +37,9 @@ node_modules/
 
 # Local secrets (Wix API key etc.)
 .env
+
+# presentation-slides: local registry with real Drive IDs, and templates registered
+# from organizers' decks (only the built-in navy template is distributed)
+.claude/skills/presentation-slides/*.local.json
+.claude/skills/presentation-slides/templates/*
+!.claude/skills/presentation-slides/templates/navy/

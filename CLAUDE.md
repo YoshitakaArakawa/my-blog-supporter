@@ -37,9 +37,9 @@ yarakawa.com の考察・内省型ブログ記事と登壇資料（Google スラ
 | 新しいテーマ・前の続き・掘りたい・主張を言語化したい・地図（ブログでも登壇でも） | `core` |
 | ブログの構成・本文・書き直し | `blog-write` |
 | 登壇の主催の規定・流れ・スライドの見出しと台詞・持ち時間 | `presentation-write` |
-| Google スライドに組む | 未実装。著者にそう伝えて止まる |
+| Google スライドに組む・組んだスライドの点検・Slides の直しの取り込み | `presentation-slides` |
 
-外へ出る操作は著者の承認を経てから行う: Wix へ書く（`blog-wix-sync` の push）、Public リポへ commit する（`blog-promote`）。記事の公開・X への投稿・登壇は、スキルがせず著者が行う。
+外へ出る操作は著者の承認を経てから行う: Wix へ書く（`blog-wix-sync` の push）、Google スライドに組む・図を一時公開する（`presentation-slides`）、Public リポへ commit する（`blog-promote`）。記事の公開・X への投稿・登壇は、スキルがせず著者が行う。
 
 ## 機械ゲート
 
