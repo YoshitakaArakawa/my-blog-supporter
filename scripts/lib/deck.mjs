@@ -7,8 +7,10 @@
 import fs from "node:fs";
 import path from "node:path";
 
-// deck.md の1枚に書ける項目。`本文:` だけは続く箇条書きを値に取る
-export const FIELDS = ["段", "役割", "画面", "本文", "見せる", "出典", "秒", "核", "反応", "メモ"];
+// deck.md の1枚に書ける項目。`伝える:` と `本文:` は続く箇条書きを値に取る
+export const FIELDS = ["段", "伝える", "役割", "画面", "本文", "見せる", "出典", "秒", "核", "反応", "メモ"];
+// 箇条書きを値に取る項目と、その箇条を入れるスライドの持ち場
+const LIST_FIELDS = { 伝える: "convey", 本文: "body" };
 // AI が起こした見出し・台詞に付ける印
 export const PROVISIONAL = "（仮）";
 export const AUTHOR = "（著者）";
@@ -25,14 +27,14 @@ function parseLine(raw) {
 
 /**
  * deck.md を読む。戻り値:
- * { title, slides: [{ index, lineNo, heading, provisional, fields: {…}, body: [string], lines: [{mark,text}] }] }
+ * { title, slides: [{ index, lineNo, heading, provisional, fields: {…}, convey: [string], body: [string], lines: [{mark,text}] }] }
  * 1枚目の `##` より前（タイトルと ℹ️ メモ）はスライドに数えない。
  */
 export function parseDeck(text) {
   const rows = text.split(/\r?\n/);
   const deck = { title: null, slides: [] };
   let cur = null;
-  let inBody = false;
+  let list = null; // 箇条書きを受けている持ち場（LIST_FIELDS の値）。受けていなければ null
   let inFence = false;
   rows.forEach((row, i) => {
     if (/^```/.test(row.trim())) { inFence = !inFence; return; }
@@ -44,32 +46,40 @@ export function parseDeck(text) {
       let heading = h2[1].trim();
       const provisional = heading.endsWith(PROVISIONAL);
       if (provisional) heading = heading.slice(0, -PROVISIONAL.length).trim();
-      cur = { index: deck.slides.length + 1, lineNo: i + 1, heading, provisional, fields: {}, body: [], lines: [], stray: [] };
+      cur = { index: deck.slides.length + 1, lineNo: i + 1, heading, provisional, fields: {}, convey: [], body: [], lines: [], stray: [] };
       deck.slides.push(cur);
-      inBody = false;
+      list = null;
       return;
     }
     if (!cur) return;
     const f = row.match(FIELD_LINE);
     if (f) {
       cur.fields[f[1]] = f[2].trim();
-      inBody = f[1] === "本文";
+      list = LIST_FIELDS[f[1]] ?? null;
       return;
     }
     const bullet = row.match(/^\s*[-*]\s+(.*)$/);
-    if (inBody && bullet) { cur.body.push(bullet[1].trim()); return; }
+    if (list && bullet) { cur[list].push(bullet[1].trim()); return; }
     const quote = row.match(/^>\s?(.*)$/);
     if (quote) {
-      inBody = false;
+      list = null;
       if (quote[1].trim().startsWith("ℹ️")) return;
       if (quote[1].trim()) cur.lines.push(parseLine(quote[1]));
       return;
     }
-    if (row.trim() === "") { inBody = false; return; }
-    // 項目でも箇条（本文）でも台詞でもない行。`>` を付け忘れた台詞などを lint が知らせる
+    if (row.trim() === "") { list = null; return; }
+    // 項目でも箇条（伝える・本文）でも台詞でもない行。`>` を付け忘れた台詞などを lint が知らせる
     cur.stray.push({ lineNo: i + 1, text: row.trim() });
   });
   return deck;
+}
+
+/**
+ * 骨組みの段階か。`役割:` も `秒:` も書いたスライドが1枚も無い間を骨組みとみなす。
+ * 骨組みは、見出しの並びと `伝える:` で何をどの順で伝えるかを合意する段階で、役割・秒・核はまだ書かない。
+ */
+export function isSkeleton(deck) {
+  return deck.slides.length > 0 && deck.slides.every((s) => !s.fields["役割"] && !s.fields["秒"]);
 }
 
 /** `秒:` の値を秒にする。数字1つ（末尾の「秒」は可）だけを受け付け、それ以外は null */

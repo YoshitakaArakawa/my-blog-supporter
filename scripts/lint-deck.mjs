@@ -15,7 +15,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseDeck, readEvent, spokenChars, screenTitle, parseSeconds } from "./lib/deck.mjs";
+import { parseDeck, readEvent, spokenChars, screenTitle, parseSeconds, isSkeleton } from "./lib/deck.mjs";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(SCRIPT_DIR, "..");
@@ -32,11 +32,14 @@ export function lintDeck(file) {
   const deck = parseDeck(text);
   const event = readEvent(file);
   const hasStoryline = fs.existsSync(path.join(path.dirname(file), "storyline.md"));
+  // 骨組み（見出しと 伝える: で並びを合意する段階）は、役割・秒・核の欠けを数えない
+  const skeleton = isSkeleton(deck);
   const ng = [], warn = [], info = [];
   let totalSec = 0;
   let provisionalTitles = 0, provisionalLines = 0, unmarkedLines = 0;
 
   if (!deck.slides.length) ng.push("スライドが1枚もありません（`## ` で始まる見出しが無い）");
+  if (skeleton) info.push("骨組みの段階（役割: も 秒: も書いたスライドが無い）なので、役割・秒・核の欠けは数えていません");
 
   for (const s of deck.slides) {
     const f = s.fields;
@@ -44,14 +47,14 @@ export function lintDeck(file) {
     const structural = CONFIG.structuralRoles.includes(role);
 
     // 必須の項目
-    if (!role) ng.push(`${label(s)} 役割: がありません`);
+    if (!role) { if (!skeleton) ng.push(`${label(s)} 役割: がありません`); }
     else if (!CONFIG.roles.includes(role)) warn.push(`${label(s)} 役割「${role}」は語彙にありません（${CONFIG.roles.join("・")}）`);
     const rawSec = (f["秒"] ?? "").trim();
     const sec = parseSeconds(rawSec);
-    if (!rawSec) ng.push(`${label(s)} 秒: がありません`);
+    if (!rawSec) { if (!skeleton) ng.push(`${label(s)} 秒: がありません`); }
     else if (sec === null) ng.push(`${label(s)} 秒:「${rawSec}」は数字1つで書く（例 25）`);
     else totalSec += sec;
-    if (!structural) {
+    if (!structural && !skeleton) {
       const rows = (f["核"] ?? "").split(/[・、,，\s]+/).filter(Boolean);
       if (!rows.length) warn.push(`${label(s)} 核: がありません（構造のスライド以外は、効く core.md の行を添える）`);
       else for (const r of rows) if (!CONFIG.coreRows.includes(r)) warn.push(`${label(s)} 核「${r}」は core.md の行名ではありません（${CONFIG.coreRows.join("・")}）`);
@@ -96,13 +99,13 @@ export function lintDeck(file) {
   }
   if (provisionalTitles || provisionalLines) info.push(`（仮）の残り: 見出し ${provisionalTitles} / 台詞 ${provisionalLines}`);
 
-  const stats = { slides: deck.slides.length, totalSec, limitSec: event?.seconds ?? null, provisionalTitles, provisionalLines, unmarkedLines };
+  const stats = { slides: deck.slides.length, skeleton, totalSec, limitSec: event?.seconds ?? null, provisionalTitles, provisionalLines, unmarkedLines };
   return { ng, warn, info, stats };
 }
 
 function report(file, r, maxLines = Infinity) {
   const s = r.stats;
-  const head = `[deck lint] ${rel(file)}\n${s.slides}枚 / 秒: の合計 ${s.totalSec}秒${s.limitSec ? ` / 持ち時間 ${s.limitSec}秒` : ""}`;
+  const head = `[deck lint] ${rel(file)}\n${s.slides}枚 / ${s.skeleton ? "骨組み（秒: はまだ）" : `秒: の合計 ${s.totalSec}秒`}${s.limitSec ? ` / 持ち時間 ${s.limitSec}秒` : ""}`;
   const out = [head];
   const push = (name, list) => { if (list.length) out.push(`${name} ${list.length}:`, ...list.map((m) => `- ${m}`)); };
   push("NG", r.ng);
