@@ -15,7 +15,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseDeck, readEvent, spokenChars, screenTitle } from "./lib/deck.mjs";
+import { parseDeck, readEvent, spokenChars, screenTitle, parseSeconds } from "./lib/deck.mjs";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(SCRIPT_DIR, "..");
@@ -46,8 +46,10 @@ export function lintDeck(file) {
     // 必須の項目
     if (!role) ng.push(`${label(s)} 役割: がありません`);
     else if (!CONFIG.roles.includes(role)) warn.push(`${label(s)} 役割「${role}」は語彙にありません（${CONFIG.roles.join("・")}）`);
-    const sec = f["秒"] !== undefined ? Number(String(f["秒"]).replace(/[^\d.]/g, "")) : NaN;
-    if (Number.isNaN(sec)) ng.push(`${label(s)} 秒: がありません（または数字でない）`);
+    const rawSec = (f["秒"] ?? "").trim();
+    const sec = parseSeconds(rawSec);
+    if (!rawSec) ng.push(`${label(s)} 秒: がありません`);
+    else if (sec === null) ng.push(`${label(s)} 秒:「${rawSec}」は数字1つで書く（例 25）`);
     else totalSec += sec;
     if (!structural) {
       const rows = (f["核"] ?? "").split(/[・、,，\s]+/).filter(Boolean);
@@ -59,10 +61,13 @@ export function lintDeck(file) {
     // 見出しの長さ（画面に出す見出しで数える。改行の ／ は数えない）
     const title = screenTitle(s).replace(/[／\s]/g, "");
     if (title.length > CONFIG.titleCharsMax) warn.push(`${label(s)} 画面の見出しが ${title.length}字（上限 ${CONFIG.titleCharsMax}字）`);
+    const titleLines = screenTitle(s).split("／").filter((t) => t.trim()).length;
+    if (titleLines > 2) warn.push(`${label(s)} 画面の見出しが ${titleLines}行（2行以内）`);
+    if (s.stray.length) warn.push(`${label(s)} 項目でも台詞でもない行（台詞なら行頭に > を付ける）: ${s.stray.map((x) => `L${x.lineNo}`).join(", ")}`);
 
     // 台詞の時間の見積もり（上限寄りの目安。短い分には警告しない）
     const chars = spokenChars(s.lines);
-    if (!Number.isNaN(sec) && chars) {
+    if (sec !== null && chars) {
       const est = Math.round((chars / CONFIG.charsPerMinute) * 60);
       if (est > sec * (1 + CONFIG.scriptOverTolerance)) warn.push(`${label(s)} 台詞の見積もり ${est}秒 > 秒: ${sec}（台詞 ${chars}字 ÷ ${CONFIG.charsPerMinute}字/分）`);
     }
@@ -84,6 +89,8 @@ export function lintDeck(file) {
   // 持ち時間
   if (event?.seconds) {
     if (totalSec > event.seconds) ng.push(`秒: の合計 ${totalSec}秒が持ち時間 ${event.seconds}秒（event.md の 時間:）を超えています`);
+  } else if (event?.values["時間"]) {
+    warn.push(`event.md の 時間:「${event.values["時間"]}」を読めません（「5分」「5分30秒」の形で書く）`);
   } else {
     info.push("持ち時間が分からないので、秒: の合計と比べていません（event.md の 時間: を書く）");
   }

@@ -41,7 +41,7 @@ output/{yyyymmdd}_{テーマ}/           記事・登壇ごとの作業ディレ
 
 ## 登壇（形式: 登壇）
 
-core.md・thinking.md・references.md・references/・review/ は上と同じ。outline.md から先の代わりに、次を置く。
+core.md・thinking.md・references.md・references/・map.json・map.html・review/ は上と同じ。outline.md・draft.md から先の代わりに、次を置く。フォルダ名はテーマの末尾に `-presentation` を付ける。
 
 ```
 output/{yyyymmdd}_{テーマ}/
@@ -49,7 +49,7 @@ output/{yyyymmdd}_{テーマ}/
   storyline.md                       段ごとの流れ（何を言い、観客がどうなるか。時間配分とスライドの作り方は書かない。任意）
   deck.md                            ゴーストデッキと台詞（見出しだけで話が通る1枚ずつの主張・証拠・台詞。Google スライドに組むまでの正）
   preview/deck.html                  deck.md のストーリーボード（scripts/render-deck.mjs の生成物。手で編集しない）
-  figures/                           スライドに貼る図の PNG と src/（/illustrate のスライド用の寸法で作る）
+  figures/                           スライドに貼る図の PNG と src/（/illustrate に出力先と大きさを指定して作る）
   slides.json                        Google スライドとの結び付き（/presentation-slides が書く。手で編集しない）
   deck_user.md                       Google スライドから取り込んだ版（組んだ後は Slides が正。/presentation-slides が書く）
   review/                            audience_01.md・drift_01.md など、/review の出力

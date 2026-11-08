@@ -17,7 +17,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseDeck, readEvent, spokenChars, screenTitle } from "./lib/deck.mjs";
+import { parseDeck, readEvent, spokenChars, screenTitle, parseSeconds } from "./lib/deck.mjs";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(SCRIPT_DIR, "..");
@@ -43,7 +43,7 @@ function card(s, ctx) {
   }
   if (!visual && show) visual = `<div class="ph">${esc(show)}</div>`;
   const body = s.body.length ? `<ul>${s.body.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : "";
-  const sec = Number(String(f["秒"] ?? "").replace(/[^\d.]/g, ""));
+  const sec = parseSeconds(f["秒"]);
   const est = Math.round((spokenChars(s.lines) / CONFIG.charsPerMinute) * 60);
   const over = s.lines.length && sec && est > sec * (1 + CONFIG.scriptOverTolerance);
   const lines = s.lines.map((l) => `<p class="line"><span class="mark ${l.mark === "著者" ? "author" : l.mark === "仮" ? "prov" : "none"}">${l.mark ?? "印なし"}</span>${esc(l.text)}</p>`).join("");
@@ -69,7 +69,7 @@ function card(s, ctx) {
 }
 
 function page(deck, event, ctx) {
-  const total = deck.slides.reduce((n, s) => n + (Number(String(s.fields["秒"] ?? "").replace(/[^\d.]/g, "")) || 0), 0);
+  const total = deck.slides.reduce((n, s) => n + (parseSeconds(s.fields["秒"]) ?? 0), 0);
   const limit = event?.seconds;
   const ghost = deck.slides.map((s) => `<li><a href="#s${s.index}">${esc(s.heading)}</a>${s.provisional ? ' <span class="mark prov">仮</span>' : ""}<span class="sec">${esc(s.fields["秒"] ?? "?")}秒</span></li>`).join("");
   return `<!DOCTYPE html>

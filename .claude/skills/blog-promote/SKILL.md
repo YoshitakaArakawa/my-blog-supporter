@@ -11,7 +11,7 @@ allowed-tools: Bash(node:*) Bash(git:*) Read Grep
 
 引数: `$ARGUMENTS`（1つ目がテーマ。日付プレフィックス付きのフォルダ名でもよい。`--with-review` を付けた時だけ `review/` も対象に加える）。
 
-対象は記事だけ。`$OUTPUT_DIR/core.md` の `形式:` が登壇なら、昇格せずに「登壇は published/ に出さない（CLAUDE.md の公開境界）」と著者に返して終える。
+対象は記事だけ。core.md の `形式:` が登壇のフォルダは、スクリプトが昇格を止める（CLAUDE.md の公開境界）。
 
 ## 手順
 

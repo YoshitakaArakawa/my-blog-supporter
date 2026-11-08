@@ -1,6 +1,6 @@
 ---
 name: blog-write
-description: ブログ記事の構成（outline.md）と本文（draft.md）を、core.md と thinking.md から著者と対話しながら作る。記事の構成や見出しを考えたい、どの話から入るか迷っている、本文を書いてほしい・書き直してほしい、ドラフトを起こして、導入だけ書き直して、と言われた時に使う。工程はファイルの有無で自動判定し、引数でも指定できる。core.md か thinking.md が無ければ core に戻す。登壇資料の構成と台詞は presentation-write
+description: ブログ記事の構成（outline.md）と本文（draft.md）を、core.md と thinking.md から著者と対話しながら作る。記事の構成や見出しを考えたい、どの話から入るか迷っている、本文を書いてほしい・書き直してほしい、ドラフトを起こして、導入だけ書き直して、と言われた時に使う。工程は引数か著者の発言で決める。core.md か thinking.md が無ければ core に戻す。登壇資料の構成と台詞は presentation-write
 argument-hint: "[テーマ] [outline|write](任意)"
 ---
 

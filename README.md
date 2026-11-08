@@ -35,9 +35,9 @@
 | `/blog-promote` | 公開してよい成果物を選別して `published/` へ昇格させる（記事の公開は Wix で著者が行う） |
 | `/blog-announce` | 公開した記事の X 告知ポストを、著者の過去の告知を見本に文案化する（投稿はしない） |
 | `/presentation-write` | 登壇の場・組む・書く（`event.md`・`storyline.md`・`deck.md`） |
-| `/presentation-slides` | `deck.md` を Google スライドに組み、Slides で直した版を取り込む |
+| `/presentation-slides` | `deck.md` を Google スライドに組み、Slides で直した版を取り込む（未実装） |
 
-接頭辞の無い Skill は媒体に依らない共通の工程で、`blog-` と `presentation-` は媒体専用です。
+接頭辞の無い Skill は媒体をまたいで使い、`blog-` と `presentation-` は媒体専用です。
 
 ## 守っていること
 

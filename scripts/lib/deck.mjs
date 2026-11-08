@@ -44,7 +44,7 @@ export function parseDeck(text) {
       let heading = h2[1].trim();
       const provisional = heading.endsWith(PROVISIONAL);
       if (provisional) heading = heading.slice(0, -PROVISIONAL.length).trim();
-      cur = { index: deck.slides.length + 1, lineNo: i + 1, heading, provisional, fields: {}, body: [], lines: [] };
+      cur = { index: deck.slides.length + 1, lineNo: i + 1, heading, provisional, fields: {}, body: [], lines: [], stray: [] };
       deck.slides.push(cur);
       inBody = false;
       return;
@@ -65,20 +65,25 @@ export function parseDeck(text) {
       if (quote[1].trim()) cur.lines.push(parseLine(quote[1]));
       return;
     }
-    if (row.trim() === "") inBody = false;
+    if (row.trim() === "") { inBody = false; return; }
+    // 項目でも箇条（本文）でも台詞でもない行。`>` を付け忘れた台詞などを lint が知らせる
+    cur.stray.push({ lineNo: i + 1, text: row.trim() });
   });
   return deck;
 }
 
-/** "5分" "20分" "300秒" "5分30秒" を秒にする。読めなければ null */
+/** `秒:` の値を秒にする。数字1つ（末尾の「秒」は可）だけを受け付け、それ以外は null */
+export function parseSeconds(v) {
+  const m = String(v ?? "").match(/^\s*(\d+(?:\.\d+)?)\s*秒?\s*$/);
+  return m ? Number(m[1]) : null;
+}
+
+/** event.md の `時間:`（"5分" "20分" "300秒" "5分30秒"）を秒にする。単位の無い数字や読めない値は null */
 export function toSeconds(s) {
   if (!s) return null;
   const m = String(s).match(/(\d+(?:\.\d+)?)\s*分/);
   const sec = String(s).match(/(\d+)\s*秒/);
-  if (!m && !sec) {
-    const bare = String(s).match(/^\s*(\d+(?:\.\d+)?)\s*$/);
-    return bare ? Number(bare[1]) : null;
-  }
+  if (!m && !sec) return null;
   return Math.round((m ? Number(m[1]) * 60 : 0) + (sec ? Number(sec[1]) : 0));
 }
 

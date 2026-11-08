@@ -4,7 +4,7 @@ sources:
   - https://www.ijee.ie/articles/Vol29-6/23_ijee2791ns.pdf
   - https://www.unh.edu/teaching-learning-resource-hub/sites/default/files/media/2023-06/itow-research-based-principles-for-designing-multimedia-instruction-mayer.pdf
   - https://www.storytellingwithdata.com/blog/2013/12/horizontal-logic
-  - http://www.rubycolor.org/takahashi/
+  - https://yapcasia.org/2015/news/08/call-for-lightning-talks.html
   - https://www.jstage.jst.go.jp/article/itej1997/52/4/52_4_504/_pdf
 fetched_at: 2026-11-08
 note: 閾値の正本は scripts/deck-lint.config.json、解析は scripts/lib/deck.mjs。Google スライドの見た目（レイアウト・文字の大きさ・画像の差し込み）は presentation-slides が扱い、ここは中身だけを決める。項目を足す・変える時は lint・ストーリーボード・presentation-slides の読み手も合わせて直す
@@ -30,21 +30,21 @@ note: 閾値の正本は scripts/deck-lint.config.json、解析は scripts/lib/d
 > ℹ️ 進捗: {手順ごとのチェックリスト}
 > ℹ️ 著者判断: {会話で決まったこと（yyyymmdd）}
 
-## Tableau MCP の道具は、1年半で 4 から 143 に増えた
+## サンプル製品の機能は、1年で 5 から 50 に増えた
 段: 2
 役割: 数字
 画面: なし
 本文:
-- 道具の数 4 → 143
-見せる: figures/fig_06_tools-growth.png
-出典: 2026年11月1日時点　出典：GitHub tableau/tableau-mcp
+- 機能の数 5 → 50
+見せる: figures/fig_feature-growth.png
+出典: {日付}時点　出典：{資料名}
 秒: 25
 核: 現在地
 反応: 拍手（開発チームへ）
-メモ: 右のカードの数字は読み上げない
+メモ: グラフの細かい数字は読み上げない
 
-> （仮）最初は4つだった道具が、1年半で143に。改修は累計で400回を超えました
-> （著者）毎月こんなペースで進化させてくれている開発チームに、拍手！
+> （仮）最初は5つだった機能が、1年で50に増えました
+> （著者）このペースで作ってくれている開発チームに、拍手！
 ```
 
 - `# デッキ:` の後に ℹ️ メモ（引用ブロック）を置く。スライドより前の行は、スライドに数えない
@@ -83,7 +83,7 @@ note: 閾値の正本は scripts/deck-lint.config.json、解析は scripts/lib/d
 - 根拠の無い強調語（「本当に」「圧倒的」「劇的に」など）を使わない。数字があれば数字で言う
 - 比喩は、平叙の語で言えない時だけ使う
 - 項目の数を3つに揃えない。数は中身で決める
-- 画面の文は、台詞でそのまま読み上げない（Mayer の redundancy の原則。効果は小さいので、lint は知らせるだけ）。キーワードや専門用語は画面に出してよい
+- 画面の文は、台詞でそのまま読み上げない（Mayer の redundancy の原則。効果量は小さい（2023年の版で d=0.10）ので、lint は知らせるだけ）。キーワードや専門用語は画面に出してよい
 
 ## 台詞の言葉
 
@@ -97,7 +97,7 @@ note: 閾値の正本は scripts/deck-lint.config.json、解析は scripts/lib/d
 - 台詞の字数 ÷ 話す速さ（config の `charsPerMinute`、既定は 300字/分）を、その1枚の台詞の時間の目安にする。日本語の話す速さは約300字/分、速い人で400字/分とされる
 - 見積もりは上限寄りの目安。リハーサルで声に出して計ったら、`秒:` を実測に置き換える
 - 台詞は `秒:` より短くてよい（指し示す間や反応の間がある）。見積もりが `秒:` を超えた時だけ直す
-- 枚数を持ち時間から決めない。LT は1枚15秒前後・5分で20枚前後になりやすく（高橋メソッドの慣習）、学術発表は1分に1枚までが目安とされる。枚数は台詞の量と見せる証拠の数から決まる
+- 枚数を持ち時間から決めない。LT は1枚15秒前後・5分で20枚前後になりやすく（日本の LT の慣行。YAPC::Asia Tokyo 2015 の募集要項の目安）、学術発表は1分に1枚までが目安とされる。枚数は台詞の量と見せる証拠の数から決まる
 - `秒:` の合計を event.md の `時間:` と比べ、超えたら削る段を著者に返す
 
 ## lint とストーリーボード

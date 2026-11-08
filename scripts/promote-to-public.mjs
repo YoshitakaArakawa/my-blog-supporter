@@ -61,6 +61,13 @@ function resolveArticle(name) {
 const srcDir = resolveArticle(target);
 const pubDir = path.join(PUB_ROOT, path.basename(srcDir));
 
+// 登壇（core.md の 形式: 登壇）は published/ に出さない（CLAUDE.md の公開境界）
+const coreFile = path.join(srcDir, "core.md");
+if (fs.existsSync(coreFile) && /^形式\s*[:：]\s*登壇/m.test(fs.readFileSync(coreFile, "utf8"))) {
+  console.error(`error: ${rel(srcDir)} は登壇（core.md の 形式: 登壇）なので published/ に出さない`);
+  process.exit(1);
+}
+
 // 対象の列挙
 const files = [];
 for (const f of fs.readdirSync(srcDir)) {

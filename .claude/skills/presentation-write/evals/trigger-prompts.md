@@ -11,14 +11,14 @@ note: description・本文の修正時に fresh session で全プロンプトを
 
 - 登壇の案内 PDF が来たので、規定を整理して
 - LT の持ち時間と提出形式をまとめておいて
-- /presentation-write 20261201_example-talk event
+- /presentation-write 20261201_example-presentation event
 
 ### 組む
 
 - 登壇の流れを組みたい
 - 発表の話の順番を一緒に考えたい
 - どこで拍手をもらうか決めたい
-- /presentation-write 20261201_example-talk storyline
+- /presentation-write 20261201_example-presentation storyline
 
 ### 書く
 
@@ -26,7 +26,7 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 発表資料の中身を作りたい
 - 5分に収まるか見て
 - 見出しだけ並べて、話が通るか確かめたい
-- /presentation-write 20261201_example-talk deck
+- /presentation-write 20261201_example-presentation deck
 
 ## 起動すべきでない（should not fire）
 

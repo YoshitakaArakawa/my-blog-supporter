@@ -37,9 +37,9 @@ yarakawa.com の考察・内省型ブログ記事と登壇資料（Google スラ
 | 新しいテーマ・前の続き・掘りたい・主張を言語化したい・地図（ブログでも登壇でも） | `core` |
 | ブログの構成・本文・書き直し | `blog-write` |
 | 登壇の流れ・スライドの見出しと台詞・持ち時間 | `presentation-write` |
-| Google スライドに組む・Slides から取り込む | `presentation-slides` |
+| Google スライドに組む・Slides から取り込む | `presentation-slides`（未実装。無ければ著者にそう伝えて止まる） |
 
-ほかのスキル（`review` / `illustrate` / `blog-revise` / `blog-thumbnail` / `blog-wix-sync` / `blog-promote` / `blog-announce`）は、各スキルの description にある起動語で起動する。接頭辞の無いスキルは媒体に依らない共通の工程で、`blog-` と `presentation-` は媒体専用。
+ほかのスキル（`review` / `illustrate` / `blog-revise` / `blog-thumbnail` / `blog-wix-sync` / `blog-promote` / `blog-announce`）は、各スキルの description にある起動語で起動する。接頭辞の無いスキルは媒体をまたいで使い、`blog-` と `presentation-` は媒体専用。
 
 外へ出る操作は著者の承認を経てから行う: Wix へ書く（`blog-wix-sync` の push）、Google スライドへ書く（`presentation-slides`）、Public リポへ commit する（`blog-promote`）。記事の公開・X への投稿・登壇は、スキルがせず著者が行う。
 

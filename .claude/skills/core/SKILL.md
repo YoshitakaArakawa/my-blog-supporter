@@ -33,8 +33,8 @@ argument-hint: "[テーマ] [core|deepen|map](任意)"
 対話で5行と形式を起草し、著者の承認を得て `$OUTPUT_DIR/core.md` に書く。**AI が起草してよいが、文言を承認するのは著者**。承認が取れるまで次の工程に進まない。
 
 - 5行・各1文・各行 120 字以内。骨格は [templates/core-template.md](templates/core-template.md) を読む
-- `形式:` の行で媒体を決める（`ブログ` か `登壇 {持ち時間}（{場}）`）。登壇なら「読者」は聴衆、「読後」は聞き終えた後のこと
-- 記事から登壇を起こす時（逆も）は、元の core.md・thinking.md を素材として読み、核は新しく承認する。媒体が変われば受け手と読後が変わるため
+- `形式:` の行で媒体を決める（`ブログ` か `登壇（{場}）`）。登壇なら「読者」は聴衆、「読後」は聞き終えた後のこと。持ち時間などの主催の規定は event.md に書く
+- 記事から登壇を起こす時（逆も）は、別のフォルダで核を新しく承認する。媒体が変われば受け手と読後が変わるため。登壇のフォルダはテーマの末尾に `-presentation` を付け、元の core.md・thinking.md は素材として読む
 - 参考 URL が対話で出たら references.md に1行（タイトル・URL・一行要旨）で控える。本文の取得は掘る工程で必要になった時に行う（不変条件4）
 
 ## 工程2: 掘る
@@ -57,7 +57,7 @@ thinking.md のスコープが固まり、著者が構成・本文・スライ�
 
 ## 地図の更新
 
-`$OUTPUT_DIR/map.html` は計画の見取り図であり、**「この設計で書き始めてよいか」を著者が一目で判断するための合意ゲート**。抽出結果を `$OUTPUT_DIR/map.json` に書き、`node ${CLAUDE_SKILL_DIR}/scripts/render-map.mjs $OUTPUT_DIR/map.json` で map.html を生成する（詳細は [references/map-spec.md](references/map-spec.md)）。生成は隔離せず、この対話の中で行う。登壇の構成の俯瞰は、presentation-write のストーリーボードが担う。
+`$OUTPUT_DIR/map.html` は計画の見取り図であり、**「この設計で書き始めてよいか」を著者が一目で判断するための合意ゲート**。抽出結果を `$OUTPUT_DIR/map.json` に書き、`node ${CLAUDE_SKILL_DIR}/scripts/render-map.mjs $OUTPUT_DIR/map.json` で map.html を生成する（詳細は [references/map-spec.md](references/map-spec.md)）。生成は隔離せず、この対話の中で行う。登壇でも核と掘るの段階では地図を作り、構成の俯瞰は presentation-write のストーリーボードが担う。
 
 | きっかけ | 扱い |
 |---|---|

@@ -20,6 +20,6 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 下書きをレビューして（→ /review の author。取り込みが要れば lens 側が blog-wix-sync を案内する）
 - 差分で見せて（→ /blog-revise）
 - この記事を公開層に反映して commit したい（→ /blog-promote）
-- X のポストを読んで（→ スキルではなく内蔵ブラウザで読む）
+- X のポストを読んで（→ スキルではなくブラウザで読む）
 - 記事に入れる概念図を描いて（→ /illustrate）
 - Wix の記事を公開して（公開は著者が Wix の画面で行う。スキルは公開しない）

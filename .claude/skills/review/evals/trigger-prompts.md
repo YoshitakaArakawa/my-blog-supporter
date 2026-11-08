@@ -22,6 +22,8 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - draft が thinking から離れていないか確認して
 - 本文に前段に根拠のない主張が湧いていないか見て
 - /review ai-bi-platform drift outline
+- deck.md が storyline から離れていないか見て
+- /review 20261201_example-presentation drift deck
 
 ### lens=readers
 
@@ -30,6 +32,13 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 公開したらどう受け取られるか予測して
 - 炎上しそうな段落はある？
 - /review ai-bi-platform readers
+
+### lens=audience
+
+- 観客にどう聞こえるか見て
+- この発表、どこで置いていかれそう？
+- 見出しだけで話が通るか確かめて
+- /review 20261201_example-presentation audience
 
 ### lens=author
 
@@ -42,7 +51,7 @@ note: description・本文の修正時に fresh session で全プロンプトを
 
 ## lens 未指定の扱い
 
-次のような発話は起動してよいが、**lens を推測して点検を始めてはならない**。lens が空・不正なら点検せず、4つの lens を提示して著者に選ばせるサマリだけを返す。
+次のような発話は起動してよいが、**lens を推測して点検を始めてはならない**。lens が空・不正なら点検せず、5つの lens を提示して著者に選ばせるサマリだけを返す。
 
 - レビューして
 - ちょっと見てもらえる？
