@@ -4,7 +4,8 @@
  *
  * 正本は deck.md。deck.html は生成物であり、手で編集しない（次の生成で上書きされる）。
  * 上半分は見出しだけの一覧（ゴーストデッキ。見出しだけを順に読んで話が通るかを見る）、
- * 下半分は1枚ずつのカード（画面に出るもの／役割・秒・核・反応・台詞・メモ）。
+ * 下半分は1枚ずつのカード（画面に出るもの／伝える・役割・秒・核・反応・台詞・メモ）。
+ * 骨組み（見出しと 伝える: だけ）の段階は、秒の代わりに「骨組み」と出す。
  * 見た目は Google スライドで組む時に決めるので、ここでは中身の並びだけを見せる。
  *
  * 使い方:
@@ -17,7 +18,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseDeck, readEvent, spokenChars, screenTitle, parseSeconds } from "./lib/deck.mjs";
+import { parseDeck, readEvent, spokenChars, screenTitle, parseSeconds, isSkeleton } from "./lib/deck.mjs";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(SCRIPT_DIR, "..");
@@ -43,6 +44,8 @@ function card(s, ctx) {
   }
   if (!visual && show) visual = `<div class="ph">${esc(show)}</div>`;
   const body = s.body.length ? `<ul>${s.body.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>` : "";
+  // 伝えることは画面に出さないので、カードの右側に置く
+  const convey = s.convey.length ? `<div class="convey"><p class="label">伝える</p><ul>${s.convey.map((c) => `<li>${esc(c)}</li>`).join("")}</ul></div>` : "";
   const sec = parseSeconds(f["秒"]);
   const est = Math.round((spokenChars(s.lines) / CONFIG.charsPerMinute) * 60);
   const over = s.lines.length && sec && est > sec * (1 + CONFIG.scriptOverTolerance);
@@ -61,6 +64,7 @@ function card(s, ctx) {
   </div>
   <div class="side">
     <p class="ghost">${esc(s.heading)}${s.provisional ? ' <span class="mark prov">仮</span>' : ""}</p>
+    ${convey}
     <dl>${meta}</dl>
     ${lines ? `<div class="script">${lines}</div>` : ""}
     ${f["メモ"] ? `<p class="memo">メモ: ${esc(f["メモ"])}</p>` : ""}
@@ -71,7 +75,11 @@ function card(s, ctx) {
 function page(deck, event, ctx) {
   const total = deck.slides.reduce((n, s) => n + (parseSeconds(s.fields["秒"]) ?? 0), 0);
   const limit = event?.seconds;
-  const ghost = deck.slides.map((s) => `<li><a href="#s${s.index}">${esc(s.heading)}</a>${s.provisional ? ' <span class="mark prov">仮</span>' : ""}<span class="sec">${esc(s.fields["秒"] ?? "?")}秒</span></li>`).join("");
+  const skeleton = isSkeleton(deck);
+  // 骨組みの間は秒をまだ書かないので、欠けた秒の「?」も出さない
+  const secOf = (s) => s.fields["秒"] ?? (skeleton ? null : "?");
+  const ghost = deck.slides.map((s) => `<li><a href="#s${s.index}">${esc(s.heading)}</a>${s.provisional ? ' <span class="mark prov">仮</span>' : ""}${secOf(s) === null ? "" : `<span class="sec">${esc(secOf(s))}秒</span>`}</li>`).join("");
+  const time = skeleton ? "骨組み（秒はまだ書いていない）" : `秒の合計 <span class="${limit && total > limit ? "over" : ""}">${total}秒</span>`;
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -103,6 +111,9 @@ function page(deck, event, ctx) {
   .no { position: absolute; right: 10px; bottom: 6px; font-size: 11px; color: #999; }
   .side { font-size: 14px; }
   .ghost { font-weight: 700; margin: 0 0 8px; }
+  .convey { background: #fff; border: 1px solid #e2e2e2; border-radius: 4px; padding: 6px 10px; margin: 0 0 10px; }
+  .convey .label { color: #777; font-size: 12px; margin: 0; }
+  .convey ul { margin: 0; padding-left: 1.2em; }
   dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0 0 10px; }
   dt { color: #777; }
   dd { margin: 0; }
@@ -120,7 +131,7 @@ function page(deck, event, ctx) {
 <body>
 <main>
 <h1>${esc(deck.title ?? "デッキ")}</h1>
-<p class="stats">${deck.slides.length}枚 ／ 秒の合計 <span class="${limit && total > limit ? "over" : ""}">${total}秒</span>${limit ? ` ／ 持ち時間 ${limit}秒` : " ／ 持ち時間は event.md に無し"}</p>
+<p class="stats">${deck.slides.length}枚 ／ ${time}${limit ? ` ／ 持ち時間 ${limit}秒` : " ／ 持ち時間は event.md に無し"}</p>
 <h3>見出しだけで読む</h3>
 <ol class="ghost-list">${ghost}</ol>
 <h3>1枚ずつ</h3>
