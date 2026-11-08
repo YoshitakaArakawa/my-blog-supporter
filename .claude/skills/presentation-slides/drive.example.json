@@ -1,0 +1,6 @@
+{
+  "templates": { "navy": "TEMPLATE_DECK_ID" },
+  "deckFolderId": "DECK_FOLDER_ID",
+  "imageFolderId": "IMAGE_FOLDER_ID",
+  "publicFolderId": "PUBLIC_FOLDER_ID"
+}

@@ -48,4 +48,8 @@ output/{yyyymmdd}_{テーマ}/
   deck.md                            ゴーストデッキと台詞
   preview/deck.html                  deck.md のストーリーボード（scripts/render-deck.mjs の生成物。手で編集しない）
   figures/                           スライドに貼る図の PNG と src/
+  preview/slides.html                組む前のスライドの一覧（presentation-slides の render-slides.mjs の生成物。手で編集しない）
+  preview/check.html                 組んだスライドの点検の一覧（presentation-slides の check-slides.mjs の生成物。手で編集しない）
+  slides.json                        Google スライドとの結び付き（デッキの ID・テンプレート・組んだ時点・スライドの対応。presentation-slides が書く。手で編集しない）
+  deck_user.md                       Slides から取り込んだ版（pull-slides.mjs の生成物。組んだ後は Slides が正で、手で編集しない）
 ```

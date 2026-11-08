@@ -1,0 +1,107 @@
+{
+  "id": "navy",
+  "label": "ネイビー（内蔵）",
+  "note": "内蔵のテンプレート。表紙・区切り・終わりはネイビーの背景に白い文字、本文の役割は白に近い背景に紺に近い黒の文字。飾り（見出しの下の線・縁の帯）は置かない。boxes の並び順が、Slides のプレースホルダの index（同じ種類の中の順）になる。画像の枠は見出しの文字の左端に揃える（画面の枠だけは広く取る）",
+  "page": { "width": 10, "height": 5.625 },
+  "font": "Noto Sans JP",
+  "colors": {
+    "navy": "#1D3461",
+    "ink": "#1A1F2B",
+    "paper": "#FAFAFA",
+    "muted": "#5A6372",
+    "white": "#FFFFFF",
+    "paleOnNavy": "#C9D2E3"
+  },
+  "inset": { "l": 0.1, "r": 0.1, "t": 0.05, "b": 0.05 },
+  "lineSpacing": 100,
+  "master": "見出しと本文",
+  "todoFrame": { "size": 18, "color": "muted", "colorOnDark": "paleOnNavy" },
+  "layouts": {
+    "表紙": {
+      "background": "navy",
+      "boxes": {
+        "title": { "ph": "CENTERED_TITLE", "x": 0.6, "y": 1.2, "w": 8.8, "h": 1.9, "size": 36, "bold": true, "color": "white", "align": "START", "anchor": "BOTTOM" },
+        "body": { "ph": "SUBTITLE", "x": 0.6, "y": 3.3, "w": 6.6, "h": 1.1, "size": 20, "color": "paleOnNavy", "align": "START", "anchor": "TOP" }
+      },
+      "frame": { "x": 7.6, "y": 3.3, "w": 1.8, "h": 1.8 }
+    },
+    "区切り": {
+      "background": "navy",
+      "boxes": {
+        "title": { "ph": "TITLE", "x": 0.75, "y": 1.3, "w": 8.5, "h": 3.0, "size": 36, "bold": true, "color": "white", "align": "CENTER", "anchor": "MIDDLE" }
+      }
+    },
+    "終わり": {
+      "background": "navy",
+      "boxes": {
+        "title": { "ph": "TITLE", "x": 0.75, "y": 0.9, "w": 8.5, "h": 1.9, "size": 36, "bold": true, "color": "white", "align": "CENTER", "anchor": "BOTTOM" },
+        "body": { "ph": "BODY", "x": 0.75, "y": 3.0, "w": 8.5, "h": 1.0, "size": 20, "color": "paleOnNavy", "align": "CENTER", "anchor": "TOP" }
+      }
+    },
+    "見出しと本文": {
+      "background": "paper",
+      "boxes": {
+        "title": { "ph": "TITLE", "x": 0.5, "y": 0.3, "w": 9.0, "h": 1.25, "size": 32, "bold": true, "color": "ink", "align": "START", "anchor": "TOP" },
+        "body": { "ph": "BODY", "x": 0.5, "y": 1.7, "w": 9.0, "h": 3.05, "size": 24, "color": "ink", "align": "START", "anchor": "TOP", "spaceBelow": 8 },
+        "source": { "ph": "BODY", "x": 0.5, "y": 4.85, "w": 9.0, "h": 0.6, "size": 18, "color": "muted", "align": "END", "anchor": "BOTTOM" }
+      }
+    },
+    "見出しと図": {
+      "background": "paper",
+      "boxes": {
+        "title": { "ph": "TITLE", "x": 0.5, "y": 0.3, "w": 9.0, "h": 1.25, "size": 32, "bold": true, "color": "ink", "align": "START", "anchor": "TOP" },
+        "source": { "ph": "BODY", "x": 0.5, "y": 4.85, "w": 9.0, "h": 0.6, "size": 18, "color": "muted", "align": "END", "anchor": "BOTTOM" }
+      },
+      "frame": { "x": 0.6, "y": 1.65, "w": 8.8, "h": 3.15 },
+      "frameNoSource": { "x": 0.6, "y": 1.65, "w": 8.8, "h": 3.65 }
+    },
+    "見出し1行と画面": {
+      "background": "paper",
+      "boxes": {
+        "title": { "ph": "TITLE", "x": 0.5, "y": 0.3, "w": 9.0, "h": 0.65, "size": 28, "bold": true, "color": "ink", "align": "START", "anchor": "TOP", "maxLines": 1 },
+        "source": { "ph": "BODY", "x": 0.5, "y": 4.85, "w": 9.0, "h": 0.6, "size": 18, "color": "muted", "align": "END", "anchor": "BOTTOM" }
+      },
+      "frame": { "x": 0.3, "y": 1.05, "w": 9.4, "h": 3.75 },
+      "frameNoSource": { "x": 0.3, "y": 1.05, "w": 9.4, "h": 4.35 }
+    },
+    "文と図": {
+      "background": "paper",
+      "boxes": {
+        "title": { "ph": "TITLE", "x": 0.5, "y": 0.3, "w": 9.0, "h": 1.25, "size": 32, "bold": true, "color": "ink", "align": "START", "anchor": "TOP" },
+        "body": { "ph": "BODY", "x": 0.5, "y": 1.7, "w": 3.6, "h": 3.05, "size": 24, "color": "ink", "align": "START", "anchor": "TOP", "spaceBelow": 8 },
+        "source": { "ph": "BODY", "x": 0.5, "y": 4.85, "w": 9.0, "h": 0.6, "size": 18, "color": "muted", "align": "END", "anchor": "BOTTOM" }
+      },
+      "frame": { "x": 4.3, "y": 1.65, "w": 5.2, "h": 3.15 },
+      "frameNoSource": { "x": 4.3, "y": 1.65, "w": 5.2, "h": 3.65 }
+    },
+    "大きな一文": {
+      "background": "paper",
+      "boxes": {
+        "body": { "ph": "BODY", "x": 0.75, "y": 1.0, "w": 8.5, "h": 3.4, "size": 36, "bold": true, "color": "ink", "align": "CENTER", "anchor": "MIDDLE" },
+        "source": { "ph": "BODY", "x": 0.5, "y": 4.85, "w": 9.0, "h": 0.6, "size": 18, "color": "muted", "align": "END", "anchor": "BOTTOM" }
+      }
+    }
+  },
+  "roles": {
+    "表紙": "表紙",
+    "区切り": "区切り",
+    "終わり": "終わり",
+    "主張": { "text": "見出しと本文", "visual": "見出しと図", "both": "文と図" },
+    "図": { "text": "見出しと本文", "visual": "見出しと図", "both": "文と図" },
+    "画面": "見出し1行と画面",
+    "数字": { "text": "大きな一文", "visual": "見出しと図", "both": "文と図" },
+    "引用": "大きな一文",
+    "問い": "大きな一文",
+    "まとめ": { "text": "見出しと本文", "visual": "見出しと図", "both": "文と図" }
+  },
+  "samples": {
+    "表紙": { "title": "発表のタイトル（2行まで）", "body": "名前 / Name", "note": "用途: 1枚目。見出しは 画面: か ## の行、名前などは 本文: に書く。見せる: は右下の枠に入る" },
+    "区切り": { "title": "段の区切り", "note": "用途: 段の変わり目。見出しだけを中央に大きく出す" },
+    "終わり": { "title": "ありがとうございました", "body": "連絡先や呼びかけ", "note": "用途: 最後の1枚。見出しと、本文: の呼びかけ" },
+    "見出しと本文": { "title": "主張の一文を見出しにする（2行まで）", "body": "本文は短い文を2〜4行\n画面の文を台詞で読み上げない", "source": "出典の行", "note": "用途: 主張・図・まとめで、本文: だけのとき" },
+    "見出しと図": { "title": "図が主張を支える（2行まで）", "source": "出典の行", "note": "用途: 主張・図・数字・まとめで、見せる: だけのとき。画像は見出しの下の枠に収める" },
+    "見出し1行と画面": { "title": "画面の見出しは1行", "source": "出典の行", "note": "用途: 画面（デモのスクリーンショット）。見出しは1行、画像は枠いっぱい" },
+    "文と図": { "title": "数字や図に短い文を添える", "body": "左に短い文\n右に図", "source": "出典の行", "note": "用途: 本文: と 見せる: の両方があるとき" },
+    "大きな一文": { "body": "一文だけを大きく出す", "source": "出典の行", "note": "用途: 引用・問い・数字で、本文: だけのとき" }
+  }
+}
