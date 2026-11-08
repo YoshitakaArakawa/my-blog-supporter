@@ -1,15 +1,15 @@
 ---
 name: review
-description: 記事の成果物を隔離コンテキストでレビューし、指摘を review/{lens}_NN.md に書く。lens は critique（thinking.md の主張を叩く）／drift（outline・draft が前段から主張を落とした・足したを点検）／readers（draft を初見読者として通読）／author（draft_user.md の編集レビュー）。「反論を出して」「主張を叩いて」「前段から落ちていないか」「読者としてどう読むか」「下書きをレビューして」「Wix の下書きをレビューして」と言われた時に使う。Wix からの取り込みだけなら wix-sync
-argument-hint: "[テーマ] [critique|drift|readers|author] [対象(任意: outline|draft|ファイル名)]"
+description: 記事と登壇の成果物を隔離コンテキストでレビューし、指摘を review/{lens}_NN.md に書く。lens は critique（thinking.md の主張を叩く）／drift（outline・draft・storyline・deck が前段から主張を落とした・足したを点検）／readers（draft を初見読者として通読）／audience（deck を会場の観客として通しで聞く）／author（draft_user.md の編集レビュー）。「反論を出して」「主張を叩いて」「前段から落ちていないか」「読者としてどう読むか」「観客にどう聞こえるか」「下書きをレビューして」「Wix の下書きをレビューして」と言われた時に使う。Wix からの取り込みだけなら blog-wix-sync
+argument-hint: "[テーマ] [critique|drift|readers|audience|author] [対象(任意: outline|draft|storyline|deck|ファイル名)]"
 context: fork
 agent: general-purpose
 background: false
 ---
 
-# 記事レビュー
+# 記事・登壇のレビュー
 
-記事の成果物を lens ごとの視点で点検し、指摘を `review/{lens}_NN.md` に書き出す。
+記事と登壇の成果物を lens ごとの視点で点検し、指摘を `review/{lens}_NN.md` に書き出す。
 
 このスキルは隔離コンテキスト（`context: fork`）で実行される。会話履歴にはアクセスできないため、対象と基準はすべてファイルから読む。書いた当人から切り離された別エージェントが「文書として」読むことで、自分の成果物を自分で擁護する経路を断つ。メイン会話には**実行サマリのみ**を返す。指摘の全文を戻り値に詰めない。
 
@@ -30,17 +30,17 @@ background: false
 - lens: `$1`
 - 対象: `$2`
 
-上の3行は起動時に実引数へ置換される。lens 欄が空、置換されずに残っている、または `critique` / `drift` / `readers` / `author` のいずれでもない場合は、**点検せずに終了する**。「lens が指定されていない（または不正）ので点検していない。`critique`（主張を叩く）／`drift`（前段からのズレ）／`readers`（初見読者の通読）／`author`（著者下書きの編集レビュー）から指定してください」という旨をサマリで返す。**推測で lens を選ばない**。
+上の3行は起動時に実引数へ置換される。lens 欄が空、置換されずに残っている、または `critique` / `drift` / `readers` / `audience` / `author` のいずれでもない場合は、**点検せずに終了する**。「lens が指定されていない（または不正）ので点検していない。`critique`（主張を叩く）／`drift`（前段からのズレ）／`readers`（初見読者の通読）／`audience`（観客として通しで聞く）／`author`（著者下書きの編集レビュー）から指定してください」という旨をサマリで返す。**推測で lens を選ばない**。
 
-対象欄の意味は lens ごとに違う（lens=drift は stage、lens=readers / author はファイル名）。既定値は lens ファイルに書いてある。
+対象欄の意味は lens ごとに違う（lens=drift は stage、lens=readers / audience / author はファイル名）。既定値は lens ファイルに書いてある。
 
 ### 2. 出力ディレクトリと core.md
 
 出力先は `output/{yyyymmdd}_{テーマ}/`。`output/` を Glob し、`_{テーマ}` で終わるフォルダを採る（テーマに日付プレフィックスが付いていればそのまま使う）。以降 `$OUTPUT_DIR` はこのディレクトリを指す。
 
-`$OUTPUT_DIR/core.md` を**最初に読む**。無ければ点検せずに「core.md が無いので点検していない。先に `/article` で core.md を作ってください」という旨をサマリで返して終了する。
+`$OUTPUT_DIR/core.md` を**最初に読む**。無ければ点検せずに「core.md が無いので点検していない。先に `/core` で core.md を作ってください」という旨をサマリで返して終了する。
 
-core.md は記事の核（問い／読者／読後／動機／現在地の5行）であり、全 lens の優先順位判定の基準になる。
+core.md は記事・登壇の核（問い／読者／読後／動機／現在地の5行と形式）であり、全 lens の優先順位判定の基準になる。
 
 ### 3. lens ファイルの読み込み
 

@@ -1,0 +1,12 @@
+{
+  "_comment": "lint-deck.mjs の閾値の正本。書式の正本は .claude/skills/presentation-write/references/deck-spec.md。charsPerMinute は日本語の話す速さの目安で、約300字/分（速い人で400字/分）とする記述（映像情報メディア学会誌 52巻4号、1998年。https://www.jstage.jst.go.jp/article/itej1997/52/4/52_4_504/_pdf）から取った。見積もりは上限寄りの目安であり、リハーサルで実測したら 秒: を実測に置き換える。scriptOverTolerance は、台詞の見積もりが 秒: をこの割合まで超えても警告しない幅。titleCharsMax は、16:9 の既定ページ（幅10in、左右の余白0.5in）で 32pt の全角が1行に約20字入る計算から、2行分の40字とした計算値。テンプレートの文字の大きさが決まったら合わせる。redundantMinChars 以上の画面の文が台詞にそのまま含まれる時、読み上げとして知らせる（短い語は専門用語・キーワードとして画面に出してよいので数えない）",
+  "targetPattern": "^output/[^/]+/deck\\.md$",
+  "charsPerMinute": 300,
+  "scriptOverTolerance": 0.1,
+  "titleCharsMax": 40,
+  "redundantMinChars": 12,
+  "roles": ["表紙", "区切り", "主張", "図", "画面", "数字", "引用", "問い", "まとめ", "終わり"],
+  "structuralRoles": ["表紙", "区切り", "まとめ", "終わり"],
+  "coreRows": ["問い", "読者", "読後", "動機", "現在地"],
+  "hookReportMaxLines": 25
+}

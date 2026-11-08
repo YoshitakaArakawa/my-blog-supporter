@@ -5,13 +5,13 @@ note: 引数解釈・出力ディレクトリの解決・core.md の読込・連
 
 # lens: drift（前段からのズレ）
 
-AI が生成した中間成果物（`outline.md` / `draft.md`）が、前段の成果物から **主張を落としていないか**・**前段に根拠のない主張を足していないか** を点検する。掘って固めた思考が散文化・縮約される過程で静かにズレるのを、工程の切れ目で捕まえる。
+AI が生成した中間成果物（ブログの `outline.md` / `draft.md`、登壇の `storyline.md` / `deck.md`）が、前段の成果物から **主張を落としていないか**・**前段に根拠のない主張を足していないか** を点検する。掘って固めた思考が散文化・縮約される過程で静かにズレるのを、工程の切れ目で捕まえる。
 
 ここで出た指摘は、著者が「この差分を許容するか／前段に戻して直すか」を決めるための材料。
 
 ## 入力
 
-対象欄（`$2`）を **stage** として解釈する。`outline` か `draft` のどちらか。それ以外・空なら既定の `draft` とする。
+対象欄（`$2`）を **stage** として解釈する。`outline`・`draft`・`storyline`・`deck` のいずれか。それ以外・空なら既定の `draft` とする。
 
 遷移ごとに「健全な動き」が違うため、stage で基準と target を切り替える。
 
@@ -19,10 +19,13 @@ AI が生成した中間成果物（`outline.md` / `draft.md`）が、前段の�
 |---|---|---|---|
 | `draft`（既定） | `core.md`（核の正）＋ `thinking.md`（主張の正）＋ `outline.md`（構成の正）＋ `references.md`（根拠源） | `draft.md` | 落とした背骨／無根拠に湧いた主張 |
 | `outline` | `core.md`（核の正）＋ `thinking.md`（主張の正） | `outline.md` | 縮約で落ちた背骨／構成段階で湧いた新主張 |
+| `storyline` | `core.md`（核の正）＋ `thinking.md`（主張の正） | `storyline.md` | 段に割る時に落ちた背骨／流れの段階で湧いた新主張 |
+| `deck` | `core.md`（核の正）＋ `thinking.md`（主張の正）＋ `storyline.md`（流れの正）＋ `references.md`（根拠源） | `deck.md` | 見出しと台詞に縮める時に落ちた背骨／見出しと台詞で湧いた主張 |
 
 - **target**（必須）: 無い・空の場合は「target が見つからない（または空）ので点検していない。先に該当工程を回してください」という旨をサマリで返して終了する。**他ファイルで代替しない**
 - **`thinking.md`**（必須）: 主張の正がなければドリフトを測れない。無ければサマリで欠落を報告して終了する
-- `outline.md` / `references.md`: stage=`draft` で無ければ「無し」として進める
+- `outline.md` / `references.md`: stage=`draft` で無ければ「無し」として進める。`storyline.md` / `references.md` も stage=`deck` で無ければ同じ
+- stage=`deck` では、台詞の `（著者）` の行を著者の言葉、`（仮）` の行を AI の言葉として扱う。`（仮）` の台詞や見出しに前段の無い主張があれば、無根拠 add として拾う
 
 thinking.md 自体の生成（掘る工程）は点検しない。掘る工程は主張が増えるのが正常で、add を咎める点検は低価値なため。主張の是非を叩きたい場合は lens=critique を使う。
 
@@ -55,7 +58,7 @@ thinking.md 自体の生成（掘る工程）は点検しない。掘る工程�
 
 ## 出力テンプレート
 
-見出しは `ドリフト点検`。`## 対象` 節には「{基準} → {target}（stage: {draft|outline}）」を書く。
+見出しは `ドリフト点検`。`## 対象` 節には「{基準} → {target}（stage: {draft|outline|storyline|deck}）」を書く。
 
 lens 固有の追加節として、`## 指摘` の後ろに次を置く:
 
@@ -84,4 +87,4 @@ lens 固有の追加節として、`## 指摘` の後ろに次を置く:
 - 主張の正しさの判定（lens=critique の領分）。あくまで「前段から保たれたか／前段に根があるか」だけを見る
 - 定量指標（carryover 率・件数比など）の算出。著者が知りたいのは *どの* idea がドリフトしたかであって率ではない
 - 落ちた条件・留保を本文へ戻す指示。条件の採否は著者が握る（観点 C）
-- 著者が書いた原稿（`draft_user.md`）の点検（lens=author の領分）。この lens は **AI が生成した** outline.md / draft.md が対象
+- 著者が書いた原稿（`draft_user.md`）の点検（lens=author の領分）。この lens は **AI が生成した** outline.md / draft.md / storyline.md / deck.md が対象
