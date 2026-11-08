@@ -1,6 +1,6 @@
 ---
 name: review
-description: 記事と登壇の成果物を隔離コンテキストでレビューし、指摘を review/{lens}_NN.md に書く。lens は critique（thinking.md の主張を叩く）／drift（outline・draft・storyline・deck が前段から主張を落とした・足したを点検）／readers（draft を初見読者として通読）／audience（deck を会場の観客として通しで聞く）／author（draft_user.md の編集レビュー）。「反論を出して」「主張を叩いて」「前段から落ちていないか」「読者としてどう読むか」「観客にどう聞こえるか」「下書きをレビューして」「Wix の下書きをレビューして」と言われた時に使う。Wix からの取り込みだけなら blog-wix-sync
+description: 記事と登壇の成果物を隔離コンテキストでレビューし、指摘を review/{lens}_NN.md に書く。lens は critique（主張を叩く）・drift（前段とのズレ）・readers（初見の読者）・audience（会場の観客）・author（著者の下書き）。「反論を出して」「主張を叩いて」「前段から落ちていないか」「読者としてどう読むか」「観客にどう聞こえるか」「下書きをレビューして」「Wix の下書きをレビューして」と言われた時に使う。Wix からの取り込みだけなら blog-wix-sync
 argument-hint: "[テーマ] [critique|drift|readers|audience|author] [対象(任意: outline|draft|storyline|deck|ファイル名)]"
 context: fork
 agent: general-purpose

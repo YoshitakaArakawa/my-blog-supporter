@@ -40,7 +40,7 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 本文を書いてみて（→ /blog-write の書く工程）
 - 登壇の流れを組みたい（→ /presentation-write の組む工程）
 - スライドの見出しと台詞を考えて（→ /presentation-write の書く工程）
-- Google スライドに組んで（→ /presentation-slides）
+- Google スライドに組んで（→ 未実装。著者にそう伝えて止まる）
 - この主張の想定反論を出して（→ /review の critique）
 - 記事の中に入れる概念図を1枚描いて（→ /illustrate）
 - 本文は固まったので、ここから細かく直したい（→ /blog-revise）

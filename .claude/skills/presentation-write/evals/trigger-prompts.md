@@ -32,8 +32,7 @@ note: description・本文の修正時に fresh session で全プロンプトを
 
 - 来月の勉強会で何を話すか一緒に考えたい（→ /core の核。中身の核が先）
 - 登壇のテーマをもっと掘りたい（→ /core の掘る工程）
-- Google スライドに組んで（→ /presentation-slides）
-- Slides で直したので取り込んで（→ /presentation-slides）
+- Google スライドに組んで（→ 未実装。著者にそう伝えて止まる）
 - 観客にどう聞こえるかレビューして（→ /review の audience）
 - このスライドに入れる図を1枚描いて（→ /illustrate）
 - 記事の構成を一緒に考えたい（→ /blog-write）

@@ -4,8 +4,6 @@ paths: ["output/**", "published/**"]
 
 # 作業ディレクトリの構成
 
-記事も登壇も、1本につき `output/{yyyymmdd}_{テーマ}/` を1つ作る。core.md・thinking.md・references までは共通で、その先は core.md の `形式:` で分かれる（ブログ・登壇それぞれの節）。
-
 ```
 published/{yyyymmdd}_{テーマ}/        公開層。/blog-promote が選別・点検した記事の成果物のみ（20260912 以降の記事は下記のサブセット。それ以前の記事は旧構成（brief.md・critique/・comparison/ 等）のままで、core.md が無い）。登壇は置かない
 
@@ -33,7 +31,7 @@ output/{yyyymmdd}_{テーマ}/           記事・登壇ごとの作業ディレ
     draft_revision.md                基準からの差分を {+ +} {- -} {? ?} で書いた正本（scripts/revise.mjs show が生成。AI が直接書いてもよい）
     index.html                       変更箇所だけ色付きの HTML（scripts/render-revision.mjs の生成物。手で編集しない）
   review/                            /review の出力。lens ごとに独立した連番で時系列に蓄積
-    critique_01.md / drift_01.md / readers_01.md / author_01.md   lens ごとの指摘
+    critique_01.md / drift_01.md / readers_01.md / audience_01.md / author_01.md   lens ごとの指摘
   x-posts.md                         X 告知ポストの文案（/blog-announce の出力。採否と投稿は著者が行う）
   published.md                       公開 Web 記事の取得スナップショット（/blog-wix-sync の pull --published。改訂の基準と slug 重複確認に使う。2026年6月以前の一部の記事は comparison/published.md にある。無い記事もある）
 
@@ -41,16 +39,13 @@ output/{yyyymmdd}_{テーマ}/           記事・登壇ごとの作業ディレ
 
 ## 登壇（形式: 登壇）
 
-core.md・thinking.md・references.md・references/・map.json・map.html・review/ は上と同じ。outline.md・draft.md から先の代わりに、次を置く。フォルダ名はテーマの末尾に `-presentation` を付ける。
+core.md・thinking.md・references.md・references/・map.json・map.html・review/ は上と同じ。outline.md・draft.md から先の代わりに、次を置く。
 
 ```
 output/{yyyymmdd}_{テーマ}/
-  event.md                           主催の規定（時間・提出形式・最小文字など。key: value の行。/presentation-write の場の工程）
-  storyline.md                       段ごとの流れ（何を言い、観客がどうなるか。時間配分とスライドの作り方は書かない。任意）
-  deck.md                            ゴーストデッキと台詞（見出しだけで話が通る1枚ずつの主張・証拠・台詞。Google スライドに組むまでの正）
+  event.md                           主催の規定
+  storyline.md                       段ごとの流れ（任意）
+  deck.md                            ゴーストデッキと台詞
   preview/deck.html                  deck.md のストーリーボード（scripts/render-deck.mjs の生成物。手で編集しない）
-  figures/                           スライドに貼る図の PNG と src/（/illustrate に出力先と大きさを指定して作る）
-  slides.json                        Google スライドとの結び付き（/presentation-slides が書く。手で編集しない）
-  deck_user.md                       Google スライドから取り込んだ版（組んだ後は Slides が正。/presentation-slides が書く）
-  review/                            audience_01.md・drift_01.md など、/review の出力
+  figures/                           スライドに貼る図の PNG と src/
 ```
