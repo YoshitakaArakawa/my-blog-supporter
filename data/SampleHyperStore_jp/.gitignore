@@ -1,0 +1,7 @@
+# Local settings and sign-in cache (never commit)
+.env
+.auth-cache/
+# Setup work files (downloaded / built data sources)
+setup/work/
+hyperd*.log
+__pycache__/

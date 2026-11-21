@@ -1,0 +1,252 @@
+{
+  "products": {
+    "datasource_name": "SampleHyperStore - products",
+    "datasource_description": "One row per SKU (Product Id): the current product master with merchandise hierarchy, attributes and current supplier, 202 SKUs. Launch Date ranges from 2018-02-02 to 2025-05-17.",
+    "columns": {
+      "Product Id": "SKU identifier (P-...).",
+      "Style Code": "Style that groups the size variants of a SKU (ST-...). Apparel styles have 4 SKUs (one per size); every other SKU has a style of its own.",
+      "Product Name": "Display name of the SKU, including its variant.",
+      "Category": "Top level of the merchandise hierarchy: camp_hike, outdoor_apparel, patio_garden, home_comfort.",
+      "Subcategory": "Second level of the merchandise hierarchy: tents, sleeping_gear, backpacks, camp_kitchen, rain_shells, insulated_jackets, base_layers, hiking_footwear, patio_furniture, grills, garden_tools, planters_irrigation, space_heaters, fire_pits_patio_heaters, blankets_throws, indoor_air.",
+      "Brand": "Brand of the SKU, either the retailer's own private label or a third-party national brand (see Brand Type).",
+      "Brand Type": "private_label (the retailer's own label) or national_brand (third-party brand).",
+      "Color": "Color of the SKU: black, charcoal, forest, navy, olive, rust, sand, slate. Always filled for outdoor_apparel; empty for all patio_garden SKUs and for many camp_hike and home_comfort SKUs.",
+      "Size": "Size of sized items: S, M, L, XL for apparel; 8 to 11 for footwear. Empty for items without sizes.",
+      "Seasonality Profile": "Seasonality class of the SKU: spring, spring_summer, summer, shoulder, fall, winter, holiday.",
+      "Weight Lb": "Shipping weight of one unit in pounds, including packaging. Per-unit attribute, not additive.",
+      "Is Oversize": "True when the item ships as a bulky or oversize parcel or as freight (e.g. patio furniture, large grills, fire pits).",
+      "Is Hazmat": "True for items with shipping restrictions (e.g. fuel canisters, propane heaters).",
+      "Case Pack Qty": "Units per inner case. Per-SKU attribute, not additive.",
+      "Supplier Id": "Primary supplier currently assigned to the SKU (SUP-...), not history: a SKU that changed supplier shows only the current one.",
+      "Launch Date": "First date the SKU was sellable online. Dates before 2023-01-01 mark the established assortment.",
+      "Discontinue Date": "Date the SKU was set to discontinued (no new purchasing; remaining stock can still sell). Empty while active."
+    }
+  },
+  "invoices": {
+    "datasource_name": "SampleHyperStore - invoices",
+    "datasource_description": "One row per invoice (Invoice Id): one invoice per shipment, so an order shipped in parts has several invoices. Covers Invoice Date 2023-01-02 to 2025-12-31 (Fiscal Month FY2022-P12 to FY2025-P11).",
+    "columns": {
+      "Invoice Id": "Invoice identifier (INV-...). One invoice per shipment, so an order shipped in parts has several invoices.",
+      "Order Id": "Order billed by the invoice (O-...). Appears on more than one invoice when the order shipped in parts.",
+      "Shipment Id": "Shipment that produced the invoice (SH-...); one invoice per shipment.",
+      "Customer Id": "Billed customer (C-...).",
+      "Channel": "Sales channel of the invoiced order: web, app, marketplace, b2b.",
+      "State Code": "Ship-to US state of the invoiced shipment (2-letter code, incl. DC).",
+      "Invoice Date": "Revenue recognition date: the day the invoiced shipment left the warehouse. Calendar date; the fiscal period is in Fiscal Month.",
+      "Payment Terms": "Payment terms: prepaid (web, app), net30 (b2b), marketplace_settlement (marketplace).",
+      "Due Date": "Payment due date; equals Invoice Date for prepaid terms.",
+      "Shipping Billed Amount": "Shipping charge billed on this invoice in USD, before tax. The order's full shipping charge is billed on its first invoice and 0 on later ones; 0 when shipping is free.",
+      "Shipping Tax Amount": "Sales tax billed on shipping in USD; 0 where shipping is not taxed.",
+      "Marketplace Fee Amount": "Fee withheld by the marketplace for this invoice in USD, charged on merchandise plus shipping excluding tax. 0 for other channels. Gross of later fee reversals.",
+      "Campaign Id": "Last-click marketing campaign of the order (CMP-...). Empty when the order had no campaign, and for all marketplace and b2b orders.",
+      "Sales Region Id": "Sales region stamped at invoice posting from the territory map valid on the Invoice Date. R-WEST, R-CENTRAL, R-SOUTH, R-EAST until 2024-12-31; from 2025-01-01 R-MOUNTAIN takes parts of R-WEST and R-SOUTH, so regions are not like-for-like across 2025-01.",
+      "Fiscal Month": "Fiscal month of invoice posting (e.g. FY2024-P06). The fiscal year starts February 1 and uses calendar months: FY2024-P01 = February 2024, FY2024-P12 = January 2025."
+    }
+  },
+  "invoice_lines": {
+    "datasource_name": "SampleHyperStore - invoice_lines",
+    "datasource_description": "One row per invoice line (Invoice Line Id): one order line on one invoice. Covers lines of invoices dated 2023-01-02 to 2025-12-31.",
+    "columns": {
+      "Invoice Line Id": "Invoice line identifier (IL-...): one order line on one invoice.",
+      "Invoice Id": "Invoice the line belongs to (INV-...).",
+      "Order Line Id": "Order line billed (OL-...). A line shipped in parts appears on several invoice lines.",
+      "Product Id": "Invoiced SKU (P-...).",
+      "Qty Invoiced": "Units invoiced on the line, equal to the units shipped for it. Integer; sum across lines.",
+      "Unit Price": "Selling price per unit before discounts, in USD (list price for web/app, listing price for marketplace, contract price for b2b). Not additive; multiply by Qty Invoiced for line value.",
+      "Discount Amount": "Discount on the invoiced units in USD: the line promotion pro-rated to invoiced units plus an allocated share of the order-level coupon. Excludes discount on cancelled units.",
+      "Tax Amount": "Sales tax on the invoiced units in USD. For marketplace orders the marketplace collects and remits it.",
+      "Unit Standard Cost": "Standard cost per unit valid on the invoice's date, in USD (standard cost, not actual cost). Not additive; multiply by Qty Invoiced."
+    }
+  },
+  "credit_memos": {
+    "datasource_name": "SampleHyperStore - credit_memos",
+    "datasource_description": "One row per credit memo line (Credit Memo Id): one reversal of invoiced revenue, booked for one customer refund. Covers Credit Memo Date 2023-01-16 to 2025-12-29 (Fiscal Month FY2022-P12 to FY2025-P11).",
+    "columns": {
+      "Credit Memo Id": "Credit memo line identifier (CM-...): one reversal posted.",
+      "Refund Id": "Customer refund the credit memo books (RF-...); every memo line has one.",
+      "Invoice Id": "Original invoice being reversed; for order-level reversals, the order's first invoice.",
+      "Order Line Id": "Order line reversed (OL-...). Empty for order-level reversals such as shipping refunds, goodwill allowances and price adjustments.",
+      "Product Id": "SKU reversed (P-...). Empty for order-level reversals.",
+      "Memo Type": "Accounting category of the reversal: return, allowance, shipping, price_adjustment. Only return memos carry credited units.",
+      "Credit Memo Date": "Posting date of the credit memo. Memos post in a weekly batch after the refund, so they can fall in a later fiscal month than the original invoice.",
+      "Qty Credited": "Units reversed. Non-zero only on return memos; 0 for allowances, shipping and price adjustments.",
+      "Merchandise Credit Amount": "Merchandise revenue reversed in USD, excluding tax and shipping.",
+      "Tax Credit Amount": "Sales tax reversed in USD.",
+      "Shipping Credit Amount": "Shipping revenue reversed in USD, excluding tax.",
+      "Marketplace Fee Reversal Amount": "Part of the marketplace fee returned by the marketplace on the refund, in USD; usually less than the fee withheld. 0 for other channels.",
+      "Sales Region Id": "Sales region stamped at credit memo posting. R-WEST, R-CENTRAL, R-SOUTH, R-EAST until 2024-12-31; from 2025-01-01 R-MOUNTAIN takes parts of R-WEST and R-SOUTH, so regions are not like-for-like across 2025-01.",
+      "Fiscal Month": "Fiscal month in which the credit memo posted (e.g. FY2024-P06; fiscal year starting February 1). Often later than the month of the original invoice."
+    }
+  },
+  "orders": {
+    "datasource_name": "SampleHyperStore - orders",
+    "datasource_description": "One row per order (Order Id): one checkout, marketplace order import, or b2b order entry, in all channels (web, app, marketplace, b2b). Covers Order Date 2023-01-01 to 2025-12-31.",
+    "columns": {
+      "Order Id": "Order identifier (O-...): one per checkout, marketplace order import, or b2b order entry.",
+      "Order At": "Timestamp the order was placed, in US Eastern time as stored by the order system.",
+      "Order Date": "Date part of Order At in US Eastern time; late-evening Pacific orders fall on the next date.",
+      "Customer Id": "Ordering customer (C-...). Marketplace buyers are registered per marketplace handle, so one person can have two customer IDs.",
+      "Session Id": "Web or app session in which the order was placed (S-...). Empty for marketplace and b2b orders.",
+      "Channel": "Sales channel of the order: web, app, marketplace, b2b.",
+      "State Code": "Ship-to US state of the order (2-letter code, incl. DC), not the customer's home state.",
+      "Sales Rep Id": "Account executive credited with the order (REP-001 to REP-010). Filled for b2b orders only; empty otherwise.",
+      "Promotion Id": "Order-level promotion applied at checkout (coupon code or free-shipping offer), PRM-.... Empty if none.",
+      "Shipping Method": "Delivery speed selected at checkout: standard, expedited, freight.",
+      "Promised Delivery Date": "Latest delivery date shown to the customer at checkout (the customer promise).",
+      "Shipping Charge Amount": "Shipping fee charged for the whole order in USD, before tax; charged once even if the order ships in several shipments. 0 when shipping is free.",
+      "Shipping Tax Amount": "Sales tax charged on shipping in USD; 0 where shipping is not taxed.",
+      "Order Discount Amount": "Order-level coupon discount for the whole order in USD; not allocated to lines and not reduced when units are cancelled. 0 if none.",
+      "Payment Method": "How the order is paid: card, digital_wallet, net30_terms, marketplace_settlement.",
+      "Campaign Id": "Last-click campaign stamped from the session's tracking parameters (CMP-...). Empty for non-campaign, marketplace and b2b orders.",
+      "Loyalty Tier": "Customer's loyalty tier at the time of the order: basic, silver, gold. Empty if not enrolled."
+    }
+  },
+  "order_lines": {
+    "datasource_name": "SampleHyperStore - order_lines",
+    "datasource_description": "One row per order line (Order Line Id): one SKU in one order. Covers lines of orders placed 2023-01-01 to 2025-12-31.",
+    "columns": {
+      "Order Line Id": "Order line identifier (OL-...): one SKU in one order.",
+      "Order Id": "Order the line belongs to (O-...).",
+      "Line Number": "Position of the line within the order, starting at 1.",
+      "Product Id": "Ordered SKU (P-...).",
+      "Promotion Id": "Line-level promotion (product markdown or bundle offer) that produced Line Discount Amount (PRM-...). Empty if none.",
+      "Qty Ordered": "Units requested by the customer, including units later cancelled or backordered. Integer; sum across lines.",
+      "Qty Backordered": "Units not in stock at any warehouse at order time and placed on backorder, later shipped or cancelled. 0 if fully available.",
+      "Qty Cancelled": "Units cancelled before shipment, at order time or later. 0 if none.",
+      "Cancel Reason": "Reason for the cancelled units: out_of_stock, backorder_timeout, customer_request, payment_failed, fraud_review. Empty when no units were cancelled.",
+      "Cancelled Date": "Date the cancellation was recorded. Empty when no units were cancelled.",
+      "Unit List Price": "List price per unit at order time from the merchandising price list, in USD. Not additive; multiply by Qty Ordered for list value.",
+      "Unit Price": "Selling price per unit before line discount, in USD: list price for web/app, listing price for marketplace (can exceed list), contract price for b2b (below list). Not additive.",
+      "Line Discount Amount": "Line-level promotional discount for all ordered units on the line, in USD; not reduced when units are cancelled. Excludes the order-level coupon.",
+      "Tax Amount": "Sales tax on the line at order time for all ordered units, in USD. For marketplace orders the marketplace collects and remits it.",
+      "Unit Standard Cost": "Standard cost per unit at order time, in USD (standard cost, not actual cost). Not additive.",
+      "Allocated Warehouse Id": "Warehouse allocated at order time: WH-W, WH-C, WH-E; not necessarily the one that shipped. Empty for lines cancelled before allocation."
+    }
+  },
+  "web_searches": {
+    "datasource_name": "SampleHyperStore - web_searches",
+    "datasource_description": "One row per on-site search (Search Id) executed in a web or app session. Covers Searched Date 2023-01-01 to 2025-12-31.",
+    "columns": {
+      "Search Id": "Search identifier (SR-...): one search executed.",
+      "Session Id": "Session in which the search ran (S-...).",
+      "Searched At": "Time the search was executed.",
+      "Searched Date": "Date part of Searched At.",
+      "Query Text": "Search query as normalized by the search engine (lowercase, trimmed).",
+      "Search Input Type": "How the query was entered: typed, autocomplete, suggested_after_no_results.",
+      "Results Count": "Number of active products matching the query, regardless of stock; 0 means no product matched.",
+      "Results In Stock Count": "Of Results Count, products shown as in stock or low stock at the visitor's serving warehouse; 0 means nothing purchasable was shown.",
+      "Clicked Product Id": "First product clicked from the results (P-...). Empty if no result was clicked.",
+      "Clicked Result Position": "1-based rank of the clicked product in the result list. Empty if no click. Average rather than sum."
+    }
+  },
+  "shipments": {
+    "datasource_name": "SampleHyperStore - shipments",
+    "datasource_description": "One row per shipment (Shipment Id): one parcel group leaving one warehouse with one carrier. Covers Shipped Date 2023-01-02 to 2025-12-31, with Delivery Status as of 2025-12-31.",
+    "columns": {
+      "Shipment Id": "Shipment identifier (SH-...): one parcel group leaving one warehouse with one carrier.",
+      "Order Id": "Order being fulfilled (O-...); an order shipped in parts has several shipments.",
+      "Shipment Number": "Sequence of the shipment within its order, starting at 1.",
+      "Warehouse Id": "Origin warehouse: WH-W, WH-C, WH-E.",
+      "Carrier Id": "Carrier code, CAR-01 to CAR-06.",
+      "Carrier Name": "Name of the carrier for Carrier Id (six carriers).",
+      "Carrier Type": "Carrier network type: national_parcel, regional_parcel, ltl_freight.",
+      "Service Level": "Carrier service purchased: ground, two_day, ltl_freight.",
+      "Shipped At": "Carrier pickup scan time at the warehouse.",
+      "Shipped Date": "Date part of Shipped At: the day the shipment left the warehouse.",
+      "Carrier Estimated Delivery Date": "Delivery date estimated by the carrier at pickup.",
+      "Delivered At": "Carrier delivery scan time. Empty if not delivered: in transit on 2025-12-31, lost, or returned to sender.",
+      "Delivered Date": "Date part of Delivered At. Empty if not delivered: in transit on 2025-12-31, lost, or returned to sender.",
+      "Delivery Status": "Last carrier tracking status as of 2025-12-31: delivered, in_transit, lost, returned_to_sender.",
+      "Package Count": "Number of cartons in the shipment. Integer; sum across shipments.",
+      "Billed Weight Lbs": "Billable weight of the shipment in pounds reported by the carrier (greater of actual and dimensional weight).",
+      "Freight Cost Amount": "Transportation cost billed by the carrier for this shipment in USD, incl. surcharges. Incurred even when the customer got free shipping.",
+      "Customer Id": "Customer of the order (C-...).",
+      "State Code": "Ship-to US state of the shipment (2-letter code, incl. DC).",
+      "Order Date": "Date the order was placed (US Eastern time), carried on each shipment of the order.",
+      "Promised Delivery Date": "Latest delivery date promised to the customer at checkout, carried on each shipment of the order."
+    }
+  },
+  "shipment_lines": {
+    "datasource_name": "SampleHyperStore - shipment_lines",
+    "datasource_description": "One row per shipment line (Shipment Line Id): one order line in one shipment. Covers Shipped Date 2023-01-02 to 2025-12-31.",
+    "columns": {
+      "Shipment Line Id": "Shipment line identifier (SL-...): one order line in one shipment.",
+      "Shipment Id": "Shipment the line belongs to (SH-...).",
+      "Order Line Id": "Order line being fulfilled (OL-...); a line shipped in parts appears in several shipments.",
+      "Product Id": "Shipped SKU (P-...).",
+      "Warehouse Id": "Origin warehouse of the line's shipment: WH-W, WH-C, WH-E.",
+      "Shipped Date": "Date the line left the warehouse (its shipment's ship date).",
+      "Qty Shipped": "Units shipped on the line. Integer; sum across lines."
+    }
+  },
+  "returns": {
+    "datasource_name": "SampleHyperStore - returns",
+    "datasource_description": "One row per return authorization line (Return Id): one order line returned once; a line can be returned in more than one authorization. Covers Requested Date 2023-01-09 to 2025-12-31, with Return Status as of 2025-12-31.",
+    "columns": {
+      "Return Id": "Return authorization line identifier (RT-...): one order line returned once; a line can be returned in more than one authorization.",
+      "Order Id": "Original order of the returned item (O-...).",
+      "Order Line Id": "Returned order line (OL-...).",
+      "Product Id": "Returned SKU (P-...).",
+      "Customer Id": "Customer who returned the item (C-...).",
+      "Warehouse Id": "Warehouse that received the return: WH-W, WH-C, WH-E. Empty if the goods were never received.",
+      "Requested At": "Time the return was requested (portal, support ticket, or marketplace).",
+      "Requested Date": "Date part of Requested At: the customer's request, not the receipt of the goods.",
+      "Received Date": "Date the goods arrived at the warehouse. Empty if not (yet) received.",
+      "Return Window Days": "Return window in days under the policy in force when the item was delivered: 30 or 60.",
+      "Return Reason": "Reason selected by the customer: wrong_size, defective, damaged_in_transit, not_as_described, arrived_late, changed_mind, other.",
+      "Return Method": "How the goods came back: prepaid_label, customer_shipped, freight_pickup, marketplace_return.",
+      "Return Status": "Status as of 2025-12-31: requested, in_transit, received, rejected, closed.",
+      "Qty Requested": "Units the customer asked to return. Integer; sum across lines.",
+      "Qty Received": "Units physically received at the warehouse; 0 if not received.",
+      "Item Condition": "Inspection result of the received units: resellable, damaged, defective. Empty if not received.",
+      "Qty Restocked": "Units put back into sellable stock on Restock Date; 0 if none.",
+      "Restock Date": "Date restocked units became available in inventory. Empty when nothing was restocked.",
+      "Return Shipping Cost Amount": "Return label or pickup cost paid by the company, in USD; 0 when the customer paid return shipping.",
+      "Order Date": "Date the original order was placed.",
+      "Shipped Date": "Ship date of the returned order line, carried on the return.",
+      "Delivered Date": "Delivery date of the returned line; the return window is counted from this date."
+    }
+  },
+  "refunds": {
+    "datasource_name": "SampleHyperStore - refunds",
+    "datasource_description": "One row per refund payment to a customer (Refund Id), with or without a return. Covers Refunded Date 2023-01-10 to 2025-12-31.",
+    "columns": {
+      "Refund Id": "Refund identifier (RF-...): one refund payment to a customer.",
+      "Return Id": "Return the refund relates to (RT-...). Empty for refunds without a return: goodwill, shipping refunds and price adjustments.",
+      "Order Id": "Original order refunded (O-...).",
+      "Order Line Id": "Order line refunded (OL-...). Empty for refunds without a return, which are booked at order level.",
+      "Ticket Id": "Support ticket that triggered the refund (TK-...). Filled for refunds without a return; empty for refunds tied to a return.",
+      "Refund Type": "Why money was returned: return, returnless (both tied to a return), shipping_refund, goodwill, price_adjustment (no return).",
+      "Refund Method": "Where the money went: original_payment, store_credit, marketplace. Store credit is not cash paid out.",
+      "Refunded At": "Time the refund was issued.",
+      "Refunded Date": "Date part of Refunded At: the day the refund was issued.",
+      "Merchandise Refund Amount": "Merchandise value refunded in USD, net of the discount originally given; excludes tax and shipping.",
+      "Tax Refund Amount": "Sales tax refunded in USD.",
+      "Shipping Refund Amount": "Shipping charge refunded in USD."
+    }
+  },
+  "web_sessions": {
+    "datasource_name": "SampleHyperStore - web_sessions",
+    "datasource_description": "One row per web or app session (Session Id) recorded by the analytics tool. Covers Session Start Date 2023-01-01 to 2025-12-31.",
+    "columns": {
+      "Session Id": "Session identifier issued by the analytics tool (S-...).",
+      "Visitor Id": "Anonymous device or browser identifier (cookie or app install). One visitor can have many sessions; one person on two devices is two visitors.",
+      "Customer Id": "Customer identified during the session by login, checkout, or a personalized email link (C-...). Empty for anonymous sessions.",
+      "Session Start Date": "Date the session started; a session that orders after midnight keeps the earlier date.",
+      "Channel": "Channel of the session: web or app.",
+      "Device Type": "Device category reported by the analytics tool: desktop, mobile, tablet.",
+      "State Code": "US state estimated from the visitor's IP (2-letter code, incl. DC); sets the serving warehouse whose stock is shown. Not a ship-to or home address.",
+      "Traffic Source": "Acquisition source under the analytics tool's last non-direct click rule (a direct return visit keeps the previous paid source for 30 days): direct, organic_search, paid_search, paid_social, organic_social, display, email, affiliate, referral, push_notification.",
+      "Campaign Id": "Campaign attributed from tracking parameters (CMP-...). Always empty for direct, organic_search, organic_social and referral sessions; also empty for some email and push_notification sessions.",
+      "Landing Page Type": "Type of the first page of the session: home, category, product, search, promotion, content.",
+      "Page Views": "Pageviews or app screen views in the session. Integer; sum across sessions.",
+      "Product Views": "Product detail page views in the session. Integer; sum across sessions.",
+      "Oos Product Views": "Product detail page views where the product showed as out of stock for the visitor's serving warehouse. Counts views, not products; reloads count again.",
+      "Cart Added Date": "Date of the first add-to-cart in the session. Empty if nothing was added.",
+      "Qty Added To Cart": "Units added to cart during the session; removals are not subtracted. 0 if nothing was added.",
+      "Checkout Started Date": "Date checkout was started. Empty if the session never reached checkout.",
+      "Order Id": "Order completed in this session (O-...). Empty when no order; earlier sessions of the same visitor do not carry it.",
+      "Tracked Order Amount": "Purchase value recorded by the analytics tool at checkout, in USD: merchandise after discounts plus shipping and tax. Not reduced by later cancellations or returns. Empty when no order."
+    }
+  }
+}

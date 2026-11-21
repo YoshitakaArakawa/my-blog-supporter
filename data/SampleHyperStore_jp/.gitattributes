@@ -1,0 +1,3 @@
+# Keep the CSVs byte-identical to SHA256SUMS on every platform (no CRLF conversion).
+*.csv -text
+SHA256SUMS -text

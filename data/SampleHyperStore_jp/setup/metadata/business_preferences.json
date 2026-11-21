@@ -1,0 +1,69 @@
+{
+  "_note": "Tableau Knowledge グラフのグローバルなビジネス設定。各項目を manage-knowledge-context で作成する（action create、isGlobal true、グラフの graphId、name = title、statements = [text]）。{{RPT_PROJECT_PATH}} は rpt_ データソースのあるプロジェクトのパスに置き換え、階層の間に ' > ' を書く。",
+  "items": [
+    {
+      "title": "使い方: 使うデータソース",
+      "text": "分析には {{RPT_PROJECT_PATH}} にある `rpt_samplehyperstore__` のデータソースを使う。`SampleHyperStore - <table>` のデータソースはリネージのための元テーブルにすぎない。"
+    },
+    {
+      "title": "使い方: どのデータソースの指標を使ったかを示す",
+      "text": "同じ名前の指標を持つデータソースが複数ある。どのデータソースの指標を使ったかを必ず示す。"
+    },
+    {
+      "title": "用語: 売上の既定の意味",
+      "text": "修飾のない「売上」は rpt_samplehyperstore__sales_orders の 売上（受注ベース、注文日基準）を指す。質問が会計期間、純売上、返品、マーケットプレイス手数料に触れているときは rpt_samplehyperstore__billing の 売上 を使う。"
+    },
+    {
+      "title": "用語: 経理の質問での会計期間",
+      "text": "経理の質問では、「今年」「昨年」「月次」は会計期間を指す: 会計月 でまとめる（会計年度は2月1日に始まる）。"
+    },
+    {
+      "title": "用語: 配達遅れは約束日より後",
+      "text": "配達日 が 約束配達日 より後なら配達遅れとする。配送業者予定配達日 は配送業者の実績を見るときにだけ使う。"
+    },
+    {
+      "title": "用語: 検索の結果なしと在庫なし",
+      "text": "検索の質問では、「結果なし」は 検索結果ゼロ率（一致する商品がない）、「在庫なし」は 在庫あり結果ゼロ率 を指す。"
+    },
+    {
+      "title": "方法: 2025-01-01 の営業地域の再編",
+      "text": "営業地域は 2025-01-01 に再編された。この日をまたいで年を比べるときは、営業地域ID ではなく 州コード で比べる。"
+    },
+    {
+      "title": "方法: 経理の計上ベースで見るクレジット",
+      "text": "経理の計上ベースでは、クレジットメモの金額を元の請求書の月ではなく 会計月 (credit_memos.csv) でまとめる。"
+    },
+    {
+      "title": "複数ソースの指標: 申請ベースの返品率",
+      "text": "申請ベースの返品率（カスタマーサポート）= rpt_samplehyperstore__returns_refunds の 返品申請数量（申請日の月別） ÷ rpt_samplehyperstore__sales_orders の 数量（注文日の月別）。"
+    },
+    {
+      "title": "複数ソースの指標: 注文コホートの返品率",
+      "text": "注文コホートの返品率（マーチャンダイジング）= rpt_samplehyperstore__returns_refunds の 返品申請数量 ÷ rpt_samplehyperstore__merchandising の 純注文数量。どちらも注文日の月別で、両方に同じフィルターをかける。"
+    },
+    {
+      "title": "複数ソースの指標: 受領ベースの返品率",
+      "text": "受領ベースの返品率（物流）= rpt_samplehyperstore__returns_refunds の 返品受領数量（受領日の月別） ÷ rpt_samplehyperstore__shipments の 数量（出荷日の月別）。"
+    },
+    {
+      "title": "複数ソースの指標: 返品明細の発生率",
+      "text": "返品明細の発生率（マーチャンダイジング）= rpt_samplehyperstore__returns_refunds の 返品注文明細数 ÷ rpt_samplehyperstore__merchandising の 注文明細数。商品別、注文日の月別。"
+    },
+    {
+      "title": "複数ソースの指標: 純送料コスト",
+      "text": "純送料コスト（経理）= rpt_samplehyperstore__shipments の 運賃（出荷日の月別） − rpt_samplehyperstore__billing の 請求送料（請求日の月別）。"
+    },
+    {
+      "title": "複数ソースの指標: セッションあたり注文数",
+      "text": "セッションあたり注文数（営業）= rpt_samplehyperstore__sales_orders の 注文数（Webとアプリのチャネル、注文日基準） ÷ rpt_samplehyperstore__web_analytics の セッション数（セッション開始日基準）。"
+    },
+    {
+      "title": "複数ソースの指標: 数量ベースのカート放棄率",
+      "text": "数量ベースのカート放棄率（マーチャンダイジング）= 1 − rpt_samplehyperstore__merchandising の 数量（Webとアプリの注文） ÷ rpt_samplehyperstore__web_analytics の カート投入数量。どちらも週別（注文日とカート追加日）。"
+    },
+    {
+      "title": "複数ソースの指標: 受注売上に対するマーケットプレイス手数料率",
+      "text": "受注売上に対するマーケットプレイス手数料率（営業）= rpt_samplehyperstore__billing の マーケットプレイス手数料（請求日の月別） ÷ rpt_samplehyperstore__sales_orders の 売上（マーケットプレイスチャネル、注文日の月別）。"
+    }
+  ]
+}

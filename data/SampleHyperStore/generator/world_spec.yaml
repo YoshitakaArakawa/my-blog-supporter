@@ -1,0 +1,218 @@
+# World specification for the SampleHyperStore generator (stage 2, design v3).
+# v3: main events E3, E12, E8, E2, E6, E10; background E1, E4, E11; E5, E7, E9 disabled (enabled: false).
+# One latent world drives every table. The generator (gen/) reads only this file and a fixed seed.
+# Which concrete IDs received each event, and how strong the effect came out, is written by the generator
+# to answer_key/ (not distributed). This file states the mechanisms and their intended strength.
+
+seed: 20261120
+period:
+  burn_in_start: 2022-01-01      # simulated, not written
+  start: 2023-01-01              # first written day
+  end: 2025-12-31                # data cutoff (open items stay open)
+  burn_in_order_stop: 2022-12-27 # burn-in orders stop early so that every burn-in order ships inside 2022
+
+scale:                           # targets; realised counts are reported by the generator
+  skus: 208
+  initial_customers: 2500        # records created 2019-2021 that are already in the pool on 2022-01-01
+  b2b_accounts: 150
+  web_app_sessions_per_day: 320
+  new_visitor_share: 0.52        # share of base traffic from new visitors (the rest comes from known customers' own visits)  # mean before season, weekday and growth multipliers
+  marketplace_orders_per_day: 7.0  # level reached after the ramp (E2)
+  b2b_orders_per_day: 1.25
+  yearly_growth: 0.07            # web/app traffic growth per year
+
+# ---------------------------------------------------------------- calendar effects (E1)
+season:
+  # monthly multipliers per seasonality profile (Jan..Dec); daily values are interpolated between mid-months
+  profiles:
+    summer:        [0.35, 0.40, 0.60, 0.95, 1.60, 2.10, 2.20, 1.80, 0.95, 0.55, 0.60, 0.70]
+    spring:        [0.35, 0.50, 1.40, 2.10, 2.10, 1.40, 0.90, 0.70, 0.60, 0.50, 0.50, 0.50]
+    spring_summer: [0.40, 0.45, 0.80, 1.50, 1.90, 1.90, 1.60, 1.20, 0.80, 0.55, 0.60, 0.70]
+    shoulder:      [0.60, 0.80, 1.40, 1.50, 1.30, 1.00, 0.75, 0.80, 1.35, 1.40, 1.00, 0.85]
+    fall:          [0.50, 0.40, 0.45, 0.55, 0.60, 0.55, 0.60, 0.80, 1.40, 1.90, 2.00, 1.90]
+    winter:        [1.40, 1.00, 0.60, 0.45, 0.35, 0.30, 0.30, 0.40, 0.70, 1.50, 2.10, 2.20]
+    holiday:       [1.10, 0.70, 0.55, 0.50, 0.50, 0.50, 0.50, 0.55, 0.70, 1.00, 2.40, 3.10]
+    year_round:    [1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00]
+  traffic_month: [0.85, 0.80, 0.95, 1.00, 1.05, 1.10, 1.05, 0.95, 0.90, 1.00, 1.25, 1.20]
+  weekday: [1.08, 1.02, 1.00, 0.98, 0.94, 0.92, 1.06]   # Mon..Sun
+  black_friday:                 # multipliers by days from Black Friday (Thanksgiving = -1, Cyber Monday = +3)
+    "-7": 1.25
+    "-6": 1.25
+    "-5": 1.3
+    "-4": 1.3
+    "-3": 1.35
+    "-2": 1.4
+    "-1": 1.6
+    "0": 3.4
+    "1": 2.4
+    "2": 2.2
+    "3": 3.0
+    "4": 1.5
+    "5": 1.3
+  black_friday_dates: [2022-11-25, 2023-11-24, 2024-11-29, 2025-11-28]
+
+# ---------------------------------------------------------------- web funnel (E10, E5)
+traffic_sources_new_visitor:     # share of new-visitor sessions before campaign bursts
+  organic_search: 0.30
+  paid_search: 0.17
+  paid_social: 0.22
+  display: 0.08
+  organic_social: 0.06
+  affiliate: 0.04
+  referral: 0.04
+  direct: 0.09
+traffic_sources_known_customer:
+  direct: 0.36
+  organic_search: 0.20
+  paid_search: 0.10
+  paid_social: 0.05
+  display: 0.04
+  referral: 0.03
+  push_notification: 0.12      # app users only; others fall back to direct
+  email: 0.10                  # browsing visits from saved email links (send-day traffic is extra)
+funnel:                          # P(product view), P(cart | view) by source; device effect at checkout
+  p_product_view:
+    direct: 0.55
+    organic_search: 0.66
+    paid_search: 0.70
+    paid_social: 0.34
+    organic_social: 0.45
+    display: 0.42
+    email: 0.72
+    affiliate: 0.70
+    referral: 0.60
+    push_notification: 0.62
+  p_cart_given_view:
+    direct: 0.20
+    organic_search: 0.17
+    paid_search: 0.19
+    paid_social: 0.065
+    organic_social: 0.12
+    display: 0.12
+    email: 0.33
+    affiliate: 0.26
+    referral: 0.18
+    push_notification: 0.24
+  known_customer_cart_multiplier: 1.55
+  p_checkout_given_cart: 0.64
+  p_order_given_checkout: {desktop: 0.70, mobile: 0.56, tablet: 0.64}
+  shipping_shock:               # applied when cart subtotal is under the free-shipping threshold
+    desktop: 0.80
+    tablet: 0.72
+    mobile: 0.60
+  oos_add_to_cart_multiplier: 0.30   # product shown out of stock at the visitor's serving warehouse
+  oos_substitution_share: 0.5    # shoppers who meet an out-of-stock product pick an in-stock one of the same subcategory
+  p_search_session: 0.13
+device_mix_web: {desktop: 0.45, mobile: 0.47, tablet: 0.08}
+device_mix_app: {mobile: 0.88, tablet: 0.12}
+app_user_share_registered: 0.45
+app_session_share_of_app_users: 0.75
+basket_lines_p: [0.34, 0.27, 0.17, 0.11, 0.07, 0.04]
+known_customer_login_share_web: 0.55
+
+# ---------------------------------------------------------------- customers
+customers:
+  guest_share_new_web: 0.12
+  marketplace_repeat_share: 0.6
+  lapsed_open_rate_factor: 0.6        # first web/app orders made as guest
+  signup_without_order_rate: 0.005 # account sign-ups per new-visitor session that does not order
+  email_optin_registered: 0.62
+  email_optin_guest: 0.18
+  daily_visit_rate_lognormal: {mean_log: -3.55, sigma: 0.9}   # sessions per day of a known customer
+  repeat_multiplier_by_acquisition:  # E10: paid_social acquired customers come back less
+    paid_social: 0.55
+    display: 0.8
+    email: 1.4
+    referral: 1.3
+    default: 1.0
+  churn_after_days_lognormal: {mean_log: 6.3, sigma: 0.8}   # customer stops visiting after ~1.5 years
+  move_share: 0.03
+  loyalty: {enroll_share_registered: 0.85, silver_spend_12m: 400, gold_spend_12m: 1000}
+  annual_unsubscribe_after_send: 0.0012
+
+# ---------------------------------------------------------------- shipping and pricing
+shipping:
+  free_threshold: 99.0
+  standard_charge: 7.95
+  expedited_charge: 16.95
+  freight_charge: 59.0
+  expedited_share: 0.12
+  processing_days: [1, 2]
+  promise_days: {standard: 4, standard_weekend: 5, expedited: 3, freight: 10}
+  expedited_processing_days: 1   # order date + days shown at checkout          # order or allocation to pickup; +1 in Black Friday week
+  ship_on_sunday: false
+pricing:
+  marketplace_listing_markup: 0.06
+  b2b_contract_discount: 0.15
+  standard_cost_annual_reset: {date_month_day: "02-01", mean: 0.022, sd: 0.01}
+  price_elasticity: -0.9
+  popularity_price_exponent: -1.5   # cheaper items sell more units
+tax:
+  shipping_taxable_states: [AR, CT, GA, HI, KS, KY, MI, MN, MS, NE, NJ, NM, NY, NC, ND, OH, PA, RI, SC, SD, TN, TX, VT, WA, WV, WI]
+
+# ---------------------------------------------------------------- returns (E4, E11)
+returns:
+  base_rate_by_category: {camp_hike: 0.07, outdoor_apparel: 0.14, patio_garden: 0.045, home_comfort: 0.075}
+  reason_mix_default: {changed_mind: 0.38, not_as_described: 0.2, damaged_in_transit: 0.14, defective: 0.12, other: 0.16}
+  reason_mix_apparel: {wrong_size: 0.62, changed_mind: 0.18, not_as_described: 0.1, defective: 0.04, other: 0.06}
+  lag_days_lognormal: {mean_log: 2.2, sigma: 0.6}
+  receive_share: 0.93
+  returnless_value_under: 25.0
+  store_credit_share: 0.15
+  split_refund_share: 0.03
+
+# ---------------------------------------------------------------- supply
+replenishment:
+  review_days: {overseas: 14, domestic: 7}
+  safety_days: {overseas: 60, domestic: 21}
+  min_stock_units: 3
+  min_cover_base_days: 21         # floor on the reorder point: 14 days of de-seasonalised demand
+  forecast_alpha: 0.035
+  seasonal_build_bias: 1.0        # 1.3 was tried (leftovers for Q21/Q57); it thickened stock and hid E3, so it is off
+  putaway_days: [0, 1, 2]
+  base_inspection_reject: 0.008
+  quoted_vs_actual_lead_overseas: 1.10   # overseas suppliers run late on average
+  backorder_timeout_days: 21
+
+# ---------------------------------------------------------------- events
+events:
+  E1: {what: seasonality and Black Friday-Cyber Monday, where: all tables, how: season.profiles, season.black_friday}
+  E2: {start: 2024-04-01, ramp_days: 90, marketplace_fee_rate: 0.15, fee_on: merchandise plus shipping,
+       web_new_visitor_cannibalisation: 0.05, fee_reversal_share_on_refund: 0.8}
+  E3: {main_tent_supplier: SUP-002, warehouse: WH-W, po_dates: [2024-02-15, 2024-07-31], lead_time_multiplier: 2.6,
+       other_warehouses_multiplier: 1.0, receipt_stop: [2024-01-15, 2024-09-15], wh_w_short_ship_share: 0.5, oos_backorder_share_when_alt: 0.45, west_camp_hike_demand: 1.6, mountain_camp_hike_demand: 2.2, secondary_supplier: SUP-018, secondary_onboarded: 2024-07-15,
+       expedite_line_cap: 6, expedite_start: 2024-09-01, other_warehouse_reserve_units: 3, private_label_share_tents: 1.0, switch_primary_supplier_share: 0.4, switch_date: 2024-10-01}
+  E4: {date: 2024-07-01, window_before: 30, window_after: 60, extra_changed_mind_rate: {outdoor_apparel: 0.05, default: 0.03},
+       extra_lag_days_uniform: [12, 58]}
+  E5: {enabled: false, promotion: free-shipping-over-50-2024-11, start: 2024-11-01, end: 2024-12-02, threshold: 50.0,
+       checkout_uplift_mobile: 1.10, extra_paid_traffic: 0.15}
+  E6: {date: 2025-01-01, new_region: R-MOUNTAIN, from_west: [ID, MT, WY, UT, CO, NV], from_south: [AZ, NM]}
+  E7: {enabled: false, subcategories: [grills, patio_furniture, camp_kitchen], supplier_cost_date: 2025-01-01, supplier_cost_increase: [0.11, 0.16],
+       standard_cost_and_list_price_date: 2025-03-01, list_price_increase: [0.10, 0.15]}
+  E8: {warehouse: WH-C, old_carrier: CAR-01, new_carrier: CAR-04, date: 2025-05-01, late_probability_new: 0.30,
+       late_probability_default: 0.05, extra_delay_days: [1, 5], cost_factor_new: 0.86, repeat_multiplier_after_late: 0.15}
+  E9: {enabled: false, supplier: SUP-004, subcategory: insulated_jackets, lot_received: [2025-07-01, 2025-09-30], inspection_reject: [0.25, 0.4],
+       defective_share_of_accepted: 0.5, defective_return_probability: 0.7, write_off_window: [2025-11-10, 2025-12-20], write_off_share: [0.15, 0.3]}
+  E10: {how: traffic_sources and funnel by source, repeat_multiplier_by_acquisition, platform attribution inflation}
+  E11: {how: returns.reason_mix_apparel and size-curve; wrong_size return probability}
+  E12: {spring_2025_promotions: [2025-03-01, 2025-05-31], receipt_stop: [2024-08-01, 2025-05-31], supplier_short_close_share: 0.9,
+        short_close_po_dates: [2025-01-01, 2025-05-15], spring_promo_product_share: 0.5, promo_boost: {featured: 2.0, other: 1.5}, summer_2024_overlap: E3 tents in summer camping promotion,
+        promo_lift_not_in_forecast: true}
+
+attribution_inflation:            # platform_conversions / last-click orders of the campaign's own sessions
+  paid_search: 1.15
+  paid_social_prospecting: 2.1
+  paid_social_retargeting: 3.0
+  display: 3.2
+  affiliate: 1.05
+  email: 1.6
+  push_notification: 1.25
+cost_per_click: {paid_search: 1.15, paid_social: 0.58, display: 1.10, affiliate: null}
+retargeting_cost_multiplier: 1.0
+click_to_session: 0.88
+view_through_claim_share: {paid_social: 0.30, display: 0.25}   # share of the day's non-campaign web/app orders each channel's platforms also claim
+
+sales_targets:
+  basis: invoice-date merchandise revenue net of discounts, before returns   # generator truth; not published
+  attainment_sd_region_year: 0.035
+  attainment_sd_month: 0.05

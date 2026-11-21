@@ -1,0 +1,5 @@
+# Byte-identical output to ../SHA256SUMS was confirmed with Python 3.14.2, numpy 2.4.1, pandas 2.3.3, PyYAML 6.0.3.
+# Other versions should produce the same tables, but checksums may differ.
+numpy>=2.4
+pandas>=2.3
+PyYAML>=6.0

@@ -1,0 +1,788 @@
+# Value translations of the Japanese edition: table -> english_column -> {english_value: japanese_value}.
+# Read by build_jp.py. Empty values stay empty. Columns not listed here are copied unchanged
+# (IDs, codes, dates, timestamps, numbers, booleans, fiscal_month labels, sizes).
+# A few values appear in the English documentation but not in the data; they are kept for the docs.
+web_sessions:
+  channel:
+    web: Web
+    app: アプリ
+  device_type:
+    desktop: デスクトップ
+    mobile: モバイル
+    tablet: タブレット
+  traffic_source:
+    direct: 直接
+    organic_search: オーガニック検索
+    paid_search: 有料検索
+    paid_social: 有料ソーシャル
+    organic_social: オーガニックソーシャル
+    display: ディスプレイ
+    email: メール
+    affiliate: アフィリエイト
+    referral: リファラル
+    push_notification: プッシュ通知
+  landing_page_type:
+    home: ホーム
+    category: カテゴリ
+    product: 商品
+    search: 検索
+    promotion: 販促
+    content: コンテンツ
+    cart: カート
+web_searches:
+  query_text:
+    2 person tent: 2人用テント
+    4 person tent: 4人用テント
+    air purifier: 空気清浄機
+    backpack: バックパック
+    backpacking tent: バックパッキングテント
+    base layer: ベースレイヤー
+    bike rack: 自転車ラック
+    blanket: ブランケット
+    camp pillow: キャンプ枕
+    camp stove: キャンプストーブ
+    camping tent: キャンプテント
+    charcoal grill: 炭火グリル
+    cook set: クッカーセット
+    cooler: クーラーボックス
+    daypack: デイパック
+    dehumidifier: 除湿機
+    down jacket: ダウンジャケット
+    drip irrigation: 点滴灌水
+    family tent: ファミリーテント
+    fire pit: ファイヤーピット
+    fishing rod: 釣り竿
+    fuel canister: 燃料缶
+    garden tools: 園芸用品
+    gas grill: ガスグリル
+    grill: グリル
+    hammock stand: ハンモックスタンド
+    heater: ヒーター
+    hiking backpack: 登山リュック
+    hiking boots: 登山靴
+    hose reel: ホースリール
+    humidifier: 加湿器
+    kayak: カヤック
+    lounge chair: ラウンジチェア
+    merino: メリノ
+    outdoor sofa: 屋外ソファ
+    paddle board: パドルボード
+    patio heater: パティオヒーター
+    patio set: パティオセット
+    planter: プランター
+    pool float: 浮き輪
+    pruning shears: 剪定ばさみ
+    puffer jacket: 中綿ジャケット
+    radiator heater: オイルヒーター
+    rain jacket: レインジャケット
+    raised bed: レイズドベッド
+    rake: 熊手
+    sleeping bag: 寝袋
+    sleeping pad: スリーピングマット
+    smoker: スモーカー
+    snow blower: 除雪機
+    snowshoes: スノーシュー
+    solar charger: ソーラー充電器
+    space heater: 電気ストーブ
+    tent: テント
+    thermal shirt: 保温シャツ
+    throw blanket: ひざ掛け
+    trail shoes: トレイルシューズ
+    trekking poles: トレッキングポール
+    waterproof jacket: 防水ジャケット
+    weighted blanket: 加重ブランケット
+    wheelbarrow: 一輪車
+    winter jacket: 冬用ジャケット
+  search_input_type:
+    typed: 手入力
+    autocomplete: オートコンプリート
+    suggested_after_no_results: 結果なし後の候補
+campaigns:
+  campaign_name:
+    always-on-affiliate: 常時配信-アフィリエイト
+    always-on-brand-search: 常時配信-ブランド検索
+    always-on-display-retargeting: 常時配信-ディスプレイリターゲティング
+    always-on-generic-search: 常時配信-一般検索
+    always-on-social-prospecting: 常時配信-ソーシャル新規獲得
+    always-on-social-retargeting: 常時配信-ソーシャルリターゲティング
+    app-push-2023-h1: アプリプッシュ-2023-上期
+    app-push-2023-h2: アプリプッシュ-2023-下期
+    app-push-2024-h1: アプリプッシュ-2024-上期
+    app-push-2024-h2: アプリプッシュ-2024-下期
+    app-push-2025-h1: アプリプッシュ-2025-上期
+    app-push-2025-h2: アプリプッシュ-2025-下期
+    black-friday-2023-display: ブラックフライデー-2023-ディスプレイ
+    black-friday-2023-email: ブラックフライデー-2023-メール
+    black-friday-2023-paid_search: ブラックフライデー-2023-有料検索
+    black-friday-2023-paid_social: ブラックフライデー-2023-有料ソーシャル
+    black-friday-2023-push: ブラックフライデー-2023-プッシュ
+    black-friday-2024-display: ブラックフライデー-2024-ディスプレイ
+    black-friday-2024-email: ブラックフライデー-2024-メール
+    black-friday-2024-paid_search: ブラックフライデー-2024-有料検索
+    black-friday-2024-paid_social: ブラックフライデー-2024-有料ソーシャル
+    black-friday-2024-push: ブラックフライデー-2024-プッシュ
+    black-friday-2025-display: ブラックフライデー-2025-ディスプレイ
+    black-friday-2025-email: ブラックフライデー-2025-メール
+    black-friday-2025-paid_search: ブラックフライデー-2025-有料検索
+    black-friday-2025-paid_social: ブラックフライデー-2025-有料ソーシャル
+    black-friday-2025-push: ブラックフライデー-2025-プッシュ
+    fall-apparel-2023-paid_social: 秋アパレル-2023-有料ソーシャル
+    fall-apparel-2024-paid_social: 秋アパレル-2024-有料ソーシャル
+    fall-apparel-2025-paid_social: 秋アパレル-2025-有料ソーシャル
+    marketplace-sponsored-listings: マーケットプレイス-スポンサー広告
+    new-arrivals-2023-display: 新着-2023-ディスプレイ
+    new-arrivals-2024-display: 新着-2024-ディスプレイ
+    new-arrivals-2025-display: 新着-2025-ディスプレイ
+    newsletter-2023-q1-email: ニュースレター-2023-Q1-メール
+    newsletter-2023-q2-email: ニュースレター-2023-Q2-メール
+    newsletter-2023-q3-email: ニュースレター-2023-Q3-メール
+    newsletter-2023-q4-email: ニュースレター-2023-Q4-メール
+    newsletter-2024-q1-email: ニュースレター-2024-Q1-メール
+    newsletter-2024-q2-email: ニュースレター-2024-Q2-メール
+    newsletter-2024-q3-email: ニュースレター-2024-Q3-メール
+    newsletter-2024-q4-email: ニュースレター-2024-Q4-メール
+    newsletter-2025-q1-email: ニュースレター-2025-Q1-メール
+    newsletter-2025-q2-email: ニュースレター-2025-Q2-メール
+    newsletter-2025-q3-email: ニュースレター-2025-Q3-メール
+    newsletter-2025-q4-email: ニュースレター-2025-Q4-メール
+    spring-garden-2023-paid_search: 春ガーデン-2023-有料検索
+    spring-garden-2023-paid_social: 春ガーデン-2023-有料ソーシャル
+    spring-garden-2024-paid_search: 春ガーデン-2024-有料検索
+    spring-garden-2024-paid_social: 春ガーデン-2024-有料ソーシャル
+    spring-garden-2025-paid_search: 春ガーデン-2025-有料検索
+    spring-garden-2025-paid_social: 春ガーデン-2025-有料ソーシャル
+    summer-camping-2023-display: 夏キャンプ-2023-ディスプレイ
+    summer-camping-2023-paid_search: 夏キャンプ-2023-有料検索
+    summer-camping-2023-paid_social: 夏キャンプ-2023-有料ソーシャル
+    summer-camping-2024-display: 夏キャンプ-2024-ディスプレイ
+    summer-camping-2024-paid_search: 夏キャンプ-2024-有料検索
+    summer-camping-2024-paid_social: 夏キャンプ-2024-有料ソーシャル
+    summer-camping-2025-display: 夏キャンプ-2025-ディスプレイ
+    summer-camping-2025-paid_search: 夏キャンプ-2025-有料検索
+    summer-camping-2025-paid_social: 夏キャンプ-2025-有料ソーシャル
+    warm-home-2023-display: あったかホーム-2023-ディスプレイ
+    warm-home-2023-paid_social: あったかホーム-2023-有料ソーシャル
+    warm-home-2024-display: あったかホーム-2024-ディスプレイ
+    warm-home-2024-paid_social: あったかホーム-2024-有料ソーシャル
+    warm-home-2025-display: あったかホーム-2025-ディスプレイ
+    warm-home-2025-paid_social: あったかホーム-2025-有料ソーシャル
+    winback-2023-q1-email: 休眠復帰-2023-Q1-メール
+    winback-2023-q2-email: 休眠復帰-2023-Q2-メール
+    winback-2023-q3-email: 休眠復帰-2023-Q3-メール
+    winback-2023-q4-email: 休眠復帰-2023-Q4-メール
+    winback-2024-q1-email: 休眠復帰-2024-Q1-メール
+    winback-2024-q2-email: 休眠復帰-2024-Q2-メール
+    winback-2024-q3-email: 休眠復帰-2024-Q3-メール
+    winback-2024-q4-email: 休眠復帰-2024-Q4-メール
+    winback-2025-q1-email: 休眠復帰-2025-Q1-メール
+    winback-2025-q2-email: 休眠復帰-2025-Q2-メール
+    winback-2025-q3-email: 休眠復帰-2025-Q3-メール
+    winback-2025-q4-email: 休眠復帰-2025-Q4-メール
+    winter-clearance-2023-email: 冬物クリアランス-2023-メール
+    winter-clearance-2024-email: 冬物クリアランス-2024-メール
+    winter-clearance-2025-email: 冬物クリアランス-2025-メール
+  marketing_channel:
+    paid_search: 有料検索
+    paid_social: 有料ソーシャル
+    display: ディスプレイ
+    email: メール
+    push_notification: プッシュ通知
+    affiliate: アフィリエイト
+    marketplace_ads: マーケットプレイス広告
+  ad_platform:
+    search_engine_a: 検索エンジンA
+    search_engine_b: 検索エンジンB
+    social_network_a: ソーシャルネットワークA
+    social_network_b: ソーシャルネットワークB
+    display_network_a: ディスプレイネットワークA
+    email_service: メール配信サービス
+    app_push_service: アプリプッシュサービス
+    affiliate_network_a: アフィリエイトネットワークA
+    marketplace_ads_console: マーケットプレイス広告管理画面
+  objective:
+    awareness: 認知
+    traffic: トラフィック
+    conversion: コンバージョン
+    retention: 継続利用
+    reactivation: 再活性化
+  audience_type:
+    prospecting: 新規見込み客
+    retargeting: リターゲティング
+    existing_customers: 既存顧客
+    lapsed_customers: 休眠顧客
+    all_subscribers: 全購読者
+  theme:
+    sitewide: サイト全体
+    camping: キャンプ
+    heating: 暖房
+    garden: ガーデン
+    apparel: アパレル
+    black_friday: ブラックフライデー
+    new_arrivals: 新着
+    clearance: クリアランス
+  cost_model:
+    cpc: クリック課金
+    cpm: インプレッション課金
+    per_send: 送信課金
+    commission: 成果報酬
+    flat_fee: 固定料金
+  attribution_window:
+    none: なし
+    1d_click: クリック後1日
+    7d_click: クリック後7日
+    7d_click_1d_view: クリック後7日・ビュー後1日
+    30d_click: クリック後30日
+    30d_click_open: クリック・開封後30日
+  managed_by:
+    in_house: 社内
+    agency: 代理店
+promotions:
+  promotion_name:
+    app-only-fall-2023: アプリ限定-秋-2023
+    app-only-fall-2024: アプリ限定-秋-2024
+    app-only-fall-2025: アプリ限定-秋-2025
+    app-only-spring-2023: アプリ限定-春-2023
+    app-only-spring-2024: アプリ限定-春-2024
+    app-only-spring-2025: アプリ限定-春-2025
+    backpack-bundle-2023: バックパックセット-2023
+    backpack-bundle-2024: バックパックセット-2024
+    backpack-bundle-2025: バックパックセット-2025
+    black-friday-2023: ブラックフライデー-2023
+    black-friday-2024: ブラックフライデー-2024
+    black-friday-2025: ブラックフライデー-2025
+    footwear-trail-2023: トレイルシューズ-2023
+    footwear-trail-2024: トレイルシューズ-2024
+    footwear-trail-2025: トレイルシューズ-2025
+    gold-reward-20-2023: ゴールド特典20-2023
+    gold-reward-20-2024: ゴールド特典20-2024
+    gold-reward-20-2025: ゴールド特典20-2025
+    grill-season-2023: グリルシーズン-2023
+    grill-season-2024: グリルシーズン-2024
+    grill-season-2025: グリルシーズン-2025
+    holiday-blankets-2023: ホリデーブランケット-2023
+    holiday-blankets-2024: ホリデーブランケット-2024
+    holiday-blankets-2025: ホリデーブランケット-2025
+    marketplace-deal-days-2024: マーケットプレイスセール-2024
+    marketplace-deal-days-2025: マーケットプレイスセール-2025
+    rain-ready-2023: 雨に備える-2023
+    rain-ready-2024: 雨に備える-2024
+    rain-ready-2025: 雨に備える-2025
+    silver-plus-spring-2023: シルバー以上-春-2023
+    silver-plus-spring-2024: シルバー以上-春-2024
+    silver-plus-spring-2025: シルバー以上-春-2025
+    spring-garden-2023: 春ガーデン-2023
+    spring-garden-2024: 春ガーデン-2024
+    spring-garden-2025: 春ガーデン-2025
+    spring-patio-2023: 春パティオ-2023
+    spring-patio-2024: 春パティオ-2024
+    spring-patio-2025: 春パティオ-2025
+    subscriber-fall-2023: 購読者-秋-2023
+    subscriber-fall-2024: 購読者-秋-2024
+    subscriber-fall-2025: 購読者-秋-2025
+    subscriber-spring-2023: 購読者-春-2023
+    subscriber-spring-2024: 購読者-春-2024
+    subscriber-spring-2025: 購読者-春-2025
+    summer-camping-2023: 夏キャンプ-2023
+    summer-camping-2024: 夏キャンプ-2024
+    summer-camping-2025: 夏キャンプ-2025
+    warm-home-2023: あったかホーム-2023
+    warm-home-2024: あったかホーム-2024
+    warm-home-2025: あったかホーム-2025
+    welcome-10-off-2023: ようこそ10オフ-2023
+    welcome-10-off-2024: ようこそ10オフ-2024
+    welcome-10-off-2025: ようこそ10オフ-2025
+    winback-20-2023: 休眠復帰20-2023
+    winback-20-2024: 休眠復帰20-2024
+    winback-20-2025: 休眠復帰20-2025
+    winter-clearance-2023: 冬物クリアランス-2023
+    winter-clearance-2024: 冬物クリアランス-2024
+    winter-clearance-2025: 冬物クリアランス-2025
+  promotion_type:
+    percent_off: 定率引き
+    amount_off: 定額引き
+    fixed_price: 固定価格
+    free_shipping: 送料無料
+    buy_x_get_y: まとめ買い特典
+  scope:
+    order: 注文
+    product: 商品
+  eligibility:
+    all: 全員
+    new_customers: 新規顧客
+    loyalty_silver_plus: シルバー以上
+    loyalty_gold: ゴールド
+    email_subscribers: メール購読者
+    lapsed_customers: 休眠顧客
+  channel_scope:
+    web_app: Webとアプリ
+    app_only: アプリのみ
+    all_channels: 全チャネル
+  funded_by:
+    company: 自社
+    supplier: 仕入先
+    marketplace: マーケットプレイス
+customers:
+  signup_source:
+    guest_checkout: ゲスト購入
+    account_signup: 会員登録
+    marketplace_order: マーケットプレイス注文
+    b2b_onboarding: 法人取引開始
+  account_type:
+    registered: 会員
+    guest: ゲスト
+    marketplace_only: マーケットプレイスのみ
+    business: 法人
+  customer_segment:
+    consumer: 個人
+    business: 法人
+  business_type:
+    campground: キャンプ場
+    outdoor_school: 野外学校
+    corporate: 企業
+  acquisition_traffic_source:
+    direct: 直接
+    organic_search: オーガニック検索
+    paid_search: 有料検索
+    paid_social: 有料ソーシャル
+    organic_social: オーガニックソーシャル
+    display: ディスプレイ
+    email: メール
+    affiliate: アフィリエイト
+    referral: リファラル
+    push_notification: プッシュ通知
+    marketplace: マーケットプレイス
+    sales_team: 営業チーム
+  loyalty_tier:
+    basic: ベーシック
+    silver: シルバー
+    gold: ゴールド
+orders:
+  channel:
+    web: Web
+    app: アプリ
+    marketplace: マーケットプレイス
+    b2b: 法人
+  shipping_method:
+    standard: 通常配送
+    expedited: お急ぎ便
+    freight: 大型貨物便
+  payment_method:
+    card: カード
+    digital_wallet: デジタルウォレット
+    net30_terms: 30日後払い
+    marketplace_settlement: マーケットプレイス精算
+  loyalty_tier:
+    basic: ベーシック
+    silver: シルバー
+    gold: ゴールド
+order_lines:
+  cancel_reason:
+    out_of_stock: 在庫切れ
+    backorder_timeout: 入荷待ち期限切れ
+    customer_request: 顧客都合
+    payment_failed: 決済失敗
+    fraud_review: 不正審査
+shipments:
+  carrier_name:
+    Basin Freight Lines: ベイスン貨物
+    Coastline Regional Delivery: コーストライン地域配送
+    Continental Parcel Service: コンチネンタル宅配
+    Keystone Freight Carriers: キーストーン貨物輸送
+    Meridian Ground Express: メリディアン陸送エクスプレス
+    Prairie Parcel Express: プレーリー宅配エクスプレス
+  carrier_type:
+    national_parcel: 全国宅配
+    regional_parcel: 地域宅配
+    ltl_freight: 混載貨物
+  service_level:
+    ground: 陸送
+    two_day: 2日配送
+    ltl_freight: 混載貨物
+  delivery_status:
+    delivered: 配達済み
+    in_transit: 輸送中
+    lost: 紛失
+    returned_to_sender: 差出人へ返送
+returns:
+  return_reason:
+    wrong_size: サイズ違い
+    defective: 不良品
+    damaged_in_transit: 輸送中の破損
+    not_as_described: 説明と異なる
+    arrived_late: 到着遅れ
+    changed_mind: 気が変わった
+    other: その他
+  return_method:
+    prepaid_label: 返送ラベル
+    customer_shipped: 顧客手配で返送
+    freight_pickup: 貨物集荷
+    marketplace_return: マーケットプレイス経由
+  return_status:
+    requested: 申請済み
+    in_transit: 輸送中
+    received: 受領済み
+    rejected: 却下
+    closed: 完了
+  item_condition:
+    resellable: 再販可能
+    damaged: 破損
+    defective: 不良
+refunds:
+  refund_type:
+    return: 返品
+    returnless: 返品不要
+    shipping_refund: 送料返金
+    goodwill: 好意による返金
+    price_adjustment: 価格調整
+  refund_method:
+    original_payment: 元の支払方法
+    store_credit: ストアクレジット
+    marketplace: マーケットプレイス
+support_tickets:
+  contact_method:
+    email: メール
+    chat: チャット
+    phone: 電話
+    web_form: Webフォーム
+  category:
+    where_is_my_order: 荷物の所在確認
+    damaged_item: 破損品
+    defective_item: 不良品
+    sizing_fit: サイズ・フィット
+    return_request: 返品依頼
+    refund_status: 返金状況
+    billing: 請求
+    product_question: 商品の質問
+    other: その他
+  priority:
+    low: 低
+    normal: 通常
+    high: 高
+  resolution:
+    info_provided: 情報提供
+    return_authorized: 返品承認
+    refund_issued: 返金実施
+    replacement_sent: 代替品発送
+    escalated_to_carrier: 配送業者へエスカレーション
+    no_action: 対応なし
+invoices:
+  channel:
+    web: Web
+    app: アプリ
+    marketplace: マーケットプレイス
+    b2b: 法人
+  payment_terms:
+    prepaid: 前払い
+    net30: 30日後払い
+    marketplace_settlement: マーケットプレイス精算
+credit_memos:
+  memo_type:
+    return: 返品
+    allowance: 値引き
+    shipping: 送料
+    price_adjustment: 価格調整
+sales_targets:
+  channel:
+    web: Web
+    app: アプリ
+    marketplace: マーケットプレイス
+    b2b: 法人
+products:
+  product_name:
+    Alder 2P Backpacking Tent, Black: アルダー 2人用バックパッキングテント ブラック
+    Alder 6P Family Tent, Sand: アルダー 6人用ファミリーテント サンド
+    Basecamp 1P Ultralight Tent, Charcoal: ベースキャンプ 1人用ウルトラライトテント チャコール
+    Basecamp 4P Dome Tent, Charcoal: ベースキャンプ 4人用ドームテント チャコール
+    Bonfire Patio Heater Tower: ボンファイヤー タワー型パティオヒーター
+    Bonfire Propane Fire Table: ボンファイヤー プロパンファイヤーテーブル
+    Bonfire Steel Fire Pit: ボンファイヤー スチールファイヤーピット
+    Boreal Down Jacket, Olive, Size L: ボレアル ダウンジャケット オリーブ サイズL
+    Boreal Down Jacket, Olive, Size M: ボレアル ダウンジャケット オリーブ サイズM
+    Boreal Down Jacket, Olive, Size S: ボレアル ダウンジャケット オリーブ サイズS
+    Boreal Down Jacket, Olive, Size XL: ボレアル ダウンジャケット オリーブ サイズXL
+    Cairn 1P Ultralight Tent, Olive: ケルン 1人用ウルトラライトテント オリーブ
+    Cairn 2P Backpacking Tent, Olive: ケルン 2人用バックパッキングテント オリーブ
+    Canyon Hiking Boot, Sand, Size 10: キャニオン ハイキングブーツ サンド サイズ10
+    Canyon Hiking Boot, Sand, Size 11: キャニオン ハイキングブーツ サンド サイズ11
+    Canyon Hiking Boot, Sand, Size 8: キャニオン ハイキングブーツ サンド サイズ8
+    Canyon Hiking Boot, Sand, Size 9: キャニオン ハイキングブーツ サンド サイズ9
+    Cascade Rain Jacket, Slate, Size L: カスケード レインジャケット スレート サイズL
+    Cascade Rain Jacket, Slate, Size M: カスケード レインジャケット スレート サイズM
+    Cascade Rain Jacket, Slate, Size S: カスケード レインジャケット スレート サイズS
+    Cascade Rain Jacket, Slate, Size XL: カスケード レインジャケット スレート サイズXL
+    Charwood Charcoal Kettle Grill: チャーウッド チャコールケトルグリル
+    Charwood Flat-Top Griddle: チャーウッド フラットトップグリドル
+    Charwood Gas Grill 3-Burner: チャーウッド ガスグリル 3バーナー
+    Clearbreeze Air Purifier: クリアブリーズ 空気清浄機
+    Clearbreeze Cool Mist Humidifier: クリアブリーズ 気化式加湿器
+    Clearbreeze Dehumidifier: クリアブリーズ 除湿機
+    Copperpot Backpacking Stove: カッパーポット バックパッキングストーブ
+    Copperpot Cook Set: カッパーポット クッカーセット
+    Copperpot Cooler 45qt: カッパーポット クーラーボックス 45qt
+    Copperpot Two-Burner Stove: カッパーポット ツーバーナーストーブ
+    Courtyard Dining Set: コートヤード ダイニングセット
+    Courtyard Lounge Chair: コートヤード ラウンジチェア
+    Courtyard Sectional Sofa: コートヤード セクショナルソファ
+    Cozy Sherpa Throw, Forest: コージー シェルパひざ掛け フォレスト
+    Cozy Sherpa Throw, Rust: コージー シェルパひざ掛け ラスト
+    Downpour Rain Jacket, Olive, Size L: ダウンポア レインジャケット オリーブ サイズL
+    Downpour Rain Jacket, Olive, Size M: ダウンポア レインジャケット オリーブ サイズM
+    Downpour Rain Jacket, Olive, Size S: ダウンポア レインジャケット オリーブ サイズS
+    Downpour Rain Jacket, Olive, Size XL: ダウンポア レインジャケット オリーブ サイズXL
+    Drift 20F Sleeping Bag: ドリフト 寝袋 20F
+    Dripline Hose Reel: ドリップライン ホースリール
+    Ember 35F Sleeping Bag: エンバー 寝袋 35F
+    Ember Patio Heater Tower: エンバー タワー型パティオヒーター
+    Ember Propane Fire Table: エンバー プロパンファイヤーテーブル
+    Fireside Backpacking Stove: ファイヤーサイド バックパッキングストーブ
+    Fireside Camp Table: ファイヤーサイド キャンプテーブル
+    Fireside Fuel Canister 8oz: ファイヤーサイド 燃料缶 8oz
+    Fireside Insulated Mug: ファイヤーサイド 保温マグ
+    Fireside Knit Blanket, Forest: ファイヤーサイド ニットブランケット フォレスト
+    Fireside Knit Blanket, Navy: ファイヤーサイド ニットブランケット ネイビー
+    Fireside Knit Blanket, Sand: ファイヤーサイド ニットブランケット サンド
+    Flamecrest Charcoal Kettle Grill: フレイムクレスト チャコールケトルグリル
+    Flamecrest Pellet Smoker: フレイムクレスト ペレットスモーカー
+    Frostline Down Jacket, Sand, Size L: フロストライン ダウンジャケット サンド サイズL
+    Frostline Down Jacket, Sand, Size M: フロストライン ダウンジャケット サンド サイズM
+    Frostline Down Jacket, Sand, Size S: フロストライン ダウンジャケット サンド サイズS
+    Frostline Down Jacket, Sand, Size XL: フロストライン ダウンジャケット サンド サイズXL
+    Furrow Hand Trowel Set: ファロウ 移植ごてセット
+    Furrow Hedge Trimmer: ファロウ ヘッジトリマー
+    Furrow Pruning Shears: ファロウ 剪定ばさみ
+    Glacier Down Jacket, Black, Size L: グレイシャー ダウンジャケット ブラック サイズL
+    Glacier Down Jacket, Black, Size M: グレイシャー ダウンジャケット ブラック サイズM
+    Glacier Down Jacket, Black, Size S: グレイシャー ダウンジャケット ブラック サイズS
+    Glacier Down Jacket, Black, Size XL: グレイシャー ダウンジャケット ブラック サイズXL
+    Glow Ceramic Heater: グロウ セラミックヒーター
+    Glow Infrared Heater: グロウ 赤外線ヒーター
+    Glow Oil-Filled Radiator: グロウ オイルヒーター
+    Granite 4P Dome Tent, Rust: グラナイト 4人用ドームテント ラスト
+    Greenhand Garden Hoe: グリーンハンド 鍬
+    Greenhand Leaf Rake: グリーンハンド 落ち葉用熊手
+    Greenhand Wheelbarrow: グリーンハンド 一輪車
+    Hearth Camp Blanket, Olive: ハース キャンプブランケット オリーブ
+    Hearth Camp Blanket, Sand: ハース キャンプブランケット サンド
+    Hearth Down Jacket, Sand, Size L: ハース ダウンジャケット サンド サイズL
+    Hearth Down Jacket, Sand, Size M: ハース ダウンジャケット サンド サイズM
+    Hearth Down Jacket, Sand, Size S: ハース ダウンジャケット サンド サイズS
+    Hearth Down Jacket, Sand, Size XL: ハース ダウンジャケット サンド サイズXL
+    Hearthside Ceramic Heater: ハースサイド セラミックヒーター
+    Hearthside Infrared Heater: ハースサイド 赤外線ヒーター
+    Hollow Insulated Sleeping Pad: ホロウ 断熱スリーピングマット
+    Humidaire Air Purifier: ヒュミデール 空気清浄機
+    Humidaire Dehumidifier: ヒュミデール 除湿機
+    Ironside Pellet Smoker: アイアンサイド ペレットスモーカー
+    Ironside Portable Grill: アイアンサイド ポータブルグリル
+    Juniper 65L Expedition Pack, Black: ジュニパー 遠征用バックパック 65L ブラック
+    Juniper 65L Expedition Pack, Slate: ジュニパー 遠征用バックパック 65L スレート
+    Kindle Backpacking Stove: キンドル バックパッキングストーブ
+    Kindle Cooler 45qt: キンドル クーラーボックス 45qt
+    Kindle Insulated Mug: キンドル 保温マグ
+    Kindle Two-Burner Stove: キンドル ツーバーナーストーブ
+    Kindlewood Patio Heater Tower: キンドルウッド タワー型パティオヒーター
+    Kindlewood Steel Fire Pit: キンドルウッド スチールファイヤーピット
+    Lakeside Daybed: レイクサイド デイベッド
+    Lakeside Dining Set: レイクサイド ダイニングセット
+    Lakeside Lounge Chair: レイクサイド ラウンジチェア
+    Lark Self-Inflating Pad: ラーク セルフインフレーティングマット
+    Layer Base Layer Crew, Charcoal, Size L: レイヤー ベースレイヤー クルーネック チャコール サイズL
+    Layer Base Layer Crew, Charcoal, Size M: レイヤー ベースレイヤー クルーネック チャコール サイズM
+    Layer Base Layer Crew, Charcoal, Size S: レイヤー ベースレイヤー クルーネック チャコール サイズS
+    Layer Base Layer Crew, Charcoal, Size XL: レイヤー ベースレイヤー クルーネック チャコール サイズXL
+    Meadow 3P Trekking Tent, Forest: メドウ 3人用トレッキングテント フォレスト
+    Meadow 4P Dome Tent, Sand: メドウ 4人用ドームテント サンド
+    Merino Base Layer Crew, Charcoal, Size L: メリノ ベースレイヤー クルーネック チャコール サイズL
+    Merino Base Layer Crew, Charcoal, Size M: メリノ ベースレイヤー クルーネック チャコール サイズM
+    Merino Base Layer Crew, Charcoal, Size S: メリノ ベースレイヤー クルーネック チャコール サイズS
+    Merino Base Layer Crew, Charcoal, Size XL: メリノ ベースレイヤー クルーネック チャコール サイズXL
+    Mistral Rain Jacket, Sand, Size L: ミストラル レインジャケット サンド サイズL
+    Mistral Rain Jacket, Sand, Size M: ミストラル レインジャケット サンド サイズM
+    Mistral Rain Jacket, Sand, Size S: ミストラル レインジャケット サンド サイズS
+    Mistral Rain Jacket, Sand, Size XL: ミストラル レインジャケット サンド サイズXL
+    Moraine Hiking Boot, Black, Size 10: モレーン ハイキングブーツ ブラック サイズ10
+    Moraine Hiking Boot, Black, Size 11: モレーン ハイキングブーツ ブラック サイズ11
+    Moraine Hiking Boot, Black, Size 8: モレーン ハイキングブーツ ブラック サイズ8
+    Moraine Hiking Boot, Black, Size 9: モレーン ハイキングブーツ ブラック サイズ9
+    Pureleaf Cool Mist Humidifier: ピュアリーフ 気化式加湿器
+    Pureleaf Dehumidifier: ピュアリーフ 除湿機
+    Radiant Ceramic Heater: ラディアント セラミックヒーター
+    Radiant Oil-Filled Radiator: ラディアント オイルヒーター
+    Rainbarrel Raised Bed Planter: レインバレル レイズドベッドプランター
+    Ridge 55L Pack, Black: リッジ バックパック 55L ブラック
+    Ridge 55L Pack, Charcoal: リッジ バックパック 55L チャコール
+    Ridge 55L Pack, Olive: リッジ バックパック 55L オリーブ
+    Ridgeline 2P Backpacking Tent, Navy: リッジライン 2人用バックパッキングテント ネイビー
+    Ridgeline 6P Family Tent, Olive: リッジライン 6人用ファミリーテント オリーブ
+    Rootwell Hand Trowel Set: ルートウェル 移植ごてセット
+    Rootwell Hedge Trimmer: ルートウェル ヘッジトリマー
+    Rootwell Pruning Shears: ルートウェル 剪定ばさみ
+    Scree Hiking Boot, Slate, Size 10: スクリー ハイキングブーツ スレート サイズ10
+    Scree Hiking Boot, Slate, Size 11: スクリー ハイキングブーツ スレート サイズ11
+    Scree Hiking Boot, Slate, Size 8: スクリー ハイキングブーツ スレート サイズ8
+    Scree Hiking Boot, Slate, Size 9: スクリー ハイキングブーツ スレート サイズ9
+    Smokehouse Flat-Top Griddle: スモークハウス フラットトップグリドル
+    Smokehouse Gas Grill 3-Burner: スモークハウス ガスグリル 3バーナー
+    Smokehouse Portable Grill: スモークハウス ポータブルグリル
+    Squall Rain Jacket, Charcoal, Size L: スコール レインジャケット チャコール サイズL
+    Squall Rain Jacket, Charcoal, Size M: スコール レインジャケット チャコール サイズM
+    Squall Rain Jacket, Charcoal, Size S: スコール レインジャケット チャコール サイズS
+    Squall Rain Jacket, Charcoal, Size XL: スコール レインジャケット チャコール サイズXL
+    Starlight Propane Fire Table: スターライト プロパンファイヤーテーブル
+    Starlight Steel Fire Pit: スターライト スチールファイヤーピット
+    Stillair Air Purifier: スティルエア 空気清浄機
+    Stillair Cool Mist Humidifier: スティルエア 気化式加湿器
+    Summit Camp Pillow: サミット キャンプ枕
+    Sundown 3P Trekking Tent, Forest: サンダウン 3人用トレッキングテント フォレスト
+    Sundown 6P Family Tent, Navy: サンダウン 6人用ファミリーテント ネイビー
+    Switchback 40L Pack, Black: スイッチバック バックパック 40L ブラック
+    Switchback 40L Pack, Rust: スイッチバック バックパック 40L ラスト
+    Switchback 40L Pack, Sand: スイッチバック バックパック 40L サンド
+    Talus 22L Daypack, Charcoal: タラス デイパック 22L チャコール
+    Talus 22L Daypack, Forest: タラス デイパック 22L フォレスト
+    Talus 22L Daypack, Navy: タラス デイパック 22L ネイビー
+    Terrace Bistro Set: テラス ビストロセット
+    Terrace Sectional Sofa: テラス セクショナルソファ
+    Terracotta Drip Irrigation Kit: テラコッタ 点滴灌水キット
+    Thermal Base Layer Crew, Rust, Size L: サーマル ベースレイヤー クルーネック ラスト サイズL
+    Thermal Base Layer Crew, Rust, Size M: サーマル ベースレイヤー クルーネック ラスト サイズM
+    Thermal Base Layer Crew, Rust, Size S: サーマル ベースレイヤー クルーネック ラスト サイズS
+    Thermal Base Layer Crew, Rust, Size XL: サーマル ベースレイヤー クルーネック ラスト サイズXL
+    Tiller Garden Hoe: ティラー 鍬
+    Tiller Leaf Rake: ティラー 落ち葉用熊手
+    Tiller Wheelbarrow: ティラー 一輪車
+    Trailhead Camp Table: トレイルヘッド キャンプテーブル
+    Trailhead Cook Set: トレイルヘッド クッカーセット
+    Trailhead Fuel Canister 8oz: トレイルヘッド 燃料缶 8oz
+    Trailhead Two-Burner Stove: トレイルヘッド ツーバーナーストーブ
+    Trailstep Hiking Boot, Charcoal, Size 10: トレイルステップ ハイキングブーツ チャコール サイズ10
+    Trailstep Hiking Boot, Charcoal, Size 11: トレイルステップ ハイキングブーツ チャコール サイズ11
+    Trailstep Hiking Boot, Charcoal, Size 8: トレイルステップ ハイキングブーツ チャコール サイズ8
+    Trailstep Hiking Boot, Charcoal, Size 9: トレイルステップ ハイキングブーツ チャコール サイズ9
+    Veranda Bistro Set: ベランダ ビストロセット
+    Veranda Daybed: ベランダ デイベッド
+    Veranda Dining Set: ベランダ ダイニングセット
+    Warmspring Ceramic Heater: ウォームスプリング セラミックヒーター
+    Warmspring Infrared Heater: ウォームスプリング 赤外線ヒーター
+    Warmspring Oil-Filled Radiator: ウォームスプリング オイルヒーター
+    Wick Base Layer Crew, Sand, Size L: ウィック ベースレイヤー クルーネック サンド サイズL
+    Wick Base Layer Crew, Sand, Size M: ウィック ベースレイヤー クルーネック サンド サイズM
+    Wick Base Layer Crew, Sand, Size S: ウィック ベースレイヤー クルーネック サンド サイズS
+    Wick Base Layer Crew, Sand, Size XL: ウィック ベースレイヤー クルーネック サンド サイズXL
+    Willow Self-Watering Planter: ウィロー 自動給水プランター
+    Woolen Weighted Blanket, Navy: ウーレン 加重ブランケット ネイビー
+    Woolen Weighted Blanket, Sand: ウーレン 加重ブランケット サンド
+  category:
+    camp_hike: キャンプ・ハイキング
+    outdoor_apparel: アウトドアウェア
+    patio_garden: パティオ・ガーデン
+    home_comfort: ホームコンフォート
+  subcategory:
+    tents: テント
+    sleeping_gear: 寝具
+    backpacks: バックパック
+    camp_kitchen: キャンプキッチン
+    rain_shells: レインウェア
+    insulated_jackets: 防寒ジャケット
+    base_layers: ベースレイヤー
+    hiking_footwear: 登山靴
+    patio_furniture: ガーデン家具
+    grills: グリル
+    garden_tools: 園芸用品
+    planters_irrigation: プランター・散水
+    space_heaters: 室内ヒーター
+    fire_pits_patio_heaters: ファイヤーピット・屋外ヒーター
+    blankets_throws: ブランケット
+    indoor_air: 空気環境
+  brand:
+    Brackenfield: ブラッケンフィールド
+    Cindervale: シンダーベール
+    Driftlark: ドリフトラーク
+    Emberwick: エンバーウィック
+    Fernstead: ファーンステッド
+    Hearthline: ハースライン
+    Loftmark: ロフトマーク
+    Marrowdale: マロウデール
+    Northmere: ノースミア
+    Pinehollow: パインホロウ
+    Quillmoss: クイルモス
+    Stonereach: ストーンリーチ
+    Thistlecove: シスルコーブ
+    Trailwright: トレイルライト
+  brand_type:
+    private_label: プライベートブランド
+    national_brand: ナショナルブランド
+  color:
+    black: ブラック
+    charcoal: チャコール
+    forest: フォレスト
+    navy: ネイビー
+    olive: オリーブ
+    rust: ラスト
+    sand: サンド
+    slate: スレート
+  seasonality_profile:
+    summer: 夏
+    spring: 春
+    spring_summer: 春夏
+    shoulder: 端境期
+    fall: 秋
+    winter: 冬
+    holiday: ホリデー
+    year_round: 通年
+suppliers:
+  supplier_name:
+    Ashgrove Patio Living: アッシュグローブ・パティオリビング
+    Brightwater Comfort Co.: ブライトウォーター・コンフォート社
+    Cedar Fork Wholesale: シーダーフォーク卸売
+    Copperleaf Brands: カッパーリーフ・ブランズ
+    Embercroft Heating Products: エンバークロフト暖房機器
+    Fernway Garden Tools: ファーンウェイ園芸工具
+    Glenhaven Outdoor Supply: グレンヘイブン・アウトドアサプライ
+    Haldane Apparel Industries: ハルデン・アパレル工業
+    Highplain Camp Supply: ハイプレイン・キャンプサプライ
+    Lanternbay Shelter Works: ランタンベイ・シェルターワークス
+    Larkspur Home Distribution: ラークスパー・ホーム流通
+    Mossbank Trading: モスバンク商事
+    Northfork Outdoor Manufacturing: ノースフォーク・アウトドア製造
+    Orchard Lane Metalcraft: オーチャードレーン金属工芸
+    Quarry Point Grill Works: クオリーポイント・グリルワークス
+    Redcliff Textile Co.: レッドクリフ織物
+    Ridgecrest Gear Distributors: リッジクレスト・ギア卸
+    Stillwater Apparel Partners: スティルウォーター・アパレルパートナーズ
+    Tidewater Home Goods Factory: タイドウォーター家庭用品工場
+    Wildmere Footwear Group: ワイルドミア・フットウェアグループ
+  supplier_type:
+    contract_manufacturer: 受託製造
+    brand_vendor: ブランドベンダー
+    distributor: 卸売業者
+  freight_terms:
+    fob_origin: FOB出荷地
+    delivered: 仕入先持込
+  payment_terms:
+    net_30: 30日払い
+    net_45: 45日払い
+    net_60: 60日払い
+purchase_orders:
+  po_type:
+    replenishment: 補充
+    seasonal_buy: シーズン仕入
+    expedite: 緊急
+    new_launch: 新商品
+  freight_mode:
+    ocean: 海上
+    truckload: トラック貸切
+    ltl: トラック混載
+    parcel: 宅配
+    air: 航空
+  po_status:
+    open: 未入荷
+    partially_received: 一部入荷
+    closed: 完了
+    cancelled: 取消
+receipts:
+  reject_reason:
+    defect: 不良
+    damaged_in_transit: 輸送中の破損
+    wrong_item: 誤品
+    short_shelf_life: 使用期限不足

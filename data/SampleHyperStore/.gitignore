@@ -1,0 +1,10 @@
+# Local settings and sign-in cache (never commit)
+.env
+.auth-cache/
+# Generator outputs: regenerated CSVs and the answer key (the answers to docs/questions.md)
+generator/out/
+generator/answer_key/
+# Setup work files (downloaded / built data sources)
+setup/work/
+hyperd*.log
+__pycache__/

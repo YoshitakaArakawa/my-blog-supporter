@@ -1,0 +1,21 @@
+supplier_id,supplier_name,supplier_type,country_code,default_lead_time_days,freight_terms,payment_terms,onboarded_date
+SUP-001,Northfork Outdoor Manufacturing,contract_manufacturer,VN,55,fob_origin,net_60,2017-04-01
+SUP-002,Lanternbay Shelter Works,contract_manufacturer,VN,50,fob_origin,net_60,2017-08-01
+SUP-003,Redcliff Textile Co.,contract_manufacturer,BD,65,fob_origin,net_60,2018-02-01
+SUP-004,Haldane Apparel Industries,contract_manufacturer,CN,60,fob_origin,net_60,2018-05-01
+SUP-005,Orchard Lane Metalcraft,contract_manufacturer,CN,62,fob_origin,net_45,2018-09-01
+SUP-006,Tidewater Home Goods Factory,contract_manufacturer,IN,58,fob_origin,net_60,2019-01-15
+SUP-007,Ridgecrest Gear Distributors,distributor,US,10,delivered,net_30,2016-05-01
+SUP-008,Copperleaf Brands,brand_vendor,US,12,delivered,net_30,2016-11-01
+SUP-009,Wildmere Footwear Group,brand_vendor,US,14,delivered,net_45,2017-03-01
+SUP-010,Glenhaven Outdoor Supply,distributor,US,9,delivered,net_30,2017-06-01
+SUP-011,Ashgrove Patio Living,brand_vendor,US,18,fob_origin,net_45,2018-01-01
+SUP-012,Embercroft Heating Products,brand_vendor,US,12,delivered,net_30,2018-03-01
+SUP-013,Fernway Garden Tools,brand_vendor,US,8,delivered,net_30,2018-07-01
+SUP-014,Brightwater Comfort Co.,brand_vendor,MX,21,fob_origin,net_45,2019-04-01
+SUP-015,Quarry Point Grill Works,brand_vendor,US,15,delivered,net_30,2019-08-01
+SUP-016,Mossbank Trading,distributor,US,7,delivered,net_30,2020-02-01
+SUP-017,Highplain Camp Supply,distributor,US,9,delivered,net_30,2021-06-01
+SUP-018,Cedar Fork Wholesale,distributor,US,6,delivered,net_30,2024-07-15
+SUP-019,Stillwater Apparel Partners,distributor,US,10,delivered,net_45,2020-03-01
+SUP-020,Larkspur Home Distribution,distributor,US,8,delivered,net_30,2021-09-01

@@ -1,0 +1,470 @@
+{
+  "_note": "rpt_ layer: one data source per department, composed from the raw-layer data sources. Build each as a single tree from \"root\" (exactly one base table), add the calculated fields with the formulas below (field names are display captions; a duplicated column is suffixed with \" (<table>.csv)\" in the order the tables were added), then publish. Values were checked against the CSVs on the reference site.",
+  "rpt_samplehyperstore__billing": {
+    "parent_tables": [
+      "invoices",
+      "invoice_lines",
+      "credit_memos",
+      "products"
+    ],
+    "root": "invoices",
+    "relationships": [
+      {
+        "from": "invoices",
+        "to": "invoice_lines",
+        "keys": [
+          [
+            "Invoice Id",
+            "Invoice Id"
+          ]
+        ]
+      },
+      {
+        "from": "invoice_lines",
+        "to": "products",
+        "keys": [
+          [
+            "Product Id",
+            "Product Id"
+          ]
+        ]
+      },
+      {
+        "from": "invoice_lines",
+        "to": "credit_memos",
+        "keys": [
+          [
+            "Invoice Id",
+            "Invoice Id"
+          ],
+          [
+            "Product Id",
+            "Product Id"
+          ]
+        ]
+      }
+    ],
+    "datasource_description": "One row per invoice line (Invoice Line Id): one order line on one invoice, related to its invoice (Invoice Id, one per shipment), the credit memo lines posted against that invoice, and product attributes. Covers invoices dated 2023-01-02 to 2025-12-31 (fiscal months FY2022-P12 to FY2025-P11).",
+    "calculated_fields": [
+      {
+        "name": "Revenue",
+        "formula": "SUM([Qty Invoiced] * [Unit Price] - [Discount Amount]) - SUM([Merchandise Credit Amount]) - SUM([Marketplace Fee Amount]) + SUM([Marketplace Fee Reversal Amount])",
+        "description": "Net revenue in USD: invoiced merchandise after discounts, minus merchandise credits and marketplace fees, plus fee reversals; tax and shipping excluded. Credits relate to their original invoice, so by Invoice Date or Fiscal Month they fall in that invoice's month."
+      },
+      {
+        "name": "Gross Revenue",
+        "formula": "SUM([Qty Invoiced] * [Unit Price] - [Discount Amount])",
+        "description": "Invoiced merchandise value in USD: invoiced (= shipped) units at unit selling price, minus the discount allocated to those units including the order-level coupon, dated by Invoice Date and fiscal month (Fiscal Month). Excludes tax, billed shipping, credits and marketplace fees."
+      },
+      {
+        "name": "Units",
+        "formula": "SUM([Qty Invoiced]) - SUM([Qty Credited])",
+        "description": "Units invoiced minus units credited, dated by Invoice Date and fiscal month (Fiscal Month); credits fall in their original invoice's month. Only return memos carry credited units, so allowances, shipping and price-adjustment credits do not reduce it."
+      },
+      {
+        "name": "Orders",
+        "formula": "COUNTD([Order Id])",
+        "description": "Distinct orders with at least one invoice, dated by Invoice Date and fiscal month (Fiscal Month). An order shipped in parts can count in more than one period; orders never shipped have no invoice."
+      },
+      {
+        "name": "Discount",
+        "formula": "SUM([Discount Amount])",
+        "description": "Discount in USD on invoiced units: line promotions pro-rated to invoiced units plus the allocated share of order-level coupons, dated by Invoice Date and fiscal month (Fiscal Month). Discount on cancelled units is not included."
+      },
+      {
+        "name": "Discount Rate",
+        "formula": "SUM([Discount Amount]) / SUM([Qty Invoiced] * [Unit Price])",
+        "description": "Ratio of invoiced discount to invoiced value before discount (invoiced units at unit selling price), dated by Invoice Date and fiscal month (Fiscal Month). Cancelled units are not included."
+      },
+      {
+        "name": "Return Rate",
+        "formula": "SUM([Qty Credited]) / SUM([Qty Invoiced])",
+        "description": "Ratio of units credited on return memos to units invoiced, dated by Invoice Date and fiscal month (Fiscal Month); credits fall in their original invoice's month. Returns not yet credited are not counted."
+      },
+      {
+        "name": "Credits",
+        "formula": "SUM([Merchandise Credit Amount] + [Shipping Credit Amount])",
+        "description": "Revenue reversed by credit memos in USD: merchandise plus shipping credits of all memo types, tax credits excluded; memos without a product (order-level shipping, price adjustment and some allowance memos) fall under null when split by product attributes or Channel. Dated by Credit Memo Date and its posting month (Fiscal Month (credit_memos.csv))."
+      },
+      {
+        "name": "Net Refund Cost",
+        "formula": "SUM([Merchandise Credit Amount] + [Shipping Credit Amount]) - SUM([Marketplace Fee Reversal Amount])",
+        "description": "Credits net of marketplace fees returned, in USD: merchandise plus shipping credits minus marketplace fee reversals, tax excluded. Dated by Credit Memo Date and its posting month (Fiscal Month (credit_memos.csv))."
+      },
+      {
+        "name": "Marketplace Fee Rate",
+        "formula": "SUM([Marketplace Fee Amount]) / SUM(IF [Channel] = 'marketplace' THEN [Qty Invoiced] * [Unit Price] - [Discount Amount] END)",
+        "description": "Ratio of marketplace fees withheld to invoiced merchandise after discounts on marketplace-channel invoices, dated by Invoice Date and fiscal month (Fiscal Month). Fees are gross of reversals on refunds; the base excludes tax and shipping."
+      },
+      {
+        "name": "Net Marketplace Fee Rate",
+        "formula": "(SUM([Marketplace Fee Amount]) - SUM([Marketplace Fee Reversal Amount])) / (SUM(IF [Channel] = 'marketplace' THEN [Qty Invoiced] * [Unit Price] - [Discount Amount] END) + SUM(IF [Channel] = 'marketplace' THEN [Shipping Billed Amount] END))",
+        "description": "Ratio of marketplace fees net of fee reversals to invoiced merchandise after discounts plus billed shipping on marketplace-channel invoices, tax excluded. Dated by Invoice Date and fiscal month (Fiscal Month); fee reversals fall in their original invoice's month."
+      },
+      {
+        "name": "Shipping Billed",
+        "formula": "SUM([Shipping Billed Amount])",
+        "description": "Shipping charged to customers in USD on invoices, shipping tax excluded, dated by Invoice Date and fiscal month (Fiscal Month). Free-shipping invoices bill 0; shipping credits are not deducted."
+      },
+      {
+        "name": "Marketplace Fees",
+        "formula": "SUM([Marketplace Fee Amount])",
+        "description": "Marketplace fees withheld in USD on marketplace-channel invoices, gross of reversals on refunds, dated by Invoice Date and fiscal month (Fiscal Month). Invoices in other channels carry no fee."
+      }
+    ]
+  },
+  "rpt_samplehyperstore__sales_orders": {
+    "parent_tables": [
+      "orders",
+      "order_lines",
+      "products"
+    ],
+    "root": "products",
+    "relationships": [
+      {
+        "from": "products",
+        "to": "order_lines",
+        "keys": [
+          [
+            "Product Id",
+            "Product Id"
+          ]
+        ]
+      },
+      {
+        "from": "order_lines",
+        "to": "orders",
+        "keys": [
+          [
+            "Order Id",
+            "Order Id"
+          ]
+        ]
+      }
+    ],
+    "datasource_description": "One row per order line (Order Line Id): one SKU in one order, related to its order (Order Id) and product attributes. Covers orders placed 2023-01-01 to 2025-12-31 in all channels (web, app, marketplace, b2b).",
+    "calculated_fields": [
+      {
+        "name": "Revenue",
+        "formula": "SUM(([Qty Ordered] - [Qty Cancelled]) * ([Unit Price] - [Line Discount Amount] / [Qty Ordered])) - SUM([Order Discount Amount])",
+        "description": "Booked revenue in USD net of cancellations: uncancelled units at unit selling price, minus the line discount pro-rated to those units, minus order-level coupons (not reduced for cancellations). Excludes tax, shipping charges and returns; dated by Order Date, calendar month."
+      },
+      {
+        "name": "Revenue before Cancellations",
+        "formula": "SUM([Qty Ordered] * [Unit Price] - [Line Discount Amount]) - SUM([Order Discount Amount])",
+        "description": "Booked revenue in USD before cancellations: all ordered units at unit selling price, minus line discounts and order-level coupons, with cancelled units still counted. Excludes tax, shipping charges and returns; dated by Order Date, calendar month."
+      },
+      {
+        "name": "Units",
+        "formula": "SUM([Qty Ordered] - [Qty Cancelled])",
+        "description": "Ordered units minus cancelled units, all channels, dated by Order Date, calendar month. Units still on backorder count."
+      },
+      {
+        "name": "Orders",
+        "formula": "COUNTD([Order Id])",
+        "description": "Distinct orders placed in all channels, including orders later fully cancelled, dated by Order Date, calendar month."
+      },
+      {
+        "name": "Fulfillable Orders",
+        "formula": "COUNTD(IF [Qty Ordered] > [Qty Cancelled] THEN [Order Id (order_lines.csv)] END)",
+        "description": "Distinct orders with at least one line that still has uncancelled units, dated by Order Date, calendar month. Orders whose every unit was cancelled are excluded."
+      },
+      {
+        "name": "Price Realization",
+        "formula": "(SUM([Qty Ordered] * [Unit Price] - [Line Discount Amount]) - SUM([Order Discount Amount])) / SUM([Qty Ordered] * [Unit List Price])",
+        "description": "Ratio of ordered value after line discounts and order-level coupons to list value (ordered units at list price), dated by Order Date, calendar month. Reflects promotions and channel prices (marketplace above list, b2b below); cancelled units are not removed."
+      },
+      {
+        "name": "Discount",
+        "formula": "SUM([Line Discount Amount]) + SUM([Order Discount Amount])",
+        "description": "Promotional discount in USD: line promotions plus order-level coupons on ordered units, not reduced for cancellations, dated by Order Date, calendar month. Excludes the gap between list and selling price, and free shipping."
+      },
+      {
+        "name": "Discount Rate",
+        "formula": "(SUM([Line Discount Amount]) + SUM([Order Discount Amount])) / SUM([Qty Ordered] * [Unit Price])",
+        "description": "Ratio of promotional discount (line promotions plus order-level coupons) to ordered value at unit selling price before discount, dated by Order Date, calendar month. The gap between list and selling price is not counted."
+      },
+      {
+        "name": "Stock-out Cancellation Value",
+        "formula": "SUM(IF [Cancel Reason] = 'out_of_stock' OR [Cancel Reason] = 'backorder_timeout' THEN [Qty Cancelled] * [Unit Price] END)",
+        "description": "Value in USD of units cancelled for stock reasons (Cancel Reason out_of_stock or backorder_timeout), at unit selling price before line discount, dated by Order Date, calendar month. Other cancel reasons are excluded."
+      }
+    ]
+  },
+  "rpt_samplehyperstore__merchandising": {
+    "parent_tables": [
+      "orders",
+      "order_lines",
+      "products"
+    ],
+    "root": "products",
+    "relationships": [
+      {
+        "from": "products",
+        "to": "order_lines",
+        "keys": [
+          [
+            "Product Id",
+            "Product Id"
+          ]
+        ]
+      },
+      {
+        "from": "order_lines",
+        "to": "orders",
+        "keys": [
+          [
+            "Order Id",
+            "Order Id"
+          ]
+        ]
+      }
+    ],
+    "datasource_description": "One row per order line (Order Line Id): one SKU in one order, related to its order (Order Id) and product attributes. Covers orders placed 2023-01-01 to 2025-12-31 in all channels (web, app, marketplace, b2b).",
+    "calculated_fields": [
+      {
+        "name": "Demand",
+        "formula": "SUM([Qty Ordered] * [Unit List Price])",
+        "description": "Demand in USD at list price: all ordered units, including units later cancelled, valued at Unit List Price, dated by Order Date, calendar month. Selling price, promotions and coupons are ignored."
+      },
+      {
+        "name": "Units",
+        "formula": "SUM([Qty Ordered])",
+        "description": "All ordered units in all channels, including units later cancelled or backordered, dated by Order Date, calendar month."
+      },
+      {
+        "name": "Price Realization",
+        "formula": "SUM([Qty Ordered] * [Unit Price] - [Line Discount Amount]) / SUM([Qty Ordered] * [Unit List Price])",
+        "description": "Ratio of ordered value after line promotions to list value (ordered units at list price), dated by Order Date, calendar month. Includes channel prices (marketplace above list, b2b below); order-level coupons are not deducted."
+      },
+      {
+        "name": "Markdown",
+        "formula": "SUM([Qty Ordered] * ([Unit List Price] - [Unit Price])) + SUM([Line Discount Amount]) + SUM([Order Discount Amount])",
+        "description": "Total reduction from list price in USD on ordered units: the list-to-selling price gap, plus line promotions and order-level coupons, dated by Order Date, calendar month. Marketplace prices above list reduce it; free shipping is not included."
+      },
+      {
+        "name": "Markdown Rate",
+        "formula": "(SUM([Qty Ordered] * ([Unit List Price] - [Unit Price])) + SUM([Line Discount Amount]) + SUM([Order Discount Amount])) / SUM([Qty Ordered] * [Unit List Price])",
+        "description": "Ratio of total markdown from list (list-to-selling price gap, line promotions, order-level coupons) to the list value of ordered units, dated by Order Date, calendar month. Marketplace prices above list reduce it."
+      },
+      {
+        "name": "Net Ordered Units",
+        "formula": "SUM([Qty Ordered] - [Qty Cancelled])",
+        "description": "Ordered units minus cancelled units, all channels, dated by Order Date, calendar month. Unlike Units, cancelled units are removed; units still on backorder count."
+      },
+      {
+        "name": "Order Lines",
+        "formula": "COUNTD([Order Line Id])",
+        "description": "Distinct order lines (one SKU in one order) in all channels, including lines later fully cancelled, dated by Order Date, calendar month."
+      }
+    ]
+  },
+  "rpt_samplehyperstore__shipments": {
+    "parent_tables": [
+      "shipments",
+      "shipment_lines",
+      "products"
+    ],
+    "root": "products",
+    "relationships": [
+      {
+        "from": "products",
+        "to": "shipment_lines",
+        "keys": [
+          [
+            "Product Id",
+            "Product Id"
+          ]
+        ]
+      },
+      {
+        "from": "shipment_lines",
+        "to": "shipments",
+        "keys": [
+          [
+            "Shipment Id",
+            "Shipment Id"
+          ]
+        ]
+      }
+    ],
+    "datasource_description": "One row per shipment line (Shipment Line Id): one order line in one shipment, related to its shipment (Shipment Id: one parcel group from one warehouse with one carrier) and product attributes. Covers shipments shipped 2023-01-02 to 2025-12-31, with delivery status as of 2025-12-31.",
+    "calculated_fields": [
+      {
+        "name": "Units",
+        "formula": "SUM([Qty Shipped])",
+        "description": "Units shipped, summed over shipment lines; unshipped and cancelled units are not included. Dated by Shipped Date (shipment_lines.csv), calendar month."
+      },
+      {
+        "name": "On-time Rate",
+        "formula": "SUM(IIF([Delivered Date] <= [Promised Delivery Date], 1, 0)) / SUM(IIF(NOT ISNULL([Delivered Date]), 1, 0))",
+        "description": "Share of delivered shipments with Delivered Date on or before the customer's Promised Delivery Date, judged per shipment. Shipments not delivered (empty Delivered Date) are excluded; dated by Shipped Date, calendar month."
+      },
+      {
+        "name": "On-time Rate vs Carrier Estimate",
+        "formula": "SUM(IIF([Delivered Date] <= [Carrier Estimated Delivery Date], 1, 0)) / SUM(IIF(NOT ISNULL([Delivered Date]), 1, 0))",
+        "description": "Share of delivered shipments with Delivered Date on or before the Carrier Estimated Delivery Date. Shipments not delivered (in transit, lost, returned to sender) are excluded; dated by Shipped Date, calendar month."
+      },
+      {
+        "name": "Carrier On-time Rate, All Shipments",
+        "formula": "SUM(IIF([Delivered Date] <= [Carrier Estimated Delivery Date], 1, 0)) / COUNTD([Shipment Id])",
+        "description": "Share of all shipments delivered on or before the Carrier Estimated Delivery Date, dated by Shipped Date, calendar month. Shipments not delivered count as not on time: lost, returned to sender, and those still in transit on 2025-12-31."
+      },
+      {
+        "name": "Perfect Order Rate",
+        "formula": "COUNTD(IF {FIXED [Order Id] : SUM(IIF(ISNULL([Delivered Date]) OR [Delivered Date] > [Promised Delivery Date], 1, 0))} = 0 THEN [Order Id] END) / COUNTD([Order Id])",
+        "description": "Share of shipped orders whose every shipment was delivered on or before the Promised Delivery Date, judged on all shipments of the order even when the view is filtered (fixed on Order Id). One late or undelivered shipment makes the order imperfect; dated by Order Date, calendar month."
+      },
+      {
+        "name": "Freight Cost",
+        "formula": "SUM([Freight Cost Amount])",
+        "description": "Freight cost in USD paid to carriers for shipments, dated by Shipped Date, calendar month. Shipping charged to customers is not netted off."
+      }
+    ]
+  },
+  "rpt_samplehyperstore__returns_refunds": {
+    "parent_tables": [
+      "returns",
+      "refunds",
+      "products"
+    ],
+    "root": "returns",
+    "relationships": [
+      {
+        "from": "returns",
+        "to": "products",
+        "keys": [
+          [
+            "Product Id",
+            "Product Id"
+          ]
+        ]
+      },
+      {
+        "from": "returns",
+        "to": "refunds",
+        "keys": [
+          [
+            "Return Id",
+            "Return Id"
+          ]
+        ]
+      }
+    ],
+    "datasource_description": "One row per return authorization line (Return Id) and per refund payment (Refund Id), related by Return Id, with product attributes of the returned SKU. Covers returns requested 2023-01-09 to 2025-12-31 and refunds issued 2023-01-10 to 2025-12-31.",
+    "calculated_fields": [
+      {
+        "name": "Refunds",
+        "formula": "SUM([Merchandise Refund Amount] + [Tax Refund Amount] + [Shipping Refund Amount])",
+        "description": "Refunds issued in USD: merchandise, tax and shipping refunds of all refund types and methods, including store credit, dated by Refunded Date, calendar month. Includes refunds without a return (goodwill, shipping refunds, price adjustments; empty Return Id (refunds.csv))."
+      },
+      {
+        "name": "Cash Refunds",
+        "formula": "SUM(IF [Refund Method] <> 'store_credit' THEN [Merchandise Refund Amount] + [Tax Refund Amount] + [Shipping Refund Amount] END)",
+        "description": "Refunds paid out in USD to the original payment method or through the marketplace (merchandise, tax, shipping), store credit excluded, dated by Refunded Date, calendar month. Includes refunds without a return (goodwill, shipping refunds, price adjustments; empty Return Id (refunds.csv))."
+      },
+      {
+        "name": "Cost of Returns",
+        "formula": "SUM([Merchandise Refund Amount] + [Shipping Refund Amount]) + SUM([Return Shipping Cost Amount])",
+        "description": "Refunded merchandise and shipping value plus company-paid return shipping, in USD, tax refunds excluded, dated by Requested Date, calendar month. Includes refunds without a return (goodwill, shipping refunds, price adjustments), which have no Requested Date and fall under an empty date."
+      },
+      {
+        "name": "Days to Return Request",
+        "formula": "AVG(DATEDIFF('day', [Delivered Date], [Requested Date]))",
+        "description": "Average days from Delivered Date to Requested Date per return line, dated by Requested Date, calendar month. Return lines without a Delivered Date are skipped."
+      },
+      {
+        "name": "Days from Shipment to Return Request",
+        "formula": "AVG(DATEDIFF('day', [Shipped Date], [Requested Date]))",
+        "description": "Average days from Shipped Date to Requested Date per return line: transit time plus the time the customer kept the item. Dated by Requested Date, calendar month."
+      },
+      {
+        "name": "Days from Order to Return Request",
+        "formula": "AVG(DATEDIFF('day', [Order Date], [Requested Date]))",
+        "description": "Average days from Order Date to Requested Date per return line. Dated by Order Date (order cohort), calendar month."
+      },
+      {
+        "name": "Requested Units",
+        "formula": "SUM([Qty Requested])",
+        "description": "Units customers asked to return, summed over return lines of every status, including rejected returns and items never received. Dated by Requested Date, calendar month; Order Date gives the order cohort."
+      },
+      {
+        "name": "Received Units",
+        "formula": "SUM([Qty Received])",
+        "description": "Units received back at the warehouse, summed over return lines; lines not received count 0. Dated by Received Date, calendar month."
+      },
+      {
+        "name": "Returned Order Lines",
+        "formula": "COUNTD([Order Line Id])",
+        "description": "Distinct order lines with a return line (Order Line Id of the return), dated by Order Date (order cohort), calendar month."
+      }
+    ]
+  },
+  "rpt_samplehyperstore__web_analytics": {
+    "parent_tables": [
+      "web_sessions",
+      "web_searches"
+    ],
+    "root": "web_sessions",
+    "relationships": [
+      {
+        "from": "web_sessions",
+        "to": "web_searches",
+        "keys": [
+          [
+            "Session Id",
+            "Session Id"
+          ]
+        ]
+      }
+    ],
+    "datasource_description": "One row per web or app session (Session Id), related to the on-site searches run in it (Search Id, one row per search). Covers sessions started 2023-01-01 to 2025-12-31.",
+    "calculated_fields": [
+      {
+        "name": "Revenue",
+        "formula": "SUM([Tracked Order Amount])",
+        "description": "Purchase value in USD recorded by the analytics tool at checkout: merchandise after discounts plus shipping and tax, web and app sessions only. Not reduced by later cancellations or returns; dated by Session Start Date, calendar month."
+      },
+      {
+        "name": "Transactions",
+        "formula": "COUNTD([Order Id])",
+        "description": "Distinct orders completed in a web or app session; marketplace and b2b orders have no session and are not counted. Dated by Session Start Date, calendar month."
+      },
+      {
+        "name": "No-results Rate",
+        "formula": "SUM(IIF([Results Count] = 0, 1, 0)) / COUNTD([Search Id])",
+        "description": "Share of searches that matched no active product (Results Count = 0). Searches whose matches are all out of stock stay in the denominator but not in the numerator; dated by Searched Date, calendar month."
+      },
+      {
+        "name": "Out-of-stock Results Rate",
+        "formula": "SUM(IIF([Results In Stock Count] = 0, 1, 0)) / COUNTD([Search Id])",
+        "description": "Share of searches with nothing shown in stock at the visitor's serving warehouse (Results In Stock Count = 0). Includes searches with no results at all; dated by Searched Date, calendar month."
+      },
+      {
+        "name": "No-click Rate",
+        "formula": "SUM(IIF(ISNULL([Clicked Product Id]), 1, 0)) / COUNTD([Search Id])",
+        "description": "Share of searches where no result was clicked (empty Clicked Product Id), dated by Searched Date, calendar month."
+      },
+      {
+        "name": "Out-of-stock View Share",
+        "formula": "SUM([Oos Product Views]) / SUM([Product Views])",
+        "description": "Ratio of product page views shown as out of stock for the visitor's serving warehouse to all product page views. Counts views, so reloads count again; dated by Session Start Date, calendar month."
+      },
+      {
+        "name": "Out-of-stock Sessions without Order",
+        "formula": "COUNTD(IF [Oos Product Views] > 0 AND ISNULL([Order Id]) THEN [Session Id] END)",
+        "description": "Count of sessions with at least one out-of-stock product view and no order. A count of sessions, not of lost units; dated by Session Start Date, calendar month."
+      },
+      {
+        "name": "Sessions",
+        "formula": "COUNTD([Session Id])",
+        "description": "Distinct web and app sessions, with or without an order, dated by Session Start Date, calendar month. Marketplace and b2b orders have no session."
+      },
+      {
+        "name": "Units Added to Cart",
+        "formula": "SUM([Qty Added To Cart])",
+        "description": "Units added to the cart in web and app sessions, dated by Cart Added Date, calendar month. Sessions without a cart add count 0 and have no Cart Added Date."
+      }
+    ]
+  }
+}
