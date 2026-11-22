@@ -37,11 +37,14 @@ note: 実装の正本は scripts/lib/wix-markdown.mjs、名前付きの色の正
 
 ```markdown
 ![手順の画面](images/step-01.png "ページを開いたら「参加」を押す"){width=small}
+![設定画面](images/step-02.png "")
 ![](wix:xxxxxx_0123456789abcdef~mv2.png){width=content align=left}
 ![参考](wix:xxxxxx_fedcba9876543210~mv2.png "参考：[スキルとは何ですか？](https://example.com/skills)")
 ```
 
-- 画像の行は1行単独で書く。キャプションは title（`"…"`）で、中のリンク・太字も効く。title が無ければ alt がキャプションになる。title 中の `"` は `\"`
+- 画像の行は1行単独で書く。キャプションは title（`"…"`）で書き、中のリンク・太字も効く。title 中の `"` は `\"`
+- キャプション無しは `![](src)`。alt（Wix の代替テキスト）だけ付けてキャプションを出さない時は、空の title を書く: `![設定画面](src "")`。pull は、代替テキストだけの Wix 画像をこの形で書く
+- title の無い `![alt](src)` は、alt をキャプションにする。既存の記事と pull の控えとの互換のための読み方で、pull はキャプションが alt と同じ文字の時にこの形で書く。新しく書く時は使わず、キャプションは title に書く
 - `wix:<Media の ID>` は著者が Wix で入れた画像。大きさは pull が `wix.json` に控える
 - `{width=small|content|full|original|<数値>}`・`{align=left|center|right}`。省略時は、縦長なら small、それ以外は content・中央
 - `align=left`・`right` は、後ろの段落が画像の横に回り込む（Wix の既定）。回り込ませたくない時は中央のまま使う
