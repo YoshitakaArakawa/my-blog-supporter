@@ -115,8 +115,10 @@ section{display:flex;flex-direction:column;gap:20px}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
 .chip{
   font-family:var(--mono);font-size:10px;letter-spacing:.05em;
-  padding:2px 7px;border:1px solid var(--rule);color:var(--ink-mute);white-space:nowrap;
+  padding:2px 7px;border:1px solid var(--rule);color:var(--ink-mute);
 }
+/* 文中に置くチップ（扱わないことの「駐車場」）だけ、行末で割らない。セルのチップは折り返さないとセルからはみ出す */
+.outrow .chip{white-space:nowrap}
 .chip.main{border-color:var(--det);color:var(--det)}
 .chip.sub{border-style:dashed}
 .cell .src{font-family:var(--mono);font-size:10px;color:var(--ink-mute);line-height:1.7;border-top:1px solid var(--rule-soft);padding-top:6px}
@@ -238,7 +240,7 @@ footer{border-top:1px solid var(--rule);padding-top:18px;font-family:var(--mono)
   .cell ul{gap:6px}
   .cell .src{font-size:12px}
   .map .chips{flex-direction:column;gap:6px}
-  .map .chip{white-space:normal;font-family:var(--sans);font-size:14px;letter-spacing:0;line-height:1.6;padding:6px 10px;color:var(--ink-soft)}
+  .map .chip{font-family:var(--sans);font-size:14px;letter-spacing:0;line-height:1.6;padding:6px 10px;color:var(--ink-soft)}
   .map .chip.main{color:var(--ink)}
 
   .q,.open{padding:14px 16px}
