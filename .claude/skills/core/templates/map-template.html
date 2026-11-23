@@ -171,7 +171,7 @@ footer{border-top:1px solid var(--rule);padding-top:18px;font-family:var(--mono)
 .cell.tbd-cell{border-style:dashed;border-color:var(--out);background:transparent}
 
 /* ---------- スマホ幅（640px 以下）: 章を縦に積み、貫く軸は章の前の凡例にする ---------- */
-/* 帯の範囲の文字列（.rng）は末尾の script が足す。デスクトップでは帯の位置が範囲を示すので出さない */
+/* 帯の範囲の文字列（.rng）は render-map.mjs が足す。デスクトップでは帯の位置が範囲を示すので出さない */
 .thread .rng{display:none}
 
 @media (max-width:640px){
@@ -364,19 +364,3 @@ footer{border-top:1px solid var(--rule);padding-top:18px;font-family:var(--mono)
 </footer>
 
 </div>
-
-<script>
-// 貫く軸の帯の範囲（インラインの grid-column）を、章の番号の文字列にして帯に添える。表示はスマホ幅だけ。
-// 列1は行ラベルなので、章 i（0始まり）の列は i+2。帯の終端の線は終了章の列 +1。
-(function(){
-  var nums=[].map.call(document.querySelectorAll(".map > .ch .num"),function(n){return n.textContent.split(" ／ ")[0];});
-  [].forEach.call(document.querySelectorAll(".map > .thread"),function(t){
-    var s=parseInt(t.style.gridColumnStart,10)-2, e=parseInt(t.style.gridColumnEnd,10)-3;
-    if(!(s>=0&&e>=s&&e<nums.length))return;
-    var r=document.createElement("span");
-    r.className="rng";
-    r.textContent="章 "+nums[s]+(e>s?" 〜 "+nums[e]:"");
-    t.insertBefore(r,t.querySelector(".d"));
-  });
-})();
-</script>
