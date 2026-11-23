@@ -141,3 +141,19 @@ test("著者向けメモ（ℹ️ の引用）とコメントは送らない", (
   assert.equal(title, "タイトル");
   assert.deepEqual(blocks.map((b) => b.kind), ["paragraph"]);
 });
+
+test("画像のキャプション: title だけを出す。空の title は alt だけ、title の無い alt は旧来の互換でキャプション", () => {
+  const md = "# t\n\n![設定画面](images/a.png \"\")\n\n![](images/b.png)\n\n![旧来の書き方](images/c.png)\n\n![図](images/d.png \"補足\")";
+  const imgs = toRicos(parseDocument(md).blocks, { image: () => ({ id: "dummy_a", width: 500, height: 300 }) }).filter((n) => n.type === "IMAGE");
+  assert.deepEqual(imgs.map((n) => [n.imageData.altText ?? null, n.imageData.caption ?? null, n.nodes.length]), [
+    ["設定画面", null, 0], [null, null, 0], ["旧来の書き方", "旧来の書き方", 1], ["図", "補足", 1],
+  ]);
+});
+
+test("往復: 代替テキストだけの Wix 画像は空の title で書き、キャプションを足さない", () => {
+  const nodes = [{ type: "IMAGE", id: "i", nodes: [], imageData: { containerData: { width: { size: "CONTENT" }, alignment: "CENTER", textWrap: true }, image: { src: { id: "dummy_0002~mv2.png" }, width: 1600, height: 900 }, altText: "設定画面" } }];
+  const { r, back } = roundtrip(nodes);
+  assert.match(r.md, /^!\[設定画面\]\(wix:dummy_0002~mv2\.png ""\)/);
+  assert.equal(r.controls.length, 0);
+  assert.equal(canonical(back), canonical(nodes));
+});

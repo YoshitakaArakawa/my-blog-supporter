@@ -605,7 +605,7 @@ function blockNode(b, ctx) {
     case "code": return { type: "CODE_BLOCK", id: "", nodes: b.body ? (codeNodes(b.body) ?? [textNode(b.body)]) : [], codeBlockData: { textStyle: { textAlignment: "AUTO" } } };
     case "divider": return { type: "DIVIDER", id: "", nodes: [], dividerData: { lineStyle: "SINGLE", width: DIVIDER_WIDTHS[b.attrs?.kv.width ?? "large"], alignment: "CENTER" } };
     case "image": {
-      // キャプションは title、無ければ alt（地の文）
+      // キャプションは title。title が無い時だけ alt（旧来の互換。地の文）。空の title はキャプション無しで alt だけ送る
       const captionNodes = b.title !== undefined ? inlineNodes(b.title) : b.alt ? [textNode(b.alt)] : [];
       return imageNode({ captionNodes, alt: b.alt, attrs: b.attrs }, ctx.image(b));
     }

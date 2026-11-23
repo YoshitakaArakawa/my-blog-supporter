@@ -34,7 +34,8 @@
  *                                     ただし wix.json の wixImages に同じキャプションの画像があれば、blog-wix-sync push と
  *                                     同じ対応付け（キャプション一致・先頭から未使用のもの）で Wix 上の画像を表示する
  *   ![alt](images/x.png "キャプション")  作図済みの図（1行単独）。figure に変換する。
- *                                     キャプションは title、無ければ alt。パスは draft.md からの相対
+ *                                     キャプションは title。title が無い時だけ alt（旧来の互換）。
+ *                                     空の title（""）はキャプション無し。パスは draft.md からの相対
  *   その他の HTML コメント             落とす
  *
  * 縦長の画像（スマホのスクリーンショット）は本文幅の半分で表示する。横長はそのまま本文幅。
@@ -123,7 +124,7 @@ function commentBlock(text, ctx) {
 // 画像。wix:ID は Wix 上の画像の配信 URL で出す。幅の属性があれば縦横比による自動の判定より優先する
 function figure(alt, src, title, attrsRaw, ctx) {
   ctx.figures += 1;
-  // キャプションは title、無ければ alt（地の文なので記法の文字を守ってから解析する）
+  // キャプションは title。title が無い時だけ alt（旧来の互換。地の文なので記法の文字を守ってから解析する）。空の title はキャプション無し
   const caption = title ?? alt.replace(/[\\`*[\]]/g, "\\$&");
   const url = src.startsWith("wix:") ? WIX_MEDIA + src.slice(4) : relink(src, ctx);
   const width = attrsRaw === undefined ? null : parseAttrs(attrsRaw)?.kv.width;
