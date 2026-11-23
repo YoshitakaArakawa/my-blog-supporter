@@ -257,8 +257,8 @@ footer{border-top:1px solid var(--rule);padding-top:18px;font-family:var(--mono)
 <!--
   このファイルは同じ Skill 内の scripts/render-map.mjs が読み込むテンプレートであり、直接編集した完成品ではない。
   {{...}} はスカラー値の単純文字列置換、<!-- NAME:START/END --> で囲んだ区間はスクリプトが
-  生成した繰り返し HTML（章・カード・行）に丸ごと差し替わる。CSS と構造はどちらも変更しない
-  （変更する場合は render-map.mjs 側の対応するレンダリング関数も合わせて直す）。
+  生成した繰り返し HTML（章・カード・行）に丸ごと差し替わる。CSS と構造は記事ごとに変えない
+  （Skill として改訂する時は、render-map.mjs 側の対応するレンダリング関数も合わせて直す）。
   入力に対応が無い箇所はスクリプトが推測せず「未定」を出す。
 -->
 
