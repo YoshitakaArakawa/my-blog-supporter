@@ -1,7 +1,7 @@
 ---
 name: review
-description: 記事と登壇の成果物を隔離コンテキストでレビューし、指摘を review/{lens}_NN.md に書く。lens は critique（主張を叩く）・drift（前段とのズレ）・readers（初見の読者）・audience（会場の観客）・author（著者の下書き）。「反論を出して」「主張を叩いて」「前段から落ちていないか」「読者としてどう読むか」「観客にどう聞こえるか」「下書きをレビューして」「Wix の下書きをレビューして」と言われた時に使う。Wix からの取り込みだけなら blog-wix-sync
-argument-hint: "[テーマ] [critique|drift|readers|audience|author] [対象(任意: outline|draft|storyline|deck|ファイル名)]"
+description: 記事と登壇の成果物を隔離コンテキストでレビューし、指摘を review/{lens}_NN.md に書く。lens は critique（主張を叩く）・drift（前段とのズレ）・readers（初見の読者。プレビューをスマホとデスクトップの画面でも読む）・audience（会場の観客）・author（著者の下書き）。「反論を出して」「主張を叩いて」「前段から落ちていないか」「読者としてどう読むか」「スマホで読みにくいところは」「図の効き方を読者の目で見て」「観客にどう聞こえるか」「下書きをレビューして」「Wix の下書きをレビューして」と言われた時に使う。Wix からの取り込みだけなら blog-wix-sync
+argument-hint: "[テーマ] [critique|drift|readers|audience|author] [対象(任意: outline|draft|storyline|deck|ファイル名)] [ペルソナ(任意・readers のみ。形式 ラベル: 説明)]"
 context: fork
 agent: general-purpose
 background: false
@@ -29,10 +29,13 @@ background: false
 - テーマ: `$0`
 - lens: `$1`
 - 対象: `$2`
+- ペルソナ: `$3`
 
-上の3行は起動時に実引数へ置換される。lens 欄が空、置換されずに残っている、または `critique` / `drift` / `readers` / `audience` / `author` のいずれでもない場合は、**点検せずに終了する**。「lens が指定されていない（または不正）ので点検していない。`critique`（主張を叩く）／`drift`（前段からのズレ）／`readers`（初見読者の通読）／`audience`（観客として通しで聞く）／`author`（著者下書きの編集レビュー）から指定してください」という旨をサマリで返す。**推測で lens を選ばない**。
+上の4行は起動時に実引数へ置換される。lens 欄が空、置換されずに残っている、または `critique` / `drift` / `readers` / `audience` / `author` のいずれでもない場合は、**点検せずに終了する**。「lens が指定されていない（または不正）ので点検していない。`critique`（主張を叩く）／`drift`（前段からのズレ）／`readers`（初見読者の通読）／`audience`（観客として通しで聞く）／`author`（著者下書きの編集レビュー）から指定してください」という旨をサマリで返す。**推測で lens を選ばない**。
 
 対象欄の意味は lens ごとに違う（lens=drift は stage、lens=readers / audience / author はファイル名）。既定値は lens ファイルに書いてある。
+
+ペルソナ欄は lens=readers だけが使い、ほかの lens では無視する。空、または置換されずに残っていれば、lens ファイルの既定のペルソナで読む。
 
 ### 2. 出力ディレクトリと core.md
 
@@ -59,6 +62,8 @@ lens の観点で拾った論点を、共通規律1〜3の順で並べ替える�
 `$OUTPUT_DIR/review/` 内の既存 `$1_NN.md` を確認し、最大番号 + 1 を今回の番号とする（2桁ゼロ埋め）。1つも無ければ `01`。lens ごとに独立した連番を振る。`review/` フォルダが無ければ作成する。
 
 過去の指摘が上書きで消えず、ループごとの変遷が時系列で残る。
+
+lens ファイルがファイル名か番号を決める時期を別に定めている時は、それに従う（lens=readers は画面を撮る前に番号を決め、ペルソナ指定時はファイル名にラベルを付ける）。
 
 `$OUTPUT_DIR/review/{lens}_{NN}.md` に、次の共通骨格で書き出す。`{見出し}` と、`## 指摘` の各項目、lens 固有の追加節は lens ファイルの出力テンプレートに従う。
 
@@ -109,5 +114,6 @@ lens: {lens}／対象: {対象}／ファイル: review/{lens}_{NN}.md
 規律:
 - 指摘は1件ずつ箇条書きにし、各行は「見出し＋効く core 行＋一言」で完結させる
 - 駐車場は件数だけ伝える。内容はファイル側に置く
+- lens ファイルがサマリに足す行を定めていれば、`駐車場` の行の前に置く
 - 指摘が1件も無い場合も、上記フォーマットで「指摘: なし」「判断: 進んでよい」を明示する
 - Write に失敗した場合は inline で指摘本文を返さず、「点検は実行したが保存に失敗」とサマリで明示する

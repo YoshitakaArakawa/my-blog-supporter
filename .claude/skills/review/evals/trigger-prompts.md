@@ -32,6 +32,18 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 公開したらどう受け取られるか予測して
 - 炎上しそうな段落はある？
 - /review ai-bi-platform readers
+- スマホで読んだ時に読みにくいところはある？
+- 挿絵の位置と効き方を、読者の目で見て
+- プレビューを画面で読んで、文章が続きすぎるところを教えて
+- 熟練者と初心者の2人の読者に、別々に読ませて（ペルソナ欄を変えた2つの起動を並列で出す）
+- /review 20261201_example readers draft.md "expert: 業務で BI ツールを5年以上使う人"
+
+### lens=readers の期待する動作
+
+- 画面を撮って読む: `review/screens/readers_NN/` に `mobile_NN.png`・`desktop_NN.png`・`screens.json` ができ、`readers_NN.md` に `## 画面で読んだ所見` 節が入る。サマリに `画面:` の行が出る
+- playwright-cli が使えない時: 点検は本文だけで続き、ファイルとサマリに「画面: 読めていない（理由）」が出る
+- ペルソナ指定: 既定の3者ではなく指定の1人で読み、`readers_NN_{ラベル}.md` と `review/screens/readers_NN_{ラベル}/` に書く。並列の2起動でファイルが上書きされない
+- ラベルの無いペルソナ（例: `"BI ツールの初心者"`）: 点検せず、`ラベル: 説明` の形式を示して返す
 
 ### lens=audience
 
@@ -65,6 +77,8 @@ note: description・本文の修正時に fresh session で全プロンプトを
 - 全体像を1枚で見たい・地図を見せて（→ /core の地図）
 - ドラフトが長いので削って（→ /blog-write の書く工程。レビューではなく編集）
 - 記事に入れる概念図を1枚描いて（→ /illustrate）
+- この図をスマホでも読めるように描き直して（→ /illustrate。点検ではなく作図）
+- プレビューをブラウザで開いて（→ `.claude/launch.json` の preview サーバー。レビューの依頼ではない）
 - 公開する成果物を選別して commit したい（→ /blog-promote）
 - コードの変更をレビューして（記事の成果物が対象ではない）
 - Wix で直したから取り込んで（→ /blog-wix-sync。レビューの依頼ではない）

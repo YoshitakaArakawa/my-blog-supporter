@@ -9,6 +9,8 @@
  *   node scripts/render-preview.mjs <draft.md> [--out <path>]   プレビューを書き出す
  *   node scripts/render-preview.mjs --hook                      PostToolUse hook（stdin に hook JSON）
  *   --out 省略時: draft.md と同じディレクトリの preview/index.html
+ *   図のパスは出力 HTML からの相対に付け替える。図ごと Artifact などに公開する時は --out を draft.md と同じ階層に置くと、
+ *   図が images/… で参照され（../ が付かない）、公開用にパスを書き換えずに済む
  *
  * hook モードは output/ 直下の記事フォルダの draft.md を書いた時だけ生成し、成功時は何も出力しない
  * （Edit のたびにコンテキストを消費しないため）。失敗・画像欠落の時だけ additionalContext で返す。
