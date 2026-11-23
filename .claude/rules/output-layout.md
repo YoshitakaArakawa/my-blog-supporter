@@ -32,6 +32,8 @@ output/{yyyymmdd}_{テーマ}/           記事・登壇ごとの作業ディレ
     index.html                       変更箇所だけ色付きの HTML（scripts/render-revision.mjs の生成物。手で編集しない）
   review/                            /review の出力。lens ごとに独立した連番で時系列に蓄積
     critique_01.md / drift_01.md / readers_01.md / audience_01.md / author_01.md   lens ごとの指摘
+    readers_01_{ラベル}.md           readers をペルソナ指定で回した時の指摘（並列の起動が衝突しないようラベルで分ける）
+    screens/readers_01/              readers が読んだ画面（mobile_NN.png・desktop_NN.png・screens.json・page.html。scripts/shoot-preview.mjs の生成物。消してよい）
   x-posts.md                         X 告知ポストの文案（/blog-announce の出力。採否と投稿は著者が行う）
   published.md                       公開 Web 記事の取得スナップショット（/blog-wix-sync の pull --published。改訂の基準と slug 重複確認に使う。2026年6月以前の一部の記事は comparison/published.md にある。無い記事もある）
 
