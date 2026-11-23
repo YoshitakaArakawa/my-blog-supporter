@@ -197,15 +197,24 @@ function threadGridColumn(start, end) {
   return `${start + 1} / ${end + 2}`;
 }
 
-function renderThreadRows(threads, chapterCount) {
+/** 帯の範囲を章の番号で書く（例: 「章 01 〜 04」）。テンプレートはこれをスマホ幅でだけ表示する
+ * （デスクトップ幅では帯の位置が範囲を示す）。範囲が章の並びの外なら出さない */
+function threadRange(chapters, start, end) {
+  if (!(Number.isInteger(start) && Number.isInteger(end) && start >= 1 && end >= start && end <= chapters.length)) return "";
+  const num = (c) => (c.num === null || c.num === undefined || c.num === "" ? TBD : c.num);
+  const text = start === end ? num(chapters[start - 1]) : `${num(chapters[start - 1])} 〜 ${num(chapters[end - 1])}`;
+  return `<span class="rng">${esc(`章 ${text}`)}</span>`;
+}
+
+function renderThreadRows(threads, chapters) {
   return threads
     .map((t, i) => {
       const rowlab = i === 0 ? "貫く軸" : "";
       const kindClass = t.kind === "alt" ? " alt" : t.kind === "dash" ? " dash" : "";
       const start = typeof t.start === "number" ? t.start : 1;
-      const end = typeof t.end === "number" ? t.end : chapterCount;
+      const end = typeof t.end === "number" ? t.end : chapters.length;
       const col = threadGridColumn(start, end);
-      return `<span class="rowlab">${esc(rowlab)}</span>\n      <div class="thread${kindClass}" style="grid-column:${col}"><span class="lbl">${escOr(t.label)}</span><span class="d">${escOr(t.desc)}</span></div>`;
+      return `<span class="rowlab">${esc(rowlab)}</span>\n      <div class="thread${kindClass}" style="grid-column:${col}"><span class="lbl">${escOr(t.label)}</span>${threadRange(chapters, start, end)}<span class="d">${escOr(t.desc)}</span></div>`;
     })
     .join("\n      ");
 }
@@ -277,7 +286,7 @@ function render(doc, templateHtml) {
   html = fillBlock(html, "CLAIM_CELLS", `<span class="rowlab">主張</span>\n      ${cells.claim.join("\n      ")}`);
   html = fillBlock(html, "ISSUE_CELLS", `<span class="rowlab">論点</span>\n      ${cells.issue.join("\n      ")}`);
   html = fillBlock(html, "MATERIAL_CELLS", `<span class="rowlab">素材</span>\n      ${cells.material.join("\n      ")}`);
-  html = fillBlock(html, "THREAD_ROWS", renderThreadRows(threads, chapterCount));
+  html = fillBlock(html, "THREAD_ROWS", renderThreadRows(threads, chapters));
   html = fillBlock(html, "QUESTIONS_CARDS", renderQuestionCards(questions));
   html = fillBlock(html, "OPEN_CARDS", renderOpenCards(openQuestions));
   html = fillBlock(html, "BOUNDARIES_ROWS", renderBoundaryRows(boundaries));

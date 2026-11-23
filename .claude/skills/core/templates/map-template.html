@@ -1,4 +1,6 @@
 <title>{{TITLE}}の全体地図</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;800&family=Noto+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -22,6 +24,7 @@
   --serif:"Shippori Mincho",Georgia,"Yu Mincho",serif;
   --sans:"Noto Sans JP",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -31,6 +34,7 @@
     --det:#4fbdb4;--det-wash:#15302f;
     --prob:#dc9a4e;--prob-wash:#33261a;
     --out:#d97a75;--out-wash:#331e1e;
+    color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
@@ -40,11 +44,16 @@
   --det:#4fbdb4;--det-wash:#15302f;
   --prob:#dc9a4e;--prob-wash:#33261a;
   --out:#d97a75;--out-wash:#331e1e;
+  color-scheme:dark;
 }
 
 *{box-sizing:border-box}
-body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.8;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1180px;margin:0 auto;padding:48px 24px 96px;display:flex;flex-direction:column;gap:52px}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.8;-webkit-font-smoothing:antialiased}
+.wrap{
+  max-width:1180px;margin:0 auto;padding-block:48px 96px;
+  padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:52px;
+}
 h1,h2,h3{font-family:var(--serif);text-wrap:balance;margin:0;line-height:1.35}
 h1{font-size:clamp(30px,5vw,46px);font-weight:800}
 h2{font-size:clamp(21px,3vw,27px);font-weight:600}
@@ -106,8 +115,10 @@ section{display:flex;flex-direction:column;gap:20px}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
 .chip{
   font-family:var(--mono);font-size:10px;letter-spacing:.05em;
-  padding:2px 7px;border:1px solid var(--rule);color:var(--ink-mute);white-space:nowrap;
+  padding:2px 7px;border:1px solid var(--rule);color:var(--ink-mute);
 }
+/* 文中に置くチップ（扱わないことの「駐車場」）だけ、行末で割らない。セルのチップは折り返さないとセルからはみ出す */
+.outrow .chip{white-space:nowrap}
 .chip.main{border-color:var(--det);color:var(--det)}
 .chip.sub{border-style:dashed}
 .cell .src{font-family:var(--mono);font-size:10px;color:var(--ink-mute);line-height:1.7;border-top:1px solid var(--rule-soft);padding-top:6px}
@@ -160,13 +171,94 @@ footer{border-top:1px solid var(--rule);padding-top:18px;font-family:var(--mono)
 /* ---------- 未定（入力に無い箇所。推測で埋めず、これで可視化する） ---------- */
 .tbd{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--out);border:1px dashed var(--out);padding:1px 6px;display:inline-block}
 .cell.tbd-cell{border-style:dashed;border-color:var(--out);background:transparent}
+
+/* ---------- スマホ幅（640px 以下）: 章を縦に積み、貫く軸は章の前の凡例にする ---------- */
+/* 帯の範囲の文字列（.rng）は render-map.mjs が足す。デスクトップでは帯の位置が範囲を示すので出さない */
+.thread .rng{display:none}
+
+@media (max-width:640px){
+  .wrap{
+    padding-block:28px 64px;
+    padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+    gap:40px;overflow-wrap:anywhere;
+  }
+  .eyebrow{font-size:12px}
+  .lede{font-size:16px}
+  .thesis{padding:16px 18px}
+  .meta{font-size:12.5px;gap:4px 14px}
+  .core .k{font-size:12px}
+  .core .v{font-size:14.5px}
+
+  /* グリッドを1列の flex にする。帯のインライン grid-column は flex では効かないので、上書きは要らない */
+  .mapwrap{overflow-x:visible;padding-bottom:0}
+  .map{min-width:0;display:flex;flex-direction:column;gap:0}
+  .map > *{min-width:0}
+
+  /* 行ラベル: 層のラベル（主張・論点・素材）は各セルの見出しに移すので隠し、「貫く軸」と「章」だけ見出しに残す */
+  .map > .rowlab{display:none;padding-top:0;font-size:12px;letter-spacing:.12em}
+  .map > .rowlab:has(+ .thread):not(:empty){display:block;order:-1;margin-bottom:8px}
+  .map > .rowlab:first-child{display:block;order:0;margin-top:20px}
+
+  /* 貫く軸: 章の一覧の前に凡例として並べる。範囲は .rng の文字で示す */
+  .map > .thread{order:-1;margin-bottom:8px;flex-wrap:wrap;align-items:baseline;gap:2px 12px;padding:10px 14px}
+  .thread .lbl{font-family:var(--sans);font-size:14px;font-weight:700;letter-spacing:0;white-space:normal}
+  .thread .rng{display:inline;font-family:var(--mono);font-size:12px;color:var(--ink-mute);font-variant-numeric:tabular-nums}
+  .thread .d{flex-basis:100%;font-size:14px;line-height:1.7}
+
+  /* 章ごとに、見出し・主張・論点・素材を続けて並べる。
+     章 i の4つは「.ch と .cell だけを数えた順番」で i, N+i, 2N+i, 3N+i 番目（N は章数）。
+     i が N を超える規則は別の章に当たるので、小さい i を後に書いて上書きさせる。17章以上は末尾に層ごとに並ぶ */
+  .map > .ch,.map > .cell{order:99}
+  .map > :nth-child({{CHAPTER_COUNT}}n+16 of .ch,.cell){order:16}
+  .map > :nth-child({{CHAPTER_COUNT}}n+15 of .ch,.cell){order:15}
+  .map > :nth-child({{CHAPTER_COUNT}}n+14 of .ch,.cell){order:14}
+  .map > :nth-child({{CHAPTER_COUNT}}n+13 of .ch,.cell){order:13}
+  .map > :nth-child({{CHAPTER_COUNT}}n+12 of .ch,.cell){order:12}
+  .map > :nth-child({{CHAPTER_COUNT}}n+11 of .ch,.cell){order:11}
+  .map > :nth-child({{CHAPTER_COUNT}}n+10 of .ch,.cell){order:10}
+  .map > :nth-child({{CHAPTER_COUNT}}n+9 of .ch,.cell){order:9}
+  .map > :nth-child({{CHAPTER_COUNT}}n+8 of .ch,.cell){order:8}
+  .map > :nth-child({{CHAPTER_COUNT}}n+7 of .ch,.cell){order:7}
+  .map > :nth-child({{CHAPTER_COUNT}}n+6 of .ch,.cell){order:6}
+  .map > :nth-child({{CHAPTER_COUNT}}n+5 of .ch,.cell){order:5}
+  .map > :nth-child({{CHAPTER_COUNT}}n+4 of .ch,.cell){order:4}
+  .map > :nth-child({{CHAPTER_COUNT}}n+3 of .ch,.cell){order:3}
+  .map > :nth-child({{CHAPTER_COUNT}}n+2 of .ch,.cell){order:2}
+  .map > :nth-child({{CHAPTER_COUNT}}n+1 of .ch,.cell){order:1}
+
+  .map > .ch{margin-top:12px;padding:12px 14px}
+  .ch .num,.ch .cnt{font-size:12px}
+  .ch .ttl{font-size:16.5px}
+  .map > .cell{border-top:0;padding:12px 14px;gap:8px;font-size:14px;line-height:1.75}
+  /* 層の見出し。層は行ラベルの何番目の後ろにあるかで決まる（2番目: 主張、3番目: 論点、4番目: 素材） */
+  .map > .cell::before{content:"主張";font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--ink-mute)}
+  .map > .rowlab:nth-child(3 of .rowlab) ~ .cell::before{content:"論点"}
+  .map > .rowlab:nth-child(4 of .rowlab) ~ .cell::before{content:"素材"}
+  .map > .cell:has(> .claim){flex-flow:row wrap;align-items:baseline;column-gap:12px}
+  .cell .role{font-size:12px}
+  .cell .claim{flex-basis:100%;font-size:15px;line-height:1.7}
+  .cell ul{gap:6px}
+  .cell .src{font-size:12px}
+  .map .chips{flex-direction:column;gap:6px}
+  .map .chip{font-family:var(--sans);font-size:14px;letter-spacing:0;line-height:1.6;padding:6px 10px;color:var(--ink-soft)}
+  .map .chip.main{color:var(--ink)}
+
+  .q,.open{padding:14px 16px}
+  .q .qa{font-size:14px}
+  .q .qw,.open .ow{font-size:12px}
+  .outrow{padding:12px 14px}
+  .outrow .what{font-size:14px}
+  .outrow .why{font-family:var(--sans);font-size:14px}
+  .outs .chip,.tbd{font-size:12px}
+  footer{font-size:12.5px}
+}
 </style>
 
 <!--
   このファイルは同じ Skill 内の scripts/render-map.mjs が読み込むテンプレートであり、直接編集した完成品ではない。
   {{...}} はスカラー値の単純文字列置換、<!-- NAME:START/END --> で囲んだ区間はスクリプトが
-  生成した繰り返し HTML（章・カード・行）に丸ごと差し替わる。CSS と構造はどちらも変更しない
-  （変更する場合は render-map.mjs 側の対応するレンダリング関数も合わせて直す）。
+  生成した繰り返し HTML（章・カード・行）に丸ごと差し替わる。CSS と構造は記事ごとに変えない
+  （Skill として改訂する時は、render-map.mjs 側の対応するレンダリング関数も合わせて直す）。
   入力に対応が無い箇所はスクリプトが推測せず「未定」を出す。
 -->
 
