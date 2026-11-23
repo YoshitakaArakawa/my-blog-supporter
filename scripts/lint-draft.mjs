@@ -6,7 +6,8 @@
  * 併せて textlint（.textlintrc.json）を走らせて、1つの Markdown レポートにまとめる。
  * LLM の自己申告チェックリストでは縮まなかった指標（分量・段落文数・「」個数・禁止句）を
  * 決定的に検出するのが役割。判定は「警告」であり、ブロックはしない。
- * 一次記録由来の識別子（config.primaryRecordPatterns）は NG にも数えず、件数と行を示すだけ。
+ * 一次記録由来の識別子（config.primaryRecordPatterns）と和欧間の空白（config.spacingPatterns）は NG にも数えず、件数と行を示すだけ。
+ * 密度の上限（段落の重さ・文の長さ・図なしで続く本文）と長い呼び名の反復も、表の判定を「警告」にして NG に数えない。
  *
  * 使い方:
  *   node scripts/lint-draft.mjs <file.md> [--json] [--no-textlint]   レポートを stdout に出す
@@ -82,6 +83,8 @@ const isHtml = (s) => /^\s*(<|::)/.test(s);
 const isImage = (s) => /^\s*!\[[^\]]*\]\([^)]*\)(\{[^}]*\})?\s*$/.test(s);
 // 図の記法（属性 {width=…} を含む）
 const IMAGE_INLINE = /!\[[^\]]*\]\([^)]*\)(\{[^}]*\})?/g;
+// 図なしで続く本文を区切る行: 図、未作図の図のプレースホルダー（<!-- 画像: … -->）、Wix の埋め込み（::x{…}）
+const isFigureBreak = (s) => /!\[[^\]]*\]\([^)]*\)/.test(s) || /<!--\s*画像/.test(s) || /^\s*::/.test(s);
 // 色の強調の記法（[テキスト]{.accent}・[テキスト]{color=#…}）。下線だけの {.u} は数えない
 const ACCENT_SPAN = new RegExp(String.raw`\]\{(?:[^}]*\s)?(?:${Object.keys(STYLES).map((k) => String.raw`\.${k}`).join("|")}|color=)[^}]*\}`, "g");
 
@@ -166,6 +169,40 @@ function metrics(text) {
   for (const m of bodyText.matchAll(/「([^「」\n]{2,24})」/g)) phraseCount.set(m[1], (phraseCount.get(m[1]) || 0) + 1);
   const repeated = [...phraseCount].filter(([, c]) => c > T.keyphraseRepeatMax).sort((a, b) => b[1] - a[1]);
   const inHeading = [...phraseCount.keys()].filter((k) => headings.some((h) => h.text.includes(k)) && (phraseCount.get(k) || 0) >= 2);
+  // 長い呼び名の反復。「」は初出だけに付ける規範なので、以後の囲いなしの出現も数える（voice-style ルール18）
+  // 対象は修飾を重ねた名詞句（ひらがなを含む語）。製品名・機能名（カタカナと英字だけの語）は短くできないので数えない
+  const longNames = [...phraseCount.keys()]
+    .filter((k) => k.length >= T.longNameMinChars && /[ぁ-ん]/.test(k))
+    .map((k) => [k, bodyText.split(k).length - 1])
+    .filter(([, c]) => c > T.longNameRepeatMax)
+    .sort((a, b) => b[1] - a[1]);
+
+  // 図なしで続く本文。図・未作図のプレースホルダー・埋め込みで区切り、区間ごとの字数を数える。見出しは区切りにしない
+  const rawLines = text.split(/\r?\n/);
+  let figures = 0;
+  let gap = { chars: 0, from: 0, to: 0 };
+  let maxGap = { chars: 0, from: 0, to: 0 };
+  let rawFence = false;
+  for (const l of lines) {
+    const raw = rawLines[l.n - 1] || "";
+    if (/^\s*```/.test(raw)) { rawFence = !rawFence; continue; }
+    if (rawFence || /^\s*>/.test(raw)) continue;
+    if (isFigureBreak(raw)) {
+      if (!/^\s*::/.test(raw)) figures += 1;
+      if (gap.chars > maxGap.chars) maxGap = gap;
+      gap = { chars: 0, from: 0, to: 0 };
+      continue;
+    }
+    if (isHeading(l.text)) continue;
+    const c = plain(l.text).replace(/\s/g, "").length;
+    if (!c) continue;
+    if (!gap.from) gap.from = l.n;
+    gap.to = l.n;
+    gap.chars += c;
+  }
+  if (gap.chars > maxGap.chars) maxGap = gap;
+  // 段落が重い時に割る候補として示す
+  const heavyParas = [...paraChars].sort((a, b) => b.len - a.len).slice(0, 5);
 
   // 冒頭
   const intro = nonHeading.map((l) => plain(l.text)).join("").replace(/\s+/g, "").slice(0, INTRO_CHARS);
@@ -191,7 +228,8 @@ function metrics(text) {
     avgSentenceLen: sentences.length ? +(sentences.reduce((a, s) => a + s.length, 0) / sentences.length).toFixed(1) : 0,
     sentPerPara: paraSent.length ? +(paraSent.reduce((a, p) => a + p.count, 0) / paraSent.length).toFixed(2) : 0,
     parasOver: paraSent.filter((p) => p.count > T.sentencesPerParagraphMax),
-    paraCharsAvg, parasShort, sections,
+    paraCharsAvg, parasShort, heavyParas, sections,
+    figures, figuresPer1k: chars ? +((figures / chars) * 1000).toFixed(2) : 0, maxFigureGap: maxGap.chars, maxFigureGapRange: maxGap, longNames,
     h2: headings.filter((h) => /^##\s/.test(h.text)).length,
     // 余談の ### は構成上の例外として数えない（voice-style ルール8・11）
     h3: headings.filter((h) => /^###\s/.test(h.text) && !/^###\s*余談/.test(h.text)).length,
@@ -221,12 +259,21 @@ function bannedHits(m) {
 
 /** 作業ログ・セッションの記録の粒度が本文に漏れた印（セッション番号・通し番号・内部コマンド名・モデル名）。見出しも見る。警告のみで NG に数えない */
 function primaryRecordHits(m) {
+  return patternHits(m, CONFIG.primaryRecordPatterns);
+}
+
+/** 和文と英字の境界の半角スペース（voice-style ルール14）。見出しも見る。「」の中は画面の表示名を写すことが多いので見ない。警告のみで NG に数えない */
+function spacingHits(m) {
+  return patternHits(m, CONFIG.spacingPatterns || [], (s) => s.replace(/「[^」]*」/g, "「」"));
+}
+
+function patternHits(m, patterns, prep = (s) => s) {
   const hits = [];
-  for (const rule of CONFIG.primaryRecordPatterns) {
+  for (const rule of patterns) {
     const re = new RegExp(rule.pattern, "g");
     for (const l of m.lines) {
       if (!l.text) continue;
-      const src = plain(l.text);
+      const src = prep(plain(l.text));
       for (const mt of src.matchAll(re)) hits.push({ n: l.n, group: rule.group, text: mt[0], hint: rule.hint });
     }
   }
@@ -264,16 +311,25 @@ async function runTextlint(file) {
 
 // ---------- 判定とレポート ----------
 
-function evaluate(m, banned, tl, heads = [], primary = []) {
+function evaluate(m, banned, tl, heads = [], primary = [], spacing = []) {
   const rows = [];
-  const add = (label, value, limit, ok, note = "") => rows.push({ label, value, limit, ok, note });
-  // 字数は判定しない（参考値）。長さは主張の数で決まり、字数を目標に削ると著者が残したい段落まで痩せる。レンジ外は注記だけ出す
-  const charsNote = m.chars > T.bodyCharsMax ? `参考: 公開記事の上限 ${T.bodyCharsMax} を ${m.chars - T.bodyCharsMax} 字超。保険文・道案内・多段論証があれば削る` : m.chars < T.bodyCharsMin ? `参考: 公開記事の下限 ${T.bodyCharsMin} より短い` : "";
-  add("本文字数（参考）", m.chars, `${T.bodyCharsMin}〜${T.bodyCharsMax}`, true, charsNote);
+  // warn は NG に数えない警告。表の判定に「警告」と出し、hook の差分でも出入りを示す
+  const add = (label, value, limit, ok, note = "", warn = false) => rows.push({ label, value, limit, ok, note, warn });
+  // 字数は判定しない（参考値）。長さは主張の数で決まり、字数を目標に削ると著者が残したい段落まで痩せる。下限は置かず、上限超過だけ注記する
+  const charsNote = m.chars > T.bodyCharsMax ? `参考: 公開記事の上限 ${T.bodyCharsMax} を ${m.chars - T.bodyCharsMax} 字超。手順3の引き算の点検をかける` : "";
+  add("本文字数（参考）", m.chars, `≤${T.bodyCharsMax}`, true, charsNote);
   const overRatio = m.paragraphs ? m.parasOver.length / m.paragraphs : 0;
   add("段落あたり文数（平均）", m.sentPerPara, `≤${T.sentencesPerParagraphMax}`, m.sentPerPara <= T.sentencesPerParagraphMax + 0.3);
   add(`${T.sentencesPerParagraphMax + 1}文以上の段落`, `${m.parasOver.length}/${m.paragraphs}`, `≤${Math.round(T.paragraphsOverLimitRatioMax * 100)}%`, overRatio <= T.paragraphsOverLimitRatioMax);
-  add("段落あたり字数（平均）", m.paraCharsAvg, `≥${T.paragraphCharsAvgMin}`, m.paraCharsAvg >= T.paragraphCharsAvgMin, m.paraCharsAvg < T.paragraphCharsAvgMin ? "1文ずつ改行して並べている。同じ論点の段落をまとめ、背景・理由・例を1段落で運ぶ" : "");  add("「」の個数", m.kagi, `≤${T.kagiKakkoMax}`, m.kagi <= T.kagiKakkoMax);
+  const paraHeavy = m.paraCharsAvg > T.paragraphCharsAvgMax;
+  const paraNote = m.paraCharsAvg < T.paragraphCharsAvgMin ? "1文ずつ改行して並べている。同じ論点の段落をまとめ、背景・理由・例を1段落で運ぶ" : paraHeavy ? "段落が重い。1段落1論点に割るか、補足を削る（下の重い段落）" : "";
+  add("段落あたり字数（平均）", m.paraCharsAvg, `${T.paragraphCharsAvgMin}〜${T.paragraphCharsAvgMax}`, m.paraCharsAvg >= T.paragraphCharsAvgMin, paraNote, paraHeavy);
+  const longSent = m.avgSentenceLen > T.avgSentenceCharsMax;
+  add("平均文長", m.avgSentenceLen, `≤${T.avgSentenceCharsMax}`, true, longSent ? "文が長い。従属節を減らすか文を割る。短文を句点で刻んで並べて満たさない" : "", longSent);
+  const gapOver = m.maxFigureGap > T.figureGapCharsMax;
+  const gapRange = m.maxFigureGapRange.from ? `（L${m.maxFigureGapRange.from}〜L${m.maxFigureGapRange.to}）` : "";
+  add("図なしで続く本文（最長）", `${m.maxFigureGap}${gapRange}`, `≤${T.figureGapCharsMax}`, true, gapOver ? `図かスクショを置く候補（図 ${m.figures} 枚、1000字あたり ${m.figuresPer1k}）` : `図 ${m.figures} 枚、1000字あたり ${m.figuresPer1k}`, gapOver);
+  add("「」の個数", m.kagi, `≤${T.kagiKakkoMax}`, m.kagi <= T.kagiKakkoMax);
   const h2Max = m.twoPart ? T.h2MaxTwoPart : T.h2Max;
   add("## の本数", m.h2, `≤${h2Max}`, m.h2 <= h2Max, m.twoPart ? "二部構成（見出しに前半／後半）として上限を切り替え" : "");
   add("### の本数（余談を除く）", m.h3, `≤${T.h3Max}`, m.h3 <= T.h3Max);
@@ -285,10 +341,12 @@ function evaluate(m, banned, tl, heads = [], primary = []) {
   add(`${T.sentenceCharsMax}字超の文`, m.longSentences, "0", m.longSentences === 0);
   add("英文引用（文）", m.english, `≤${T.englishQuoteMax}`, m.english <= T.englishQuoteMax);
   add("「」語の反復", m.repeated.length ? m.repeated.map(([k, c]) => `「${k}」×${c}`).join(" ") : 0, `各≤${T.keyphraseRepeatMax}`, m.repeated.length === 0);
+  add(`長い呼び名の反復（${T.longNameMinChars}字以上、囲いなしも数える）`, m.longNames.length ? m.longNames.map(([k, c]) => `${k}×${c}`).join(" ") : 0, `各≤${T.longNameRepeatMax}`, true, m.longNames.length ? "初出だけ使い、以後は短い語で呼ぶ（voice-style ルール18）" : "", m.longNames.length > 0);
   add("見出しの型（コロン・対句）", heads.length, "0", heads.length === 0);
   add("見出しに使った「」語", m.inHeading.length ? m.inHeading.map((k) => `「${k}」`).join(" ") : 0, "0", m.inHeading.length === 0);
   // 一次記録由来の識別子は警告だけ。NG に数えると著者が意図して残した語まで直させるため
-  add("一次記録由来の識別子（警告）", primary.length, "0", true, primary.length ? "読者が辿れない番号・道具名・モデル名。意味に言い換える（voice-style ルール21）" : "");
+  add("一次記録由来の識別子（警告）", primary.length, "0", true, primary.length ? "読者が辿れない番号・道具名・モデル名。意味に言い換える（voice-style ルール21）" : "", primary.length > 0);
+  add("和欧間の半角スペース（警告）", spacing.length, "0", true, spacing.length ? "和文と英字の境界の空白を外す（voice-style ルール14）" : "", spacing.length > 0);
   add("冒頭", m.introKind, "宣言 or 体験", m.introKind !== "不明");
   add("冒頭の参考資料ブロック／固定ヘッダ", `${m.introHasRefBlock ? "参考資料あり" : "なし"}${m.introHasFixedHeader ? "・Tableau NOTEあり" : ""}`, "なし", !m.introHasRefBlock && !m.introHasFixedHeader);
   if (m.closingFound) {
@@ -305,16 +363,25 @@ function evaluate(m, banned, tl, heads = [], primary = []) {
   return rows;
 }
 
-function report(file, m, banned, tl, rows, heads = [], primary = []) {
+const verdict = (r) => (!r.ok ? "NG" : r.warn ? "警告" : "OK");
+
+function report(file, m, banned, tl, rows, heads = [], primary = [], spacing = []) {
   const ng = rows.filter((r) => !r.ok);
+  const warned = rows.filter((r) => r.ok && r.warn);
   const out = [];
   out.push(`# draft lint: ${path.relative(ROOT, file).replace(/\\/g, "/")}`);
   out.push("");
   out.push(ng.length ? `**NG ${ng.length} 件**: ${ng.map((r) => r.label).join(" / ")}` : "**NG なし**（機械ゲート通過）");
+  if (warned.length) out.push(`警告 ${warned.length} 件（NG に数えない。直すかは自己レビューで決める）: ${warned.map((r) => r.label).join(" / ")}`);
   out.push("");
   out.push("| 指標 | 値 | 閾値 | 判定 |");
   out.push("|---|---|---|---|");
-  for (const r of rows) out.push(`| ${r.label} | ${r.value} | ${r.limit} | ${r.ok ? "OK" : "NG"}${r.note ? " " + r.note : ""} |`);
+  for (const r of rows) out.push(`| ${r.label} | ${r.value} | ${r.limit} | ${verdict(r)}${r.note ? " " + r.note : ""} |`);
+  if (m.paraCharsAvg > T.paragraphCharsAvgMax && m.heavyParas.length) {
+    out.push("");
+    out.push(`## 重い段落（上位 ${m.heavyParas.length} 件。割るか補足を削る候補）`);
+    for (const p of m.heavyParas) out.push(`- L${p.n}（${p.len}字）${p.head}…`);
+  }
   if (m.parasOver.length) {
     out.push("");
     out.push(`## ${T.sentencesPerParagraphMax + 1}文以上の段落（${m.parasOver.length} 件）`);
@@ -342,6 +409,12 @@ function report(file, m, banned, tl, rows, heads = [], primary = []) {
     out.push(`## 一次記録由来の識別子（${primary.length} 件。警告。NG に数えない）`);
     for (const p of primary) out.push(`- L${p.n} 「${p.text}」 → ${p.hint}`);
   }
+  if (spacing.length) {
+    out.push("");
+    out.push(`## 和欧間の半角スペース（${spacing.length} 件。警告。NG に数えない）`);
+    for (const p of spacing.slice(0, 15)) out.push(`- L${p.n} 「${p.text}」`);
+    if (spacing.length > 15) out.push(`- …ほか ${spacing.length - 15} 件`);
+  }
   if (tl.error) {
     out.push("");
     out.push(`## textlint: ${tl.error}`);
@@ -366,8 +439,8 @@ function report(file, m, banned, tl, rows, heads = [], primary = []) {
 }
 
 function metricsTable(files, csv) {
-  const cols = ["chars", "paragraphs", "sentPerPara", "paraCharsAvg", "avgSentenceLen", "h2", "h3", "kagi", "bold", "english", "hedge"];
-  const labels = ["本文字数", "段落数", "文/段落", "字/段落", "平均文長", "##", "###（余談除く）", "「」", "太字", "英文引用", "思う系語尾"];
+  const cols = ["chars", "paragraphs", "sentPerPara", "paraCharsAvg", "avgSentenceLen", "figuresPer1k", "maxFigureGap", "h2", "h3", "kagi", "bold", "english", "hedge"];
+  const labels = ["本文字数", "段落数", "文/段落", "字/段落", "平均文長", "図/1000字", "図なし最長", "##", "###（余談除く）", "「」", "太字", "英文引用", "思う系語尾"];
   const data = files.map((f) => {
     const m = metrics(fs.readFileSync(f, "utf8"));
     const banned = bannedHits(m).length;
@@ -399,21 +472,23 @@ function hookStatePath(file) {
 /** 差分比較に使う「論点の集合」。行番号は Edit で動くので鍵に含めず、内容で同一視する */
 function issueSet(r) {
   const rows = {};
-  for (const x of r.rows) rows[x.label] = { value: String(x.value), ok: x.ok };
+  for (const x of r.rows) rows[x.label] = { value: String(x.value), ok: x.ok, warn: !!x.warn };
   // 件数と出現行を持つ。行番号は Edit で動くので同一視の鍵にはせず、増えた時にどこかを示す用途だけに使う
   const count = (list, keyOf, lineOf) => { const m = {}; for (const it of list) { const k = keyOf(it); (m[k] ||= { n: 0, lines: [] }); m[k].n += 1; m[k].lines.push(lineOf(it)); } return m; };
   const banned = count(r.banned, (b) => `[${b.group}] 「${b.text}」 → ${b.hint}`, (b) => b.n);
   const primary = count(r.primary || [], (p) => `「${p.text}」 → ${p.hint}`, (p) => p.n);
+  const spacing = count(r.spacing || [], (p) => `「${p.text}」`, (p) => p.n);
   const sev = { 2: "error", 1: "warning", 0: "info" };
   const tl = count((r.tl.messages || []).filter((x) => x.severity >= 1), (x) => `${sev[x.severity]}:${x.ruleId} ${x.message.replace(/\n/g, " ").slice(0, 80)}`, (x) => x.line);
-  return { rows, banned, primary, tl };
+  return { rows, banned, primary, spacing, tl };
 }
 
 /** 前回状態との差分レポート。変化が無ければ1行で返す */
 function diffReport(file, prev, cur, r) {
   const rel = path.relative(ROOT, file).replace(/\\/g, "/");
   const ngNow = Object.entries(cur.rows).filter(([, v]) => !v.ok).map(([k]) => k);
-  const head = `# draft lint: ${rel} — ${ngNow.length ? `NG ${ngNow.length} 件: ${ngNow.join(" / ")}` : "NG なし"}`;
+  const warnNow = Object.entries(cur.rows).filter(([, v]) => v.ok && v.warn).map(([k]) => k);
+  const head = `# draft lint: ${rel} — ${ngNow.length ? `NG ${ngNow.length} 件: ${ngNow.join(" / ")}` : "NG なし"}${warnNow.length ? `（警告 ${warnNow.length} 件）` : ""}`;
   const lines = [];
   const keys = (a, b) => [...new Set([...Object.keys(a), ...Object.keys(b)])];
   for (const k of keys(prev.rows, cur.rows)) {
@@ -423,6 +498,8 @@ function diffReport(file, prev, cur, r) {
     if (p.ok && !c.ok) lines.push(`- NG になった: ${k} ${p.value} → ${c.value}`);
     else if (!p.ok && c.ok) lines.push(`- 解消: ${k} ${p.value} → ${c.value}`);
     else if (!c.ok && p.value !== c.value) lines.push(`- NG のまま変化: ${k} ${p.value} → ${c.value}`);
+    else if (c.ok && c.warn && !p.warn) lines.push(`- 警告になった: ${k} ${p.value} → ${c.value}`);
+    else if (c.ok && !c.warn && p.warn) lines.push(`- 警告が消えた: ${k} ${p.value} → ${c.value}`);
   }
   const diffCount = (label, a, b) => {
     for (const k of keys(a, b)) {
@@ -438,6 +515,7 @@ function diffReport(file, prev, cur, r) {
   };
   diffCount("禁止句", prev.banned, cur.banned);
   diffCount("一次記録由来の識別子", prev.primary || {}, cur.primary || {});
+  diffCount("和欧間の半角スペース", prev.spacing || {}, cur.spacing || {});
   diffCount("textlint", prev.tl, cur.tl);
   if (!lines.length) return `${head}\n変化なし。全文は \`node scripts/lint-draft.mjs ${rel}\``;
   return `${head}\n前回からの差分:\n${lines.join("\n")}`;
@@ -515,8 +593,9 @@ async function lintOne(file, opts) {
   const tl = opts.noTextlint ? { messages: [] } : await runTextlint(file);
   const heads = headingHits(m);
   const primary = primaryRecordHits(m);
-  const rows = evaluate(m, banned, tl, heads, primary);
-  return { m, banned, heads, primary, tl, rows, text: report(file, m, banned, tl, rows, heads, primary) };
+  const spacing = spacingHits(m);
+  const rows = evaluate(m, banned, tl, heads, primary, spacing);
+  return { m, banned, heads, primary, spacing, tl, rows, text: report(file, m, banned, tl, rows, heads, primary, spacing) };
 }
 
 async function main() {
@@ -557,7 +636,7 @@ async function main() {
   const r = await lintOne(file, { noTextlint: flag("--no-textlint") });
   if (flag("--json")) {
     const { lines, ...m } = r.m;
-    console.log(JSON.stringify({ file, metrics: m, banned: r.banned, headings: r.heads, primaryRecord: r.primary, textlint: r.tl.messages || [], rows: r.rows }, null, 1));
+    console.log(JSON.stringify({ file, metrics: m, banned: r.banned, headings: r.heads, primaryRecord: r.primary, spacing: r.spacing, textlint: r.tl.messages || [], rows: r.rows }, null, 1));
   } else {
     console.log(r.text);
   }
